@@ -1,29 +1,48 @@
 /*
-See the LICENSE.txt file for this sample’s licensing information.
+See the LICENSE.txt file for this sample's licensing information.
 
 Abstract:
-The main app declaration.
+The main browser app declaration.
 */
 
+import AppKit
 import SwiftUI
 
-/// The main app declaration.
 @main
-struct LandmarksApp: App {
-    /// An object that manages the app's data and state.
-    @State private var modelData = ModelData()
+struct TungstenApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @State private var browserModel = BrowserModel()
 
     var body: some Scene {
         WindowGroup {
-            LandmarksSplitView()
-                .environment(modelData)
-                .frame(minWidth: 375.0, minHeight: 375.0)
-                // Keeps the current window's size for use in scrolling header calculations.
-                .onGeometryChange(for: CGSize.self) { geometry in
-                    geometry.size
-                } action: {
-                    modelData.windowSize = $0
-                }
+            BrowserSplitView()
+                .environment(browserModel)
+                .frame(minWidth: 700, minHeight: 460)
         }
+        .commands {
+            CommandGroup(after: .newItem) {
+                Button("New Tab") {
+                    browserModel.addTab()
+                }
+                .keyboardShortcut("t")
+            }
+        }
+    }
+}
+
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        guard
+            let iconURL = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
+            let icon = NSImage(contentsOf: iconURL)
+        else {
+            return
+        }
+
+        NSApp.applicationIconImage = icon
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        TungstenCEFApp.shared().shutdownCEF()
     }
 }

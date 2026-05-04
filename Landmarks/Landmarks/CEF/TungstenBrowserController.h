@@ -1,0 +1,45 @@
+/*
+See the LICENSE.txt file for this sample's licensing information.
+
+Abstract:
+Objective-C facade for one CEF browser instance.
+*/
+
+#import <AppKit/AppKit.h>
+
+NS_ASSUME_NONNULL_BEGIN
+
+@class TungstenBrowserController;
+
+@protocol TungstenBrowserControllerDelegate <NSObject>
+
+- (void)browserController:(TungstenBrowserController *)controller didUpdateTitle:(NSString *)title;
+- (void)browserController:(TungstenBrowserController *)controller didUpdateURL:(NSString *)urlString;
+- (void)browserController:(TungstenBrowserController *)controller
+        didUpdateLoading:(BOOL)isLoading
+               canGoBack:(BOOL)canGoBack
+            canGoForward:(BOOL)canGoForward;
+- (void)browserController:(TungstenBrowserController *)controller
+     didUpdateFaviconURLs:(NSArray<NSString *> *)faviconURLs;
+
+@end
+
+@interface TungstenBrowserController : NSObject
+
+- (instancetype)initWithInitialURL:(NSString *)initialURL NS_DESIGNATED_INITIALIZER;
+- (instancetype)init NS_UNAVAILABLE;
+
+@property (nonatomic, weak, nullable) id<TungstenBrowserControllerDelegate> delegate;
+@property (nonatomic, strong, readonly) NSView *view;
+@property (nonatomic) CGFloat cornerRadius;
+
+- (void)navigateToURLString:(NSString *)urlString;
+- (void)goBack;
+- (void)goForward;
+- (void)reload;
+- (void)stopLoading;
+- (void)layoutBrowserView;
+
+@end
+
+NS_ASSUME_NONNULL_END

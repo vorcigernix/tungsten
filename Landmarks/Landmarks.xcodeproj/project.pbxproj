@@ -10,7 +10,7 @@
 		2D2C6419D5C74F1C63806726 /* LICENSE.txt */ = {isa = PBXFileReference; includeInIndex = 1; path = LICENSE.txt; sourceTree = "<group>"; };
 		497AAC104C4C5E3F5FF5F6A3 /* SampleCode.xcconfig */ = {isa = PBXFileReference; name = SampleCode.xcconfig; path = ../Configuration/SampleCode.xcconfig; sourceTree = "<group>"; };
 		9AFBAAF37D3D2CD5D83C356B /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
-		D82EA0F52D5692FD00493877 /* Landmarks.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Landmarks.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D82EA0F52D5692FD00493877 /* Tungsten.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tungsten.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -42,7 +42,7 @@
 		D82EA0F62D5692FD00493877 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				D82EA0F52D5692FD00493877 /* Landmarks.app */,
+				D82EA0F52D5692FD00493877 /* Tungsten.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -74,6 +74,7 @@
 				D82EA0F12D5692FD00493877 /* Sources */,
 				D82EA0F22D5692FD00493877 /* Frameworks */,
 				D82EA0F32D5692FD00493877 /* Resources */,
+				D82EA1042D5692FE00493877 /* Copy CEF Runtime */,
 			);
 			buildRules = (
 			);
@@ -83,8 +84,8 @@
 				D82EA0F72D5692FD00493877 /* Landmarks */,
 			);
 			name = Landmarks;
-			productName = Landmarks;
-			productReference = D82EA0F52D5692FD00493877 /* Landmarks.app */;
+			productName = Tungsten;
+			productReference = D82EA0F52D5692FD00493877 /* Tungsten.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -134,6 +135,40 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		D82EA1042D5692FE00493877 /* Copy CEF Runtime */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/../Vendor/CEF/current/Release/Chromium Embedded Framework.framework",
+				"$(SRCROOT)/../Vendor/CEF/current/build/Tungsten Helper.app",
+				"$(SRCROOT)/../Vendor/CEF/current/build/Tungsten Helper (Alerts).app",
+				"$(SRCROOT)/../Vendor/CEF/current/build/Tungsten Helper (GPU).app",
+				"$(SRCROOT)/../Vendor/CEF/current/build/Tungsten Helper (Plugin).app",
+				"$(SRCROOT)/../Vendor/CEF/current/build/Tungsten Helper (Renderer).app",
+			);
+			name = "Copy CEF Runtime";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/Chromium Embedded Framework.framework",
+				"$(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/Tungsten Helper.app",
+				"$(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/Tungsten Helper (Alerts).app",
+				"$(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/Tungsten Helper (GPU).app",
+				"$(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/Tungsten Helper (Plugin).app",
+				"$(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/Tungsten Helper (Renderer).app",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/../scripts/copy-cef-runtime.sh\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		D82EA0F12D5692FD00493877 /* Sources */ = {
@@ -187,7 +222,7 @@
 				DEVELOPMENT_TEAM = D6B62XVC28;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -254,7 +289,7 @@
 				DEVELOPMENT_TEAM = D6B62XVC28;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -266,6 +301,7 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -276,7 +312,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 497AAC104C4C5E3F5FF5F6A3 /* SampleCode.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "Landmarks App Icon";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = Landmarks/Landmarks.entitlements;
@@ -286,46 +322,47 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = "";
-				ENABLE_APP_SANDBOX = YES;
+				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
-				ENABLE_USER_SELECTED_FILES = readonly;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "$(PRODUCT_NAME)";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Landmarks uses your location to show where you are on the map relative to other landmarks.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
-				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDefault;
-				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
-				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				HEADER_SEARCH_PATHS = "$(inherited)";
+				SYSTEM_HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../Vendor/CEF/current",
+					"$(SRCROOT)/../Vendor/CEF/current/include",
+					"$(SRCROOT)/../Vendor/CEF/current/libcef_dll",
+				);
+				INFOPLIST_KEY_CFBundleDisplayName = Tungsten;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.example.apple-samplecode.Landmarks${SAMPLE_CODE_DISAMBIGUATOR}";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"$(SRCROOT)/../Vendor/CEF/current/lib/libcef_dll_wrapper.a",
+					"-framework",
+					AppKit,
+					"-framework",
+					Cocoa,
+					"-framework",
+					Foundation,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.tungsten.browser;
+				PRODUCT_NAME = Tungsten;
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				REGISTER_APP_GROUPS = YES;
-				SDKROOT = iphoneos;
+				REGISTER_APP_GROUPS = NO;
+				SDKROOT = macosx;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTED_PLATFORMS = macosx;
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_OBJC_BRIDGING_HEADER = "Landmarks/Landmarks-Bridging-Header.h";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 6.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -333,7 +370,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 497AAC104C4C5E3F5FF5F6A3 /* SampleCode.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "Landmarks App Icon";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = Landmarks/Landmarks.entitlements;
@@ -343,46 +380,48 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = "";
-				ENABLE_APP_SANDBOX = YES;
+				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
-				ENABLE_USER_SELECTED_FILES = readonly;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "$(PRODUCT_NAME)";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Landmarks uses your location to show where you are on the map relative to other landmarks.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
-				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDefault;
-				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
-				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				HEADER_SEARCH_PATHS = "$(inherited)";
+				SYSTEM_HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../Vendor/CEF/current",
+					"$(SRCROOT)/../Vendor/CEF/current/include",
+					"$(SRCROOT)/../Vendor/CEF/current/libcef_dll",
+				);
+				INFOPLIST_KEY_CFBundleDisplayName = Tungsten;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.example.apple-samplecode.Landmarks${SAMPLE_CODE_DISAMBIGUATOR}";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"$(SRCROOT)/../Vendor/CEF/current/lib/libcef_dll_wrapper.a",
+					"-framework",
+					AppKit,
+					"-framework",
+					Cocoa,
+					"-framework",
+					Foundation,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.tungsten.browser;
+				PRODUCT_NAME = Tungsten;
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				REGISTER_APP_GROUPS = YES;
-				SDKROOT = iphoneos;
+				REGISTER_APP_GROUPS = NO;
+				SDKROOT = macosx;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTED_PLATFORMS = macosx;
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_OBJC_BRIDGING_HEADER = "Landmarks/Landmarks-Bridging-Header.h";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 6.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
