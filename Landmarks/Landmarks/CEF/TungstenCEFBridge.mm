@@ -512,9 +512,9 @@ private:
 }
 
 - (void)dealloc {
-    if (_client && _client->browser()) {
-        _client->browser()->GetHost()->CloseBrowser(true);
-    }
+    // CEF browser close is asynchronous and can send AppKit close notifications
+    // while SwiftUI is dismantling the NSView hierarchy. Releasing the
+    // container view lets CEF observe normal child-view teardown.
 }
 
 - (void)navigateToURLString:(NSString *)urlString {
