@@ -14,8 +14,9 @@ struct BrowserDetailView: View {
         BrowserView(controller: tab.browserController)
             .id(tab.id)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .ignoresSafeArea(edges: .bottom)
-            .navigationTitle("")
+            .ignoresSafeArea(edges: [.top, .bottom])
+            .toolbar(removing: .title)
+            .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
     }
 }
 
