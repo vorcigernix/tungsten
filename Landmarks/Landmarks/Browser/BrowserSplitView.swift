@@ -26,11 +26,13 @@ struct BrowserSplitView: View {
                 ContentUnavailableView("No Tabs", systemImage: "rectangle.dashed")
             }
         }
-        // Make the window-level surface around the sidebar's rounded glass
-        // panel see-through. SwiftUI must not paint it (.clear), and the
-        // NSWindow itself must be non-opaque, otherwise the window draws its
-        // own opaque backing before SwiftUI gets a chance.
-        .containerBackground(.clear, for: .window)
+        // Frosty glass fills the window-level gutters around the rounded
+        // sidebar panel and around the inset page. NSVisualEffectView
+        // (which Material uses under the hood) needs framebuffer content
+        // behind the window to blur, so WindowTransparencyEnabler keeps the
+        // host NSWindow non-opaque — otherwise the material would just blur
+        // the window's own backing color and look flat.
+        .containerBackground(.regularMaterial, for: .window)
         .background(WindowTransparencyEnabler())
     }
 }
