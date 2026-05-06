@@ -11,12 +11,25 @@ import Foundation
 @Observable @MainActor
 final class BrowserModel {
     var tabs: [BrowserTab] = []
-    var selectedTabID: BrowserTab.ID?
+    var selectedTabID: BrowserTab.ID? {
+        didSet {
+            guard oldValue != selectedTabID else {
+                return
+            }
+            if let oldValue {
+                previousSelectedTabID = oldValue
+            }
+        }
+    }
     var addressText: String = ""
+    var addressFocusRequestID = 0
+    var isSidebarVisible = true
 
     var selectedTab: BrowserTab? {
         tabs.first { $0.id == selectedTabID }
     }
+
+    private var previousSelectedTabID: BrowserTab.ID?
 
     init() {
         addTab(navigateTo: "https://www.google.com")
@@ -44,6 +57,87 @@ final class BrowserModel {
             let nextIndex = min(index, tabs.count - 1)
             selectedTabID = tabs[nextIndex].id
         }
+    }
+
+    func closeSelectedTab() {
+        guard let selectedTab else {
+            return
+        }
+        close(selectedTab)
+    }
+
+    func copySelectedTabURL() {
+        guard let urlString = selectedTab?.urlString else {
+            return
+        }
+
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(urlString, forType: .string)
+    }
+
+    func copySelectedTabURLAsMarkdown() {
+        guard let selectedTab else {
+            return
+        }
+
+        let title = selectedTab.displayTitle
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "]", with: "\\]")
+        let markdown = "[\(title)](\(selectedTab.urlString))"
+
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(markdown, forType: .string)
+    }
+
+    func focusAddressInput() {
+        addressText = selectedTab?.urlString ?? addressText
+        addressFocusRequestID += 1
+    }
+
+    func toggleSidebar() {
+        isSidebarVisible.toggle()
+    }
+
+    func selectTab(atZeroBasedIndex index: Int) {
+        guard tabs.indices.contains(index) else {
+            return
+        }
+        selectedTabID = tabs[index].id
+    }
+
+    func selectPreviousTab() {
+        guard
+            let selectedTabID,
+            let index = tabs.firstIndex(where: { $0.id == selectedTabID }),
+            index > tabs.startIndex
+        else {
+            return
+        }
+
+        self.selectedTabID = tabs[index - 1].id
+    }
+
+    func selectNextTab() {
+        guard
+            let selectedTabID,
+            let index = tabs.firstIndex(where: { $0.id == selectedTabID }),
+            index < tabs.index(before: tabs.endIndex)
+        else {
+            return
+        }
+
+        self.selectedTabID = tabs[index + 1].id
+    }
+
+    func selectRecentTab() {
+        guard
+            let previousSelectedTabID,
+            tabs.contains(where: { $0.id == previousSelectedTabID })
+        else {
+            return
+        }
+
+        selectedTabID = previousSelectedTabID
     }
 
     func submitAddressBar() {

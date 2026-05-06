@@ -12,11 +12,18 @@ import SwiftUI
 struct TungstenApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var browserModel = BrowserModel()
+    @State private var shortcutManager = ShortcutManager()
 
     var body: some Scene {
         WindowGroup {
             BrowserSplitView()
                 .environment(browserModel)
+                .background(
+                    ShortcutEventMonitor(
+                        shortcutManager: shortcutManager,
+                        browserModel: browserModel
+                    )
+                )
                 .frame(minWidth: 700, minHeight: 460)
         }
         .commands {
@@ -24,8 +31,11 @@ struct TungstenApp: App {
                 Button("New Tab") {
                     browserModel.addTab()
                 }
-                .keyboardShortcut("t")
             }
+        }
+
+        Settings {
+            ShortcutSettingsView(shortcutManager: shortcutManager)
         }
     }
 }

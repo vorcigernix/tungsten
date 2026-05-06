@@ -14,9 +14,15 @@ struct BrowserSplitView: View {
     @Environment(BrowserModel.self) private var browserModel
 
     var body: some View {
+        @Bindable var browserModel = browserModel
         let tab = browserModel.selectedTab
+        let sidebarVisibility = Binding<NavigationSplitViewVisibility> {
+            browserModel.isSidebarVisible ? .all : .detailOnly
+        } set: { visibility in
+            browserModel.isSidebarVisible = visibility != .detailOnly
+        }
 
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: sidebarVisibility) {
             BrowserSidebar()
                 .navigationSplitViewColumnWidth(min: 320, ideal: 400, max: 560)
         } detail: {
@@ -86,6 +92,7 @@ private struct BrowserSidebar: View {
 
             ChatInput(
                 text: $browserModel.addressText,
+                focusRequestID: browserModel.addressFocusRequestID,
                 onSubmit: { browserModel.submitAddressBar() }
             )
         }
@@ -161,6 +168,7 @@ private struct BrowserTabRow: View {
 
 private struct ChatInput: View {
     @Binding var text: String
+    let focusRequestID: Int
     let onSubmit: () -> Void
 
     @FocusState private var isFocused: Bool
@@ -217,6 +225,9 @@ private struct ChatInput: View {
         .padding(.horizontal, 12)
         .padding(.top, 10)
         .padding(.bottom, 12)
+        .onChange(of: focusRequestID) { _, _ in
+            isFocused = true
+        }
     }
 
     private func submit() {
