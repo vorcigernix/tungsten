@@ -22,3 +22,6 @@ xcuserdata/
 
 # CEF binary distribution and build output
 Vendor/CEF/
+
+# Local agent worktrees
+.worktrees/
