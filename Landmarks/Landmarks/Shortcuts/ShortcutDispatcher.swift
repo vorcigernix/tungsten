@@ -54,16 +54,20 @@ enum ShortcutDispatcher {
             } else {
                 browserModel.selectedTab?.reload()
             }
+        case .zoomIn:
+            browserModel.zoomIn()
+        case .zoomOut:
+            browserModel.zoomOut()
+        case .resetZoom:
+            browserModel.resetZoom()
+        case .findInPage:
+            browserModel.showFindInPage()
         case .newWindow,
              .newIncognitoWindow,
              .reopenLastClosedTab,
              .pinOrUnpinCurrentTab,
              .clearUnpinnedTabs,
-             .viewHistory,
-             .zoomIn,
-             .zoomOut,
-             .resetZoom,
-             .findInPage:
+             .viewHistory:
             return false
         }
 

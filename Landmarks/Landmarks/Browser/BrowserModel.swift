@@ -24,6 +24,9 @@ final class BrowserModel {
     var addressText: String = ""
     var addressFocusRequestID = 0
     var isSidebarVisible = true
+    var isFindBarVisible = false
+    var findText = ""
+    var findFocusRequestID = 0
 
     var selectedTab: BrowserTab? {
         tabs.first { $0.id == selectedTabID }
@@ -98,6 +101,51 @@ final class BrowserModel {
         isSidebarVisible.toggle()
     }
 
+    func zoomIn() {
+        selectedTab?.zoomIn()
+    }
+
+    func zoomOut() {
+        selectedTab?.zoomOut()
+    }
+
+    func resetZoom() {
+        selectedTab?.resetZoom()
+    }
+
+    func showFindInPage() {
+        isFindBarVisible = true
+        findFocusRequestID += 1
+
+        if findText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false {
+            runFindInPage(findNext: false, forward: true)
+        }
+    }
+
+    func closeFindInPage() {
+        selectedTab?.stopFinding(clearSelection: true)
+        isFindBarVisible = false
+    }
+
+    func updateFindText(_ text: String) {
+        findText = text
+
+        guard findText.isEmpty == false else {
+            selectedTab?.stopFinding(clearSelection: true)
+            return
+        }
+
+        runFindInPage(findNext: false, forward: true)
+    }
+
+    func findNextInPage() {
+        runFindInPage(findNext: true, forward: true)
+    }
+
+    func findPreviousInPage() {
+        runFindInPage(findNext: true, forward: false)
+    }
+
     func selectTab(atZeroBasedIndex index: Int) {
         guard tabs.indices.contains(index) else {
             return
@@ -150,6 +198,14 @@ final class BrowserModel {
 
         selectedTab.navigate(to: target)
         addressText = ""
+    }
+
+    private func runFindInPage(findNext: Bool, forward: Bool) {
+        guard findText.isEmpty == false else {
+            return
+        }
+
+        selectedTab?.findInPage(findText, forward: forward, matchCase: false, findNext: findNext)
     }
 }
 
@@ -243,6 +299,26 @@ final class BrowserTab: Identifiable {
 
     func stopLoading() {
         browserController.stopLoading()
+    }
+
+    func zoomIn() {
+        browserController.zoomIn()
+    }
+
+    func zoomOut() {
+        browserController.zoomOut()
+    }
+
+    func resetZoom() {
+        browserController.resetZoom()
+    }
+
+    func findInPage(_ text: String, forward: Bool, matchCase: Bool, findNext: Bool) {
+        browserController.find(text: text, forward: forward, matchCase: matchCase, findNext: findNext)
+    }
+
+    func stopFinding(clearSelection: Bool) {
+        browserController.stopFinding(clearSelection: clearSelection)
     }
 }
 

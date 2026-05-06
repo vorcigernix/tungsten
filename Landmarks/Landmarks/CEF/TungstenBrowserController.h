@@ -40,6 +40,14 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)goForward;
 - (void)reload;
 - (void)stopLoading;
+- (void)zoomIn;
+- (void)zoomOut;
+- (void)resetZoom;
+- (void)findText:(NSString *)searchText
+         forward:(BOOL)forward
+       matchCase:(BOOL)matchCase
+        findNext:(BOOL)findNext NS_SWIFT_NAME(find(text:forward:matchCase:findNext:));
+- (void)stopFindingWithClearSelection:(BOOL)clearSelection NS_SWIFT_NAME(stopFinding(clearSelection:));
 - (void)layoutBrowserView;
 
 @end

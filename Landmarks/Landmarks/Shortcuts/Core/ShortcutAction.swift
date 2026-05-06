@@ -100,10 +100,10 @@ enum ShortcutCatalog {
 
     private static let otherActions: [ShortcutAction] = [
         comingSoon(.viewHistory, "View History", .other, [.cmd("y")]),
-        comingSoon(.zoomIn, "Zoom In Webpage", .other, [.cmd("+")]),
-        comingSoon(.zoomOut, "Zoom Out Webpage", .other, [.cmd("-")]),
-        comingSoon(.resetZoom, "Reset Webpage Zoom", .other, [.cmd("0")]),
-        comingSoon(.findInPage, "Find in Webpage", .other, [.cmd("f")])
+        available(.zoomIn, "Zoom In Webpage", .other, [.cmd("+")]),
+        available(.zoomOut, "Zoom Out Webpage", .other, [.cmd("-")]),
+        available(.resetZoom, "Reset Webpage Zoom", .other, [.cmd("0")]),
+        available(.findInPage, "Find in Webpage", .other, [.cmd("f")])
     ]
 
     private static func available(_ id: ShortcutActionID, _ title: String, _ category: ShortcutCategory, _ bindings: [ShortcutBinding]) -> ShortcutAction {

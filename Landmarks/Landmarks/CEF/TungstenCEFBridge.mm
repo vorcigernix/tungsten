@@ -567,6 +567,41 @@ private:
     }
 }
 
+- (void)zoomIn {
+    CefRefPtr<CefBrowser> browser = _client ? _client->browser() : nullptr;
+    if (browser) {
+        browser->GetHost()->Zoom(CEF_ZOOM_COMMAND_IN);
+    }
+}
+
+- (void)zoomOut {
+    CefRefPtr<CefBrowser> browser = _client ? _client->browser() : nullptr;
+    if (browser) {
+        browser->GetHost()->Zoom(CEF_ZOOM_COMMAND_OUT);
+    }
+}
+
+- (void)resetZoom {
+    CefRefPtr<CefBrowser> browser = _client ? _client->browser() : nullptr;
+    if (browser) {
+        browser->GetHost()->Zoom(CEF_ZOOM_COMMAND_RESET);
+    }
+}
+
+- (void)findText:(NSString *)searchText forward:(BOOL)forward matchCase:(BOOL)matchCase findNext:(BOOL)findNext {
+    CefRefPtr<CefBrowser> browser = _client ? _client->browser() : nullptr;
+    if (browser) {
+        browser->GetHost()->Find(ToString(searchText), forward, matchCase, findNext);
+    }
+}
+
+- (void)stopFindingWithClearSelection:(BOOL)clearSelection {
+    CefRefPtr<CefBrowser> browser = _client ? _client->browser() : nullptr;
+    if (browser) {
+        browser->GetHost()->StopFinding(clearSelection);
+    }
+}
+
 - (void)layoutBrowserView {
     [self createBrowserIfNeeded];
 

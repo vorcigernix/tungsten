@@ -27,7 +27,24 @@ struct BrowserSplitView: View {
                 .navigationSplitViewColumnWidth(min: 320, ideal: 400, max: 560)
         } detail: {
             if let tab {
-                BrowserDetailView(tab: tab)
+                ZStack(alignment: .topTrailing) {
+                    BrowserDetailView(tab: tab)
+
+                    if browserModel.isFindBarVisible {
+                        FindBar(
+                            text: $browserModel.findText,
+                            focusRequestID: browserModel.findFocusRequestID,
+                            onTextChange: { browserModel.updateFindText($0) },
+                            onPrevious: { browserModel.findPreviousInPage() },
+                            onNext: { browserModel.findNextInPage() },
+                            onClose: { browserModel.closeFindInPage() }
+                        )
+                        .padding(.top, 14)
+                        .padding(.trailing, 18)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                    }
+                }
+                .animation(.smooth(duration: 0.16), value: browserModel.isFindBarVisible)
             } else {
                 ContentUnavailableView("No Tabs", systemImage: "rectangle.dashed")
             }
@@ -162,6 +179,75 @@ private struct BrowserTabRow: View {
             } else {
                 Image(systemName: "globe")
             }
+        }
+    }
+}
+
+private struct FindBar: View {
+    @Binding var text: String
+    let focusRequestID: Int
+    let onTextChange: (String) -> Void
+    let onPrevious: () -> Void
+    let onNext: () -> Void
+    let onClose: () -> Void
+
+    @FocusState private var isFocused: Bool
+
+    private var hasQuery: Bool {
+        text.isEmpty == false
+    }
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+
+            TextField("Find", text: $text)
+                .textFieldStyle(.plain)
+                .frame(width: 190)
+                .focused($isFocused)
+                .onSubmit(onNext)
+
+            Button("Previous", systemImage: "chevron.up") {
+                onPrevious()
+            }
+            .disabled(hasQuery == false)
+            .help("Previous")
+
+            Button("Next", systemImage: "chevron.down") {
+                onNext()
+            }
+            .disabled(hasQuery == false)
+            .help("Next")
+
+            Divider()
+                .frame(height: 18)
+
+            Button("Close", systemImage: "xmark") {
+                onClose()
+            }
+            .keyboardShortcut(.escape, modifiers: [])
+            .help("Close")
+        }
+        .labelStyle(.iconOnly)
+        .buttonStyle(.borderless)
+        .controlSize(.small)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .strokeBorder(Color.secondary.opacity(0.16), lineWidth: 1)
+        }
+        .shadow(color: .black.opacity(0.16), radius: 14, y: 6)
+        .onAppear {
+            isFocused = true
+        }
+        .onChange(of: focusRequestID) { _, _ in
+            isFocused = true
+        }
+        .onChange(of: text) { _, newValue in
+            onTextChange(newValue)
         }
     }
 }

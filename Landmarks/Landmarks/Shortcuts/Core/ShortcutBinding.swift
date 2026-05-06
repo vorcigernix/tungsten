@@ -63,8 +63,9 @@ struct ShortcutBinding: Codable, Equatable, Hashable {
     var modifiers: ShortcutModifiers
 
     init(key: String, modifiers: ShortcutModifiers) {
-        self.key = Self.normalizedKey(key)
-        self.modifiers = modifiers
+        let normalized = Self.normalizedKeyAndModifiers(key: key, modifiers: modifiers)
+        self.key = normalized.key
+        self.modifiers = normalized.modifiers
     }
 
     init?(event: NSEvent) {
@@ -125,12 +126,19 @@ struct ShortcutBinding: Codable, Equatable, Hashable {
         }
     }
 
-    private static func normalizedKey(_ key: String) -> String {
+    private static func normalizedKeyAndModifiers(key: String, modifiers: ShortcutModifiers) -> (key: String, modifiers: ShortcutModifiers) {
+        var normalizedModifiers = modifiers
         switch key {
         case tabKey, leftArrowKey, rightArrowKey, upArrowKey, downArrowKey:
-            return key
+            return (key, normalizedModifiers)
+        case "+":
+            normalizedModifiers.remove(.shift)
+            return ("+", normalizedModifiers)
+        case "=" where modifiers.contains(.shift):
+            normalizedModifiers.remove(.shift)
+            return ("+", normalizedModifiers)
         default:
-            return key.lowercased()
+            return (key.lowercased(), normalizedModifiers)
         }
     }
 }
