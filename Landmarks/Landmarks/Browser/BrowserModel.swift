@@ -10,6 +10,8 @@ import Foundation
 
 @Observable @MainActor
 final class BrowserModel {
+    private static let defaultNewTabURL = "https://www.google.com"
+
     var tabs: [BrowserTab] = []
     var selectedTabID: BrowserTab.ID? {
         didSet {
@@ -35,10 +37,10 @@ final class BrowserModel {
     private var previousSelectedTabID: BrowserTab.ID?
 
     init() {
-        addTab(navigateTo: "https://www.google.com")
+        addTab(navigateTo: Self.defaultNewTabURL)
     }
 
-    func addTab(navigateTo urlString: String = "https://www.google.com") {
+    func addTab(navigateTo urlString: String = BrowserModel.defaultNewTabURL) {
         let tab = BrowserTab(initialURL: urlString)
         tabs.append(tab)
         selectedTabID = tab.id
@@ -46,6 +48,14 @@ final class BrowserModel {
 
     func close(_ tab: BrowserTab) {
         guard let index = tabs.firstIndex(where: { $0.id == tab.id }) else {
+            return
+        }
+
+        if tabs.count == 1 {
+            tab.resetForLastTabClose(to: Self.defaultNewTabURL)
+            selectedTabID = tab.id
+            isFindBarVisible = false
+            findText = ""
             return
         }
 
@@ -319,6 +329,21 @@ final class BrowserTab: Identifiable {
 
     func stopFinding(clearSelection: Bool) {
         browserController.stopFinding(clearSelection: clearSelection)
+    }
+
+    func resetForLastTabClose(to urlString: String) {
+        faviconFetchTask?.cancel()
+        faviconFetchTask = nil
+        loadedFaviconURL = nil
+        favicon = nil
+        pageBackgroundColor = nil
+        title = "New Tab"
+        isLoading = false
+        canGoBack = false
+        canGoForward = false
+        self.urlString = urlString
+        browserController.stopFinding(clearSelection: true)
+        browserController.navigate(toURLString: urlString)
     }
 }
 
