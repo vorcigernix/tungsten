@@ -48,6 +48,7 @@ NS_ASSUME_NONNULL_BEGIN
        matchCase:(BOOL)matchCase
         findNext:(BOOL)findNext NS_SWIFT_NAME(find(text:forward:matchCase:findNext:));
 - (void)stopFindingWithClearSelection:(BOOL)clearSelection NS_SWIFT_NAME(stopFinding(clearSelection:));
+- (void)closeBrowser;
 - (void)layoutBrowserView;
 
 @end

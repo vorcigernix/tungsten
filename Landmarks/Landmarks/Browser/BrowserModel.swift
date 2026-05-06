@@ -59,6 +59,7 @@ final class BrowserModel {
             return
         }
 
+        tab.closeBrowser()
         tabs.remove(at: index)
 
         if tabs.isEmpty {
@@ -329,6 +330,10 @@ final class BrowserTab: Identifiable {
 
     func stopFinding(clearSelection: Bool) {
         browserController.stopFinding(clearSelection: clearSelection)
+    }
+
+    func closeBrowser() {
+        browserController.closeBrowser()
     }
 
     func resetForLastTabClose(to urlString: String) {

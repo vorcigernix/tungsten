@@ -23,6 +23,10 @@ Objective-C++ bridge between SwiftUI/AppKit and Chromium Embedded Framework.
 #include "include/wrapper/cef_helpers.h"
 #include "wrapper/cef_library_loader.h"
 
+@interface TungstenBrowserController ()
+- (void)cefBrowserDidClose;
+@end
+
 namespace {
 
 // External message pump for CEF on macOS.
@@ -255,6 +259,20 @@ public:
         if (browser_ && browser_->IsSame(browser)) {
             browser_ = nullptr;
         }
+        TungstenBrowserController *controller = controller_;
+        [controller cefBrowserDidClose];
+    }
+
+    bool DoClose(CefRefPtr<CefBrowser> browser) override {
+        CEF_REQUIRE_UI_THREAD();
+
+        NSView *browserView = (__bridge NSView *)browser->GetHost()->GetWindowHandle();
+        [browserView removeFromSuperview];
+
+        // This browser is hosted as a child view inside SwiftUI. Returning
+        // false would make CEF send a default close event to the top-level
+        // NSWindow, which is the wrong ownership boundary for closing a tab.
+        return true;
     }
 
     void OnTitleChange(CefRefPtr<CefBrowser> browser, const CefString &title) override {
@@ -470,8 +488,10 @@ private:
     NSString *_initialURL;
     NSString *_pendingURL;
     BOOL _didCreateBrowser;
+    BOOL _isClosingBrowser;
     CGFloat _cornerRadius;
     CefRefPtr<TungstenBrowserClient> _client;
+    void *_closeRetainToken;
 }
 
 - (instancetype)initWithInitialURL:(NSString *)initialURL {
@@ -515,9 +535,17 @@ private:
     // CEF browser close is asynchronous and can send AppKit close notifications
     // while SwiftUI is dismantling the NSView hierarchy. Releasing the
     // container view lets CEF observe normal child-view teardown.
+    if (_closeRetainToken != nullptr) {
+        CFRelease(_closeRetainToken);
+        _closeRetainToken = nullptr;
+    }
 }
 
 - (void)navigateToURLString:(NSString *)urlString {
+    if (_isClosingBrowser) {
+        return;
+    }
+
     _pendingURL = [urlString copy];
 
     CefRefPtr<CefBrowser> browser = _client ? _client->browser() : nullptr;
@@ -603,6 +631,10 @@ private:
 }
 
 - (void)layoutBrowserView {
+    if (_isClosingBrowser) {
+        return;
+    }
+
     [self createBrowserIfNeeded];
 
     CefRefPtr<CefBrowser> browser = _client ? _client->browser() : nullptr;
@@ -621,7 +653,7 @@ private:
 }
 
 - (void)createBrowserIfNeeded {
-    if (_didCreateBrowser || self.view.window == nil) {
+    if (_isClosingBrowser || _didCreateBrowser || self.view.window == nil) {
         return;
     }
 
@@ -648,6 +680,38 @@ private:
     if (!CefBrowserHost::CreateBrowser(windowInfo, _client.get(), url, browserSettings, nullptr, nullptr)) {
         NSLog(@"Unable to create CEF browser for URL %@", _pendingURL ?: _initialURL);
         _didCreateBrowser = NO;
+    }
+}
+
+- (void)closeBrowser {
+    if (_isClosingBrowser) {
+        return;
+    }
+
+    _isClosingBrowser = YES;
+    self.delegate = nil;
+
+    CefRefPtr<CefBrowser> browser = _client ? _client->browser() : nullptr;
+    if (!browser) {
+        _didCreateBrowser = NO;
+        return;
+    }
+
+    if (_closeRetainToken == nullptr) {
+        _closeRetainToken = (__bridge_retained void *)self;
+    }
+
+    NSView *browserView = (__bridge NSView *)browser->GetHost()->GetWindowHandle();
+    [browserView removeFromSuperview];
+    browser->GetHost()->CloseBrowser(true);
+}
+
+- (void)cefBrowserDidClose {
+    _didCreateBrowser = NO;
+
+    if (_closeRetainToken != nullptr) {
+        CFRelease(_closeRetainToken);
+        _closeRetainToken = nullptr;
     }
 }
 
