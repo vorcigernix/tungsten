@@ -21,6 +21,8 @@ NS_ASSUME_NONNULL_BEGIN
             canGoForward:(BOOL)canGoForward;
 - (void)browserController:(TungstenBrowserController *)controller
      didUpdateFaviconURLs:(NSArray<NSString *> *)faviconURLs;
+- (void)browserController:(TungstenBrowserController *)controller
+        didUpdatePageBackgroundColorString:(NSString *)colorString;
 
 @end
 

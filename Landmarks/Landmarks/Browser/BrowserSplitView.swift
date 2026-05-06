@@ -7,6 +7,7 @@ sidebar that holds the tab list and the chat-style input, and a detail
 column that hosts the active browser surface.
 */
 
+import AppKit
 import SwiftUI
 
 struct BrowserSplitView: View {
@@ -24,6 +25,31 @@ struct BrowserSplitView: View {
             } else {
                 ContentUnavailableView("No Tabs", systemImage: "rectangle.dashed")
             }
+        }
+        // Make the window-level surface around the sidebar's rounded glass
+        // panel see-through. SwiftUI must not paint it (.clear), and the
+        // NSWindow itself must be non-opaque, otherwise the window draws its
+        // own opaque backing before SwiftUI gets a chance.
+        .containerBackground(.clear, for: .window)
+        .background(WindowTransparencyEnabler())
+    }
+}
+
+/// Marks the host NSWindow as transparent so SwiftUI's `.containerBackground(.clear, …)`
+/// actually shows through to the desktop. The CEF NSView in the detail column
+/// stays opaque (it draws the page), so only areas SwiftUI leaves clear become
+/// transparent — i.e. the strip around the sidebar's rounded glass panel.
+private struct WindowTransparencyEnabler: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        NSView()
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        DispatchQueue.main.async {
+            guard let window = nsView.window else { return }
+            window.isOpaque = false
+            window.backgroundColor = .clear
+            window.invalidateShadow()
         }
     }
 }

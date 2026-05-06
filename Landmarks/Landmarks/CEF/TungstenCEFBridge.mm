@@ -307,6 +307,40 @@ public:
         });
     }
 
+    // Probe the main frame's body background color when load finishes. The
+    // JavaScript prints the color through console.log with a sentinel marker;
+    // OnConsoleMessage filters it out. We use console.log instead of the
+    // DevTools protocol because it's a single-line implementation.
+    void OnLoadEnd(CefRefPtr<CefBrowser> browser,
+                   CefRefPtr<CefFrame> frame,
+                   int httpStatusCode) override {
+        if (!frame->IsMain()) {
+            return;
+        }
+        const std::string js =
+            "(()=>{try{const c=getComputedStyle(document.body).backgroundColor;"
+            "console.log('TUNGSTEN_BG:'+c);}catch(e){}})()";
+        frame->ExecuteJavaScript(js, "tungsten://internal/bg-probe", 0);
+    }
+
+    bool OnConsoleMessage(CefRefPtr<CefBrowser> browser,
+                          cef_log_severity_t level,
+                          const CefString &message,
+                          const CefString &source,
+                          int line) override {
+        const std::string msg = message.ToString();
+        static const std::string kMarker = "TUNGSTEN_BG:";
+        if (msg.compare(0, kMarker.size(), kMarker) != 0) {
+            return false;
+        }
+        NSString *colorString = [NSString stringWithUTF8String:msg.substr(kMarker.size()).c_str()];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            TungstenBrowserController *controller = controller_;
+            [controller.delegate browserController:controller didUpdatePageBackgroundColorString:colorString];
+        });
+        return true;  // suppress from DevTools console
+    }
+
 private:
     __weak TungstenBrowserController *controller_;
     CefRefPtr<CefBrowser> browser_;

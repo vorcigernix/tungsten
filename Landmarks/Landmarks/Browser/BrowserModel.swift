@@ -70,6 +70,7 @@ final class BrowserTab: Identifiable {
     var canGoBack = false
     var canGoForward = false
     var favicon: NSImage?
+    var pageBackgroundColor: NSColor?
 
     @ObservationIgnored private var loadedFaviconURL: String?
     @ObservationIgnored private var faviconFetchTask: Task<Void, Never>?
@@ -103,9 +104,14 @@ final class BrowserTab: Identifiable {
         if URLComponents(string: urlString)?.host != URLComponents(string: self.urlString)?.host {
             favicon = nil
             loadedFaviconURL = nil
+            pageBackgroundColor = nil
         }
         self.urlString = urlString
         browserController.navigate(toURLString: urlString)
+    }
+
+    func updatePageBackgroundColor(from cssString: String) {
+        pageBackgroundColor = NSColor.parseCSS(cssString)
     }
 
     func updateFavicon(from urls: [String]) {
@@ -177,6 +183,53 @@ private final class BrowserControllerObserver: NSObject, TungstenBrowserControll
         Task { @MainActor [weak tab] in
             tab?.updateFavicon(from: faviconURLs)
         }
+    }
+
+    func browserController(_ controller: TungstenBrowserController, didUpdatePageBackgroundColorString colorString: String) {
+        Task { @MainActor [weak tab] in
+            tab?.updatePageBackgroundColor(from: colorString)
+        }
+    }
+}
+
+private extension NSColor {
+    /// Parses CSS-style color strings produced by `getComputedStyle(...)`,
+    /// which always normalizes to `rgb(r, g, b)` or `rgba(r, g, b, a)`.
+    /// Returns nil for transparent or unrecognized values.
+    static func parseCSS(_ raw: String) -> NSColor? {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty || trimmed == "transparent" {
+            return nil
+        }
+
+        // Strip the leading "rgb(" / "rgba(" and trailing ")" then split on commas.
+        guard let openParen = trimmed.firstIndex(of: "("),
+              let closeParen = trimmed.lastIndex(of: ")") else {
+            return nil
+        }
+        let prefix = trimmed[..<openParen].lowercased()
+        guard prefix == "rgb" || prefix == "rgba" else {
+            return nil
+        }
+
+        let inner = trimmed[trimmed.index(after: openParen)..<closeParen]
+        let parts = inner.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+        guard parts.count == 3 || parts.count == 4 else {
+            return nil
+        }
+
+        guard let r = Double(parts[0]), let g = Double(parts[1]), let b = Double(parts[2]) else {
+            return nil
+        }
+        let a: Double = parts.count == 4 ? (Double(parts[3]) ?? 1) : 1
+
+        // rgba(0,0,0,0) is the default for "transparent" body backgrounds —
+        // treat as no tint so the sidebar falls back to the system look.
+        if a <= 0 {
+            return nil
+        }
+
+        return NSColor(srgbRed: r / 255.0, green: g / 255.0, blue: b / 255.0, alpha: a)
     }
 }
 
