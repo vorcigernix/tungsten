@@ -2,7 +2,7 @@
 
 ## Goal
 
-Tungsten should support an Arc-inspired keyboard workflow for technical users. The app should expose the full Arc-style shortcut catalog in Settings, let users remap supported actions, and clearly mark unsupported actions as "Coming soon" until the matching browser feature exists.
+Tungsten should support an Arc-inspired keyboard workflow for technical users. The app should expose the approved Arc-style shortcut catalog in Settings, let users remap supported actions, and clearly mark unsupported actions as "Coming soon" until the matching browser feature exists.
 
 ## Source Behavior
 
@@ -26,7 +26,9 @@ The implementation includes:
 - Runtime dispatch for shortcut actions backed by existing Tungsten behavior.
 - Disabled "Coming soon" rows for Arc actions that require future browser features.
 
-The implementation does not include the missing product features themselves, such as Spaces, Split View, Little Arc, Incognito, History, Find in Page, webpage zoom, or pinned tabs.
+The implementation does not include the missing product features themselves, such as Incognito, History, Find in Page, webpage zoom, or pinned tabs.
+
+The implementation also intentionally skips Arc actions for Little Arc, Spaces, and Split View. These actions should not appear in Settings in this pass, not even as "Coming soon" rows.
 
 ## Shortcut Catalog
 
@@ -59,15 +61,9 @@ Initial coming-soon actions:
 
 - New window.
 - New incognito window.
-- Open Little Arc.
 - Re-open last closed tab.
 - Pin or unpin current tab.
 - Clear unpinned tabs.
-- Focus on Space 1 through Space 9.
-- Switch between Spaces.
-- Add Split View.
-- Close Split View.
-- Switch Split View focus.
 - View History.
 - Zoom in webpage.
 - Zoom out webpage.
