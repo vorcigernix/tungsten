@@ -4,7 +4,7 @@
 
 **Goal:** Add a macOS Settings pane where Tungsten users can view and remap the approved Arc-style shortcut catalog, with unsupported actions shown as Coming soon.
 
-**Architecture:** Put shortcut definitions, bindings, persistence, matching, and collision checks in focused Swift files under `Landmarks/Landmarks/Shortcuts`. The app installs one local key event monitor that dispatches available shortcuts through `BrowserModel`, and Settings renders the same shortcut manager so display and runtime behavior share one source of truth.
+**Architecture:** Put shortcut definitions, bindings, persistence, matching, and collision checks in focused Swift files under `Tungsten/Tungsten/Shortcuts`. The app installs one local key event monitor that dispatches available shortcuts through `BrowserModel`, and Settings renders the same shortcut manager so display and runtime behavior share one source of truth.
 
 **Tech Stack:** Swift 6, SwiftUI, AppKit `NSEvent`, `UserDefaults`, shell-driven Swift logic tests, Xcode build verification.
 
@@ -12,25 +12,25 @@
 
 ### File Structure
 
-- Create: `Landmarks/Landmarks/Shortcuts/Core/ShortcutBinding.swift`
+- Create: `Tungsten/Tungsten/Shortcuts/Core/ShortcutBinding.swift`
   - Defines `ShortcutModifiers`, `ShortcutBinding`, display formatting, validation, and `NSEvent` conversion.
-- Create: `Landmarks/Landmarks/Shortcuts/Core/ShortcutAction.swift`
+- Create: `Tungsten/Tungsten/Shortcuts/Core/ShortcutAction.swift`
   - Defines shortcut categories, stable action identifiers, availability, and the approved Arc-style catalog.
-- Create: `Landmarks/Landmarks/Shortcuts/Core/ShortcutPreferencesStore.swift`
+- Create: `Tungsten/Tungsten/Shortcuts/Core/ShortcutPreferencesStore.swift`
   - Loads and saves user overrides in `UserDefaults`.
-- Create: `Landmarks/Landmarks/Shortcuts/Core/ShortcutManager.swift`
+- Create: `Tungsten/Tungsten/Shortcuts/Core/ShortcutManager.swift`
   - Owns active bindings, remapping, reset, clear, collision detection, and event-to-action matching.
-- Create: `Landmarks/Landmarks/Shortcuts/ShortcutEventMonitor.swift`
+- Create: `Tungsten/Tungsten/Shortcuts/ShortcutEventMonitor.swift`
   - Installs one app-local keyDown monitor and calls `BrowserModel`.
-- Create: `Landmarks/Landmarks/Shortcuts/ShortcutDispatcher.swift`
+- Create: `Tungsten/Tungsten/Shortcuts/ShortcutDispatcher.swift`
   - Maps dispatchable shortcut action IDs to `BrowserModel` and `BrowserTab` behavior.
-- Create: `Landmarks/Landmarks/Shortcuts/ShortcutSettingsView.swift`
+- Create: `Tungsten/Tungsten/Shortcuts/ShortcutSettingsView.swift`
   - Renders grouped shortcut settings rows, record/reset/clear controls, and Coming soon badges.
-- Modify: `Landmarks/Landmarks/Browser/BrowserModel.swift`
+- Modify: `Tungsten/Tungsten/Browser/BrowserModel.swift`
   - Adds selected-tab helpers, recent-tab tracking, pasteboard actions, address focus requests, and sidebar visibility state.
-- Modify: `Landmarks/Landmarks/Browser/BrowserSplitView.swift`
+- Modify: `Tungsten/Tungsten/Browser/BrowserSplitView.swift`
   - Binds sidebar visibility and address-input focus request into the UI.
-- Modify: `Landmarks/Landmarks/LandmarksApp.swift`
+- Modify: `Tungsten/Tungsten/TungstenApp.swift`
   - Creates the shared shortcut manager, adds a Settings scene, removes static `Cmd-T` handling, and installs the shortcut monitor.
 - Create: `Tests/ShortcutLogicTests.swift`
   - Runs focused logic tests without adding an Xcode test target.
@@ -41,10 +41,10 @@
 
 **Files:**
 - Create: `Tests/ShortcutLogicTests.swift`
-- Create: `Landmarks/Landmarks/Shortcuts/Core/ShortcutBinding.swift`
-- Create: `Landmarks/Landmarks/Shortcuts/Core/ShortcutAction.swift`
-- Create: `Landmarks/Landmarks/Shortcuts/Core/ShortcutPreferencesStore.swift`
-- Create: `Landmarks/Landmarks/Shortcuts/Core/ShortcutManager.swift`
+- Create: `Tungsten/Tungsten/Shortcuts/Core/ShortcutBinding.swift`
+- Create: `Tungsten/Tungsten/Shortcuts/Core/ShortcutAction.swift`
+- Create: `Tungsten/Tungsten/Shortcuts/Core/ShortcutPreferencesStore.swift`
+- Create: `Tungsten/Tungsten/Shortcuts/Core/ShortcutManager.swift`
 
 - [x] **Step 1: Write the failing shortcut logic tests**
 
@@ -73,10 +73,10 @@ struct ShortcutLogicTests {
 Run:
 
 ```bash
-swiftc Landmarks/Landmarks/Shortcuts/Core/*.swift Tests/ShortcutLogicTests.swift -o /tmp/TungstenShortcutLogicTests && /tmp/TungstenShortcutLogicTests
+swiftc Tungsten/Tungsten/Shortcuts/Core/*.swift Tests/ShortcutLogicTests.swift -o /tmp/TungstenShortcutLogicTests && /tmp/TungstenShortcutLogicTests
 ```
 
-Expected: FAIL because `Landmarks/Landmarks/Shortcuts/Core/*.swift` does not exist.
+Expected: FAIL because `Tungsten/Tungsten/Shortcuts/Core/*.swift` does not exist.
 
 - [x] **Step 3: Implement shortcut binding and catalog**
 
@@ -109,7 +109,7 @@ func dispatchableAction(for binding: ShortcutBinding) -> ShortcutAction?
 Run:
 
 ```bash
-swiftc Landmarks/Landmarks/Shortcuts/Core/*.swift Tests/ShortcutLogicTests.swift -o /tmp/TungstenShortcutLogicTests && /tmp/TungstenShortcutLogicTests
+swiftc Tungsten/Tungsten/Shortcuts/Core/*.swift Tests/ShortcutLogicTests.swift -o /tmp/TungstenShortcutLogicTests && /tmp/TungstenShortcutLogicTests
 ```
 
 Expected: PASS with `ShortcutLogicTests passed`.
@@ -117,8 +117,8 @@ Expected: PASS with `ShortcutLogicTests passed`.
 ### Task 2: Browser Model Dispatch Support
 
 **Files:**
-- Modify: `Landmarks/Landmarks/Browser/BrowserModel.swift`
-- Create: `Landmarks/Landmarks/Shortcuts/ShortcutDispatcher.swift`
+- Modify: `Tungsten/Tungsten/Browser/BrowserModel.swift`
+- Create: `Tungsten/Tungsten/Shortcuts/ShortcutDispatcher.swift`
 
 - [x] **Step 1: Write a failing compile check for dispatch APIs**
 
@@ -134,7 +134,7 @@ try expect(manager.dispatchableAction(for: ShortcutBinding(key: "f", modifiers: 
 Run:
 
 ```bash
-swiftc Landmarks/Landmarks/Shortcuts/Core/*.swift Tests/ShortcutLogicTests.swift -o /tmp/TungstenShortcutLogicTests && /tmp/TungstenShortcutLogicTests
+swiftc Tungsten/Tungsten/Shortcuts/Core/*.swift Tests/ShortcutLogicTests.swift -o /tmp/TungstenShortcutLogicTests && /tmp/TungstenShortcutLogicTests
 ```
 
 Expected: FAIL because Coming soon dispatch filtering is not implemented.
@@ -152,7 +152,7 @@ In `ShortcutDispatcher.dispatch`, switch over action IDs and call the new `Brows
 Run:
 
 ```bash
-swiftc Landmarks/Landmarks/Shortcuts/Core/*.swift Tests/ShortcutLogicTests.swift -o /tmp/TungstenShortcutLogicTests && /tmp/TungstenShortcutLogicTests
+swiftc Tungsten/Tungsten/Shortcuts/Core/*.swift Tests/ShortcutLogicTests.swift -o /tmp/TungstenShortcutLogicTests && /tmp/TungstenShortcutLogicTests
 ```
 
 Expected: PASS.
@@ -160,11 +160,11 @@ Expected: PASS.
 ### Task 3: Settings UI and Key Event Routing
 
 **Files:**
-- Create: `Landmarks/Landmarks/Shortcuts/ShortcutEventMonitor.swift`
-- Create: `Landmarks/Landmarks/Shortcuts/ShortcutDispatcher.swift`
-- Create: `Landmarks/Landmarks/Shortcuts/ShortcutSettingsView.swift`
-- Modify: `Landmarks/Landmarks/Browser/BrowserSplitView.swift`
-- Modify: `Landmarks/Landmarks/LandmarksApp.swift`
+- Create: `Tungsten/Tungsten/Shortcuts/ShortcutEventMonitor.swift`
+- Create: `Tungsten/Tungsten/Shortcuts/ShortcutDispatcher.swift`
+- Create: `Tungsten/Tungsten/Shortcuts/ShortcutSettingsView.swift`
+- Modify: `Tungsten/Tungsten/Browser/BrowserSplitView.swift`
+- Modify: `Tungsten/Tungsten/TungstenApp.swift`
 
 - [x] **Step 1: Implement event monitor**
 
@@ -176,7 +176,7 @@ Add `ShortcutSettingsView` with grouped rows. Each available row has Record, Res
 
 - [x] **Step 3: Wire the main app**
 
-In `LandmarksApp.swift`, create shared state:
+In `TungstenApp.swift`, create shared state:
 
 ```swift
 @State private var shortcutManager = ShortcutManager()
@@ -193,7 +193,7 @@ In `BrowserSplitView`, bind `BrowserModel.isSidebarVisible` to `NavigationSplitV
 Run:
 
 ```bash
-xcodebuild -project Landmarks/Landmarks.xcodeproj -scheme Landmarks -destination 'platform=macOS' -derivedDataPath /tmp/TungstenDerivedDataShortcut build
+xcodebuild -project Tungsten/Tungsten.xcodeproj -scheme Tungsten -destination 'platform=macOS' -derivedDataPath /tmp/TungstenDerivedDataShortcut build
 ```
 
 Expected: BUILD SUCCEEDED.
@@ -213,7 +213,7 @@ Remove the `.worktrees/` ignore entry from `.gitignore`.
 Run:
 
 ```bash
-swiftc Landmarks/Landmarks/Shortcuts/Core/*.swift Tests/ShortcutLogicTests.swift -o /tmp/TungstenShortcutLogicTests && /tmp/TungstenShortcutLogicTests
+swiftc Tungsten/Tungsten/Shortcuts/Core/*.swift Tests/ShortcutLogicTests.swift -o /tmp/TungstenShortcutLogicTests && /tmp/TungstenShortcutLogicTests
 ```
 
 Expected: PASS with `ShortcutLogicTests passed`.
@@ -223,7 +223,7 @@ Expected: PASS with `ShortcutLogicTests passed`.
 Run:
 
 ```bash
-xcodebuild -project Landmarks/Landmarks.xcodeproj -scheme Landmarks -destination 'platform=macOS' -derivedDataPath /tmp/TungstenDerivedDataShortcut build
+xcodebuild -project Tungsten/Tungsten.xcodeproj -scheme Tungsten -destination 'platform=macOS' -derivedDataPath /tmp/TungstenDerivedDataShortcut build
 ```
 
 Expected: BUILD SUCCEEDED.
@@ -233,6 +233,6 @@ Expected: BUILD SUCCEEDED.
 Run:
 
 ```bash
-git add .gitignore Landmarks/Landmarks Tests docs/superpowers/plans/2026-05-06-arc-shortcuts-settings.md
+git add .gitignore Tungsten/Tungstens Tests docs/superpowers/plans/2026-05-06-arc-shortcuts-settings.md
 git commit -m "Add Arc-style shortcut remapping settings"
 ```

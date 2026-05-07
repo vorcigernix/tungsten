@@ -68,16 +68,16 @@ enum ShortcutCatalog {
 
     private static let everydayActions: [ShortcutAction] = [
         available(.newTab, "New Tab", .everyday, [.cmd("t")]),
-        comingSoon(.newWindow, "New Window", .everyday, [.cmd("n")]),
-        comingSoon(.newIncognitoWindow, "New Incognito Window", .everyday, [.cmdShift("n")]),
+        available(.newWindow, "New Window", .everyday, [.cmd("n")]),
+        available(.newIncognitoWindow, "New Incognito Window", .everyday, [.cmdShift("n")]),
         available(.closeCurrentTab, "Close Current Tab", .everyday, [.cmd("w")]),
-        comingSoon(.reopenLastClosedTab, "Re-open Last Closed Tab", .everyday, [.cmdShift("t")]),
-        comingSoon(.pinOrUnpinCurrentTab, "Pin or Unpin Current Tab", .everyday, [.cmd("d")]),
+        available(.reopenLastClosedTab, "Re-open Last Closed Tab", .everyday, [.cmdShift("t")]),
+        available(.pinOrUnpinCurrentTab, "Pin or Unpin Current Tab", .everyday, [.cmd("d")]),
         available(.copyCurrentURL, "Copy Current URL", .everyday, [.cmdShift("c")]),
         available(.copyCurrentURLAsMarkdown, "Copy Current URL as Markdown", .everyday, [.cmdOptionShift("c")]),
         available(.focusAddressInput, "Change Current Tab URL", .everyday, [.cmd("l")]),
         available(.toggleSidebar, "Show or Hide Sidebar", .everyday, [.cmd("s")]),
-        comingSoon(.clearUnpinnedTabs, "Clear Unpinned Tabs", .everyday, [.cmdShift("k")])
+        available(.clearUnpinnedTabs, "Clear Unpinned Tabs", .everyday, [.cmdShift("k")])
     ]
 
     private static let quickNavigationActions: [ShortcutAction] = [
@@ -99,7 +99,7 @@ enum ShortcutCatalog {
     ]
 
     private static let otherActions: [ShortcutAction] = [
-        comingSoon(.viewHistory, "View History", .other, [.cmd("y")]),
+        available(.viewHistory, "View History", .other, [.cmd("y")]),
         available(.zoomIn, "Zoom In Webpage", .other, [.cmd("+")]),
         available(.zoomOut, "Zoom Out Webpage", .other, [.cmd("-")]),
         available(.resetZoom, "Reset Webpage Zoom", .other, [.cmd("0")]),

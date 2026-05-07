@@ -14,8 +14,8 @@
 
 **Files:**
 - Modify: `Tests/ShortcutLogicTests.swift`
-- Modify: `Landmarks/Landmarks/Shortcuts/Core/ShortcutAction.swift`
-- Modify: `Landmarks/Landmarks/Shortcuts/ShortcutDispatcher.swift`
+- Modify: `Tungsten/Tungsten/Shortcuts/Core/ShortcutAction.swift`
+- Modify: `Tungsten/Tungsten/Shortcuts/ShortcutDispatcher.swift`
 
 - [x] **Step 1: Write failing shortcut tests**
 
@@ -26,7 +26,7 @@ Add expectations that `.zoomIn`, `.zoomOut`, `.resetZoom`, and `.findInPage` are
 Run:
 
 ```bash
-swiftc Landmarks/Landmarks/Shortcuts/Core/*.swift Tests/ShortcutLogicTests.swift -o /tmp/TungstenShortcutLogicTests && /tmp/TungstenShortcutLogicTests
+swiftc Tungsten/Tungsten/Shortcuts/Core/*.swift Tests/ShortcutLogicTests.swift -o /tmp/TungstenShortcutLogicTests && /tmp/TungstenShortcutLogicTests
 ```
 
 Expected: FAIL because Zoom and Find are still Coming soon.
@@ -40,7 +40,7 @@ Change the catalog rows to available and update the dispatcher to call browser m
 Run:
 
 ```bash
-swiftc Landmarks/Landmarks/Shortcuts/Core/*.swift Tests/ShortcutLogicTests.swift -o /tmp/TungstenShortcutLogicTests && /tmp/TungstenShortcutLogicTests
+swiftc Tungsten/Tungsten/Shortcuts/Core/*.swift Tests/ShortcutLogicTests.swift -o /tmp/TungstenShortcutLogicTests && /tmp/TungstenShortcutLogicTests
 ```
 
 Expected: PASS with `ShortcutLogicTests passed`.
@@ -48,9 +48,9 @@ Expected: PASS with `ShortcutLogicTests passed`.
 ### Task 2: Bridge CEF Zoom and Find
 
 **Files:**
-- Modify: `Landmarks/Landmarks/CEF/TungstenBrowserController.h`
-- Modify: `Landmarks/Landmarks/CEF/TungstenCEFBridge.mm`
-- Modify: `Landmarks/Landmarks/Browser/BrowserModel.swift`
+- Modify: `Tungsten/Tungsten/CEF/TungstenBrowserController.h`
+- Modify: `Tungsten/Tungsten/CEF/TungstenCEFBridge.mm`
+- Modify: `Tungsten/Tungsten/Browser/BrowserModel.swift`
 
 - [x] **Step 1: Add CEF controller API**
 
@@ -67,7 +67,7 @@ Add model methods to show/focus/close the find bar and tab methods that forward 
 ### Task 3: Add Find Bar UI and Verify
 
 **Files:**
-- Modify: `Landmarks/Landmarks/Browser/BrowserSplitView.swift`
+- Modify: `Tungsten/Tungsten/Browser/BrowserSplitView.swift`
 
 - [x] **Step 1: Render the find bar overlay**
 
@@ -82,8 +82,8 @@ Typing updates the current CEF search, Return advances, Previous goes backward, 
 Run:
 
 ```bash
-swiftc Landmarks/Landmarks/Shortcuts/Core/*.swift Tests/ShortcutLogicTests.swift -o /tmp/TungstenShortcutLogicTests && /tmp/TungstenShortcutLogicTests
-xcodebuild -project Landmarks/Landmarks.xcodeproj -scheme Landmarks -destination 'platform=macOS' -derivedDataPath /tmp/TungstenDerivedDataCEFZoomFind build
+swiftc Tungsten/Tungsten/Shortcuts/Core/*.swift Tests/ShortcutLogicTests.swift -o /tmp/TungstenShortcutLogicTests && /tmp/TungstenShortcutLogicTests
+xcodebuild -project Tungsten/Tungsten.xcodeproj -scheme Tungsten -destination 'platform=macOS' -derivedDataPath /tmp/TungstenDerivedDataCEFZoomFind build
 ```
 
 Expected: shortcut tests pass and Xcode reports `BUILD SUCCEEDED`.

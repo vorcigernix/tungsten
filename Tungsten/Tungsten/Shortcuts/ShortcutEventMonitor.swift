@@ -3,7 +3,7 @@ import SwiftUI
 
 struct ShortcutEventMonitor: NSViewRepresentable {
     let shortcutManager: ShortcutManager
-    let browserModel: BrowserModel
+    let commandContext: BrowserCommandContext
 
     func makeCoordinator() -> ShortcutEventMonitorBox {
         ShortcutEventMonitorBox()
@@ -18,7 +18,7 @@ struct ShortcutEventMonitor: NSViewRepresentable {
             context.coordinator.install(
                 window: nsView.window,
                 shortcutManager: shortcutManager,
-                browserModel: browserModel
+                commandContext: commandContext
             )
         }
     }
@@ -40,7 +40,11 @@ final class ShortcutEventMonitorBox {
     private weak var window: NSWindow?
     private var monitor: Any?
 
-    func install(window: NSWindow?, shortcutManager: ShortcutManager, browserModel: BrowserModel) {
+    func install(window: NSWindow?, shortcutManager: ShortcutManager, commandContext: BrowserCommandContext) {
+        guard let window else {
+            return
+        }
+
         self.window = window
 
         guard monitor == nil else {
@@ -60,7 +64,7 @@ final class ShortcutEventMonitorBox {
             guard
                 let binding = ShortcutBinding(event: event),
                 let action = shortcutManager.dispatchableAction(for: binding),
-                ShortcutDispatcher.dispatch(action, browserModel: browserModel)
+                ShortcutDispatcher.dispatch(action, context: commandContext)
             else {
                 return event
             }

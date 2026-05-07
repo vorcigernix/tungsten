@@ -14,7 +14,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		D82EA0F72D5692FD00493877 /* Landmarks */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Landmarks; sourceTree = "<group>"; };
+		D82EA0F72D5692FD00493877 /* Tungsten */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Tungsten; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -32,7 +32,7 @@
 			isa = PBXGroup;
 			children = (
 				9AFBAAF37D3D2CD5D83C356B /* README.md */,
-				D82EA0F72D5692FD00493877 /* Landmarks */,
+				D82EA0F72D5692FD00493877 /* Tungsten */,
 				D82EA0F62D5692FD00493877 /* Products */,
 				F81A15098011BE5B986CF307 /* Configuration */,
 				D82F1FE13C89795E8FB74220 /* LICENSE */,
@@ -67,9 +67,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		D82EA0F42D5692FD00493877 /* Landmarks */ = {
+		D82EA0F42D5692FD00493877 /* Tungsten */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = D82EA1012D5692FE00493877 /* Build configuration list for PBXNativeTarget "Landmarks" */;
+			buildConfigurationList = D82EA1012D5692FE00493877 /* Build configuration list for PBXNativeTarget "Tungsten" */;
 			buildPhases = (
 				D82EA0F12D5692FD00493877 /* Sources */,
 				D82EA0F22D5692FD00493877 /* Frameworks */,
@@ -81,9 +81,9 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				D82EA0F72D5692FD00493877 /* Landmarks */,
+				D82EA0F72D5692FD00493877 /* Tungsten */,
 			);
-			name = Landmarks;
+			name = Tungsten;
 			productName = Tungsten;
 			productReference = D82EA0F52D5692FD00493877 /* Tungsten.app */;
 			productType = "com.apple.product-type.application";
@@ -104,7 +104,7 @@
 					};
 				};
 			};
-			buildConfigurationList = D82EA0F02D5692FD00493877 /* Build configuration list for PBXProject "Landmarks" */;
+			buildConfigurationList = D82EA0F02D5692FD00493877 /* Build configuration list for PBXProject "Tungsten" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -121,7 +121,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				D82EA0F42D5692FD00493877 /* Landmarks */,
+				D82EA0F42D5692FD00493877 /* Tungsten */,
 			);
 		};
 /* End PBXProject section */
@@ -315,7 +315,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
-				CODE_SIGN_ENTITLEMENTS = Landmarks/Landmarks.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Tungsten/Tungsten.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
@@ -336,6 +336,8 @@
 				);
 				INFOPLIST_KEY_CFBundleDisplayName = Tungsten;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Tungsten uses Bluetooth so websites can sign you in with a passkey or security key on a nearby phone.";
+				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "Tungsten uses Bluetooth so websites can sign you in with a passkey or security key on a nearby phone.";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
@@ -360,7 +362,7 @@
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_OBJC_BRIDGING_HEADER = "Landmarks/Landmarks-Bridging-Header.h";
+				SWIFT_OBJC_BRIDGING_HEADER = "Tungsten/Tungsten-Bridging-Header.h";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 6.0;
 			};
@@ -373,7 +375,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
-				CODE_SIGN_ENTITLEMENTS = Landmarks/Landmarks.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Tungsten/Tungsten.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
@@ -394,6 +396,8 @@
 				);
 				INFOPLIST_KEY_CFBundleDisplayName = Tungsten;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Tungsten uses Bluetooth so websites can sign you in with a passkey or security key on a nearby phone.";
+				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "Tungsten uses Bluetooth so websites can sign you in with a passkey or security key on a nearby phone.";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
@@ -419,7 +423,7 @@
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_OBJC_BRIDGING_HEADER = "Landmarks/Landmarks-Bridging-Header.h";
+				SWIFT_OBJC_BRIDGING_HEADER = "Tungsten/Tungsten-Bridging-Header.h";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 6.0;
 			};
@@ -428,7 +432,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		D82EA0F02D5692FD00493877 /* Build configuration list for PBXProject "Landmarks" */ = {
+		D82EA0F02D5692FD00493877 /* Build configuration list for PBXProject "Tungsten" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				D82EA0FF2D5692FE00493877 /* Debug */,
@@ -437,7 +441,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		D82EA1012D5692FE00493877 /* Build configuration list for PBXNativeTarget "Landmarks" */ = {
+		D82EA1012D5692FE00493877 /* Build configuration list for PBXNativeTarget "Tungsten" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				D82EA1022D5692FE00493877 /* Debug */,

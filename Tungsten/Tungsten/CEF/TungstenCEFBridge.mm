@@ -20,11 +20,13 @@ Objective-C++ bridge between SwiftUI/AppKit and Chromium Embedded Framework.
 #include "include/cef_browser.h"
 #include "include/cef_client.h"
 #include "include/cef_command_line.h"
+#include "include/cef_request_context.h"
 #include "include/wrapper/cef_helpers.h"
 #include "wrapper/cef_library_loader.h"
 
 @interface TungstenBrowserController ()
 - (void)cefBrowserDidClose;
+- (void)closeBrowserWithForce:(BOOL)forceClose;
 @end
 
 namespace {
@@ -67,6 +69,10 @@ void PerformCefMessageLoopWork(void) {
     do {
         g_messagePumpReentry = false;
         g_messagePumpActive = true;
+        // Note: an Objective-C exception thrown deep inside CEF unwinds
+        // through Chromium frames compiled with -fno-exceptions and aborts
+        // before any local @catch can see it. We log via
+        // NSSetUncaughtExceptionHandler in AppDelegate instead.
         CefDoMessageLoopWork();
         g_messagePumpActive = false;
     } while (g_messagePumpReentry);
@@ -487,14 +493,22 @@ private:
 @implementation TungstenBrowserController {
     NSString *_initialURL;
     NSString *_pendingURL;
+    BOOL _isIncognito;
     BOOL _didCreateBrowser;
     BOOL _isClosingBrowser;
     CGFloat _cornerRadius;
     CefRefPtr<TungstenBrowserClient> _client;
+    CefRefPtr<CefRequestContext> _requestContext;
     void *_closeRetainToken;
 }
 
+@synthesize browserDidCloseHandler = _browserDidCloseHandler;
+
 - (instancetype)initWithInitialURL:(NSString *)initialURL {
+    return [self initWithInitialURL:initialURL incognito:NO];
+}
+
+- (instancetype)initWithInitialURL:(NSString *)initialURL incognito:(BOOL)incognito {
     self = [super init];
     if (self == nil) {
         return nil;
@@ -502,6 +516,7 @@ private:
 
     _initialURL = [initialURL copy];
     _pendingURL = [initialURL copy];
+    _isIncognito = incognito;
 
     TungstenBrowserContainerView *containerView = [[TungstenBrowserContainerView alloc] initWithFrame:NSZeroRect];
     containerView.controller = self;
@@ -648,6 +663,17 @@ private:
         [self.view addSubview:browserView];
     }
 
+    // Force the page's CALayer to render opaque even when the host NSWindow
+    // is non-opaque (we toggle isOpaque=false in WindowTransparencyEnabler so
+    // the gutter shows desktop). Without this, AppKit composites the entire
+    // window with alpha, causing the page to look semi-transparent —
+    // especially on unfocused windows.
+    browserView.wantsLayer = YES;
+    browserView.layer.opaque = YES;
+    if (browserView.layer.backgroundColor == NULL) {
+        browserView.layer.backgroundColor = NSColor.windowBackgroundColor.CGColor;
+    }
+
     browserView.frame = self.view.bounds;
     browserView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
 }
@@ -677,13 +703,31 @@ private:
 
     CefBrowserSettings browserSettings;
     std::string url = ToString(_pendingURL ?: _initialURL);
-    if (!CefBrowserHost::CreateBrowser(windowInfo, _client.get(), url, browserSettings, nullptr, nullptr)) {
+
+    CefRefPtr<CefRequestContext> requestContext = nullptr;
+    if (_isIncognito) {
+        if (!_requestContext) {
+            CefRequestContextSettings contextSettings;
+            _requestContext = CefRequestContext::CreateContext(contextSettings, nullptr);
+        }
+        requestContext = _requestContext;
+    }
+
+    if (!CefBrowserHost::CreateBrowser(windowInfo, _client.get(), url, browserSettings, nullptr, requestContext)) {
         NSLog(@"Unable to create CEF browser for URL %@", _pendingURL ?: _initialURL);
         _didCreateBrowser = NO;
     }
 }
 
 - (void)closeBrowser {
+    [self closeBrowserWithForce:YES];
+}
+
+- (void)closeBrowserForWindowClose {
+    [self closeBrowserWithForce:NO];
+}
+
+- (void)closeBrowserWithForce:(BOOL)forceClose {
     if (_isClosingBrowser) {
         return;
     }
@@ -694,6 +738,11 @@ private:
     CefRefPtr<CefBrowser> browser = _client ? _client->browser() : nullptr;
     if (!browser) {
         _didCreateBrowser = NO;
+        void (^handler)(void) = _browserDidCloseHandler;
+        _browserDidCloseHandler = nil;
+        if (handler) {
+            handler();
+        }
         return;
     }
 
@@ -701,13 +750,17 @@ private:
         _closeRetainToken = (__bridge_retained void *)self;
     }
 
-    NSView *browserView = (__bridge NSView *)browser->GetHost()->GetWindowHandle();
-    [browserView removeFromSuperview];
-    browser->GetHost()->CloseBrowser(true);
+    browser->GetHost()->CloseBrowser(forceClose);
 }
 
 - (void)cefBrowserDidClose {
     _didCreateBrowser = NO;
+
+    void (^handler)(void) = _browserDidCloseHandler;
+    _browserDidCloseHandler = nil;
+    if (handler) {
+        handler();
+    }
 
     if (_closeRetainToken != nullptr) {
         CFRelease(_closeRetainToken);

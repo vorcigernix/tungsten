@@ -8,7 +8,7 @@ Transforms omnibox input into browser navigation targets.
 import Foundation
 
 enum AddressResolver {
-    static func navigationTarget(for input: String) -> String? {
+    static func navigationTarget(for input: String, searchEngine: SearchEngine = .googleAIMode) -> String? {
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trimmed.isEmpty == false else {
             return nil
@@ -22,9 +22,7 @@ enum AddressResolver {
             return "\(scheme)://\(trimmed)"
         }
 
-        let allowed = CharacterSet.urlQueryAllowed.subtracting(CharacterSet(charactersIn: "&+"))
-        let query = trimmed.addingPercentEncoding(withAllowedCharacters: allowed) ?? trimmed
-        return "https://www.google.com/search?q=\(query)"
+        return searchEngine.searchURL(for: trimmed)
     }
 
     private static let directNavigationSchemes: Set<String> = [

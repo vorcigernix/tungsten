@@ -6,11 +6,11 @@ struct ShortcutLogicTests {
     static func main() throws {
         try testCatalogIncludesAvailableAndComingSoonActions()
         try testCEFBackedActionsAreAvailable()
+        try testRemainingBrowserActionsAreAvailable()
         try testOverridesReplaceDefaultsAndResetRestoresDefaults()
         try testClearedBindingLeavesActionUnassigned()
         try testDuplicateActiveBindingsAreDetected()
-        try testComingSoonDefaultsDoNotBlockRemapping()
-        try testComingSoonActionDoesNotDispatch()
+        try testRemainingBrowserActionDefaultsParticipateInRemapping()
         try testModifierOrderDoesNotAffectMatching()
         print("ShortcutLogicTests passed")
     }
@@ -19,7 +19,7 @@ struct ShortcutLogicTests {
         let actions = ShortcutCatalog.actions
 
         try expect(actions.contains { $0.id == .newTab && $0.availability == .available })
-        try expect(actions.contains { $0.id == .viewHistory && $0.availability == .comingSoon })
+        try expect(actions.allSatisfy(\.isAvailable))
         try expect(actions.contains { $0.title == "Open Little Arc" } == false)
         try expect(actions.contains { $0.title.contains("Space") } == false)
         try expect(actions.contains { $0.title.contains("Split View") } == false)
@@ -33,6 +33,24 @@ struct ShortcutLogicTests {
         try expect(ShortcutCatalog.action(id: .resetZoom)?.availability == .available)
         try expect(ShortcutCatalog.action(id: .findInPage)?.availability == .available)
         try expect(manager.dispatchableAction(for: ShortcutBinding(key: "f", modifiers: [.command]))?.id == .findInPage)
+    }
+
+    static func testRemainingBrowserActionsAreAvailable() throws {
+        let manager = ShortcutManager(store: makeStore("remaining-browser-actions"))
+
+        let expected: [(ShortcutActionID, ShortcutBinding)] = [
+            (.newWindow, ShortcutBinding(key: "n", modifiers: [.command])),
+            (.newIncognitoWindow, ShortcutBinding(key: "n", modifiers: [.command, .shift])),
+            (.reopenLastClosedTab, ShortcutBinding(key: "t", modifiers: [.command, .shift])),
+            (.pinOrUnpinCurrentTab, ShortcutBinding(key: "d", modifiers: [.command])),
+            (.clearUnpinnedTabs, ShortcutBinding(key: "k", modifiers: [.command, .shift])),
+            (.viewHistory, ShortcutBinding(key: "y", modifiers: [.command]))
+        ]
+
+        for (actionID, binding) in expected {
+            try expect(ShortcutCatalog.action(id: actionID)?.availability == .available)
+            try expect(manager.dispatchableAction(for: binding)?.id == actionID)
+        }
     }
 
     static func testOverridesReplaceDefaultsAndResetRestoresDefaults() throws {
@@ -67,20 +85,17 @@ struct ShortcutLogicTests {
         try expect(manager.setCustomBinding(closeTab, for: .newTab) == .conflict(existingAction: .closeCurrentTab))
     }
 
-    static func testComingSoonDefaultsDoNotBlockRemapping() throws {
-        let manager = ShortcutManager(store: makeStore("coming-soon-remap"))
+    static func testRemainingBrowserActionDefaultsParticipateInRemapping() throws {
+        let manager = ShortcutManager(store: makeStore("remaining-browser-remap"))
         let historyDefault = ShortcutBinding(key: "y", modifiers: [.command])
 
-        try expect(manager.conflicts(for: historyDefault, excluding: .newTab).isEmpty)
+        let conflicts = manager.conflicts(for: historyDefault, excluding: .newTab)
+        try expect(conflicts.map(\.id) == [.viewHistory])
+        try expect(manager.setCustomBinding(historyDefault, for: .newTab) == .conflict(existingAction: .viewHistory))
+        manager.clearBinding(for: .viewHistory)
         try expect(manager.setCustomBinding(historyDefault, for: .newTab) == .assigned)
-        try expect(manager.dispatchableAction(for: historyDefault)?.id == .newTab)
-    }
-
-    static func testComingSoonActionDoesNotDispatch() throws {
-        let manager = ShortcutManager(store: makeStore("coming-soon"))
-
-        try expect(manager.dispatchableAction(for: ShortcutBinding(key: "y", modifiers: [.command])) == nil)
-        try expect(manager.dispatchableAction(for: ShortcutBinding(key: "t", modifiers: [.command]))?.id == .newTab)
+        try expect(manager.activeBindings(for: .newTab) == [historyDefault])
+        try expect(manager.dispatchableAction(for: ShortcutBinding(key: "t", modifiers: [.command])) == nil)
     }
 
     static func testModifierOrderDoesNotAffectMatching() throws {

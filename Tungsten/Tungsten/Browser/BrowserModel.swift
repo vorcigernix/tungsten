@@ -10,9 +10,13 @@ import Foundation
 
 @Observable @MainActor
 final class BrowserModel {
-    private static let defaultNewTabURL = "https://www.google.com"
-
+    let kind: BrowserWindowKind
+    let appPreferences: AppPreferences
     var tabs: [BrowserTab] = []
+
+    var defaultNewTabURL: String {
+        appPreferences.searchEngine.homepageURL
+    }
     var selectedTabID: BrowserTab.ID? {
         didSet {
             guard oldValue != selectedTabID else {
@@ -27,6 +31,7 @@ final class BrowserModel {
     var addressFocusRequestID = 0
     var isSidebarVisible = true
     var isFindBarVisible = false
+    var isHistoryVisible = false
     var findText = ""
     var findFocusRequestID = 0
 
@@ -35,13 +40,26 @@ final class BrowserModel {
     }
 
     private var previousSelectedTabID: BrowserTab.ID?
+    let historyStore: HistoryStore
+    private var closedTabs: [ClosedTab] = []
+    private var didCloseBrowsersForWindowClose = false
+    private var pendingWindowCloseTabIDs: Set<BrowserTab.ID> = []
+    private var windowCloseCompletion: (() -> Void)?
 
-    init() {
-        addTab(navigateTo: Self.defaultNewTabURL)
+    init(
+        kind: BrowserWindowKind = .normal,
+        historyStore: HistoryStore = HistoryStore(),
+        appPreferences: AppPreferences = AppPreferences()
+    ) {
+        self.kind = kind
+        self.historyStore = historyStore
+        self.appPreferences = appPreferences
+        addTab()
     }
 
-    func addTab(navigateTo urlString: String = BrowserModel.defaultNewTabURL) {
-        let tab = BrowserTab(initialURL: urlString)
+    func addTab(navigateTo urlString: String? = nil) {
+        let target = urlString ?? defaultNewTabURL
+        let tab = makeTab(navigateTo: target)
         tabs.append(tab)
         selectedTabID = tab.id
     }
@@ -52,11 +70,21 @@ final class BrowserModel {
         }
 
         if tabs.count == 1 {
-            tab.resetForLastTabClose(to: Self.defaultNewTabURL)
+            tab.resetForLastTabClose(to: defaultNewTabURL)
             selectedTabID = tab.id
             isFindBarVisible = false
             findText = ""
             return
+        }
+
+        if kind == .normal {
+            closedTabs.append(
+                ClosedTab(
+                    urlString: tab.urlString,
+                    title: tab.displayTitle,
+                    isPinned: tab.isPinned
+                )
+            )
         }
 
         tab.closeBrowser()
@@ -78,6 +106,126 @@ final class BrowserModel {
             return
         }
         close(selectedTab)
+    }
+
+    func closeBrowsersForWindowClose(completion: @escaping () -> Void) {
+        guard didCloseBrowsersForWindowClose == false else {
+            if windowCloseCompletion == nil {
+                completion()
+            }
+            return
+        }
+
+        didCloseBrowsersForWindowClose = true
+        isFindBarVisible = false
+        isHistoryVisible = false
+        findText = ""
+
+        let closingTabs = tabs
+        pendingWindowCloseTabIDs = Set(closingTabs.map(\.id))
+        windowCloseCompletion = completion
+
+        guard closingTabs.isEmpty == false else {
+            finishWindowCloseIfNeeded()
+            return
+        }
+
+        for tab in closingTabs {
+            let tabID = tab.id
+            tab.onBrowserClose = { [weak self] in
+                self?.markWindowCloseBrowserClosed(tabID)
+            }
+        }
+
+        for tab in closingTabs {
+            tab.closeBrowserForWindowClose()
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+            self?.finishWindowCloseIfNeeded()
+        }
+    }
+
+    func toggleSelectedTabPin() {
+        guard let selectedTab else {
+            return
+        }
+
+        togglePin(selectedTab)
+    }
+
+    func togglePin(_ tab: BrowserTab) {
+        guard tabs.contains(where: { $0.id == tab.id }) else {
+            return
+        }
+
+        tab.isPinned.toggle()
+    }
+
+    func clearUnpinnedTabs() {
+        let pinnedTabs = tabs.filter(\.isPinned)
+        let removedTabs = tabs.filter { $0.isPinned == false }
+        let selectedWasRemoved = selectedTab.map { $0.isPinned == false } ?? false
+
+        guard removedTabs.isEmpty == false else {
+            return
+        }
+
+        for tab in removedTabs {
+            tab.closeBrowser()
+        }
+
+        if pinnedTabs.isEmpty {
+            tabs.removeAll()
+            isFindBarVisible = false
+            findText = ""
+            addTab()
+            return
+        }
+
+        let oldSelectedTabID = selectedTabID
+        tabs = pinnedTabs
+
+        if let oldSelectedTabID, tabs.contains(where: { $0.id == oldSelectedTabID }) {
+            selectedTabID = oldSelectedTabID
+        } else {
+            selectedTabID = tabs.first?.id
+        }
+
+        if selectedWasRemoved {
+            isFindBarVisible = false
+            findText = ""
+        }
+    }
+
+    func reopenLastClosedTab() {
+        guard kind == .normal, let closedTab = closedTabs.popLast() else {
+            return
+        }
+
+        let tab = makeTab(navigateTo: closedTab.urlString)
+        tab.title = closedTab.title
+        tab.isPinned = closedTab.isPinned
+        tabs.append(tab)
+        selectedTabID = tab.id
+    }
+
+    func showHistory() {
+        isHistoryVisible = true
+    }
+
+    func closeHistory() {
+        isHistoryVisible = false
+    }
+
+    func openHistoryEntry(_ entry: HistoryEntry) {
+        if let selectedTab {
+            selectedTab.navigate(to: entry.urlString)
+        } else {
+            addTab(navigateTo: entry.urlString)
+        }
+
+        closeHistory()
     }
 
     func copySelectedTabURL() {
@@ -201,7 +349,7 @@ final class BrowserModel {
 
     func submitAddressBar() {
         guard
-            let target = AddressResolver.navigationTarget(for: addressText),
+            let target = AddressResolver.navigationTarget(for: addressText, searchEngine: appPreferences.searchEngine),
             let selectedTab
         else {
             return
@@ -218,6 +366,71 @@ final class BrowserModel {
 
         selectedTab?.findInPage(findText, forward: forward, matchCase: false, findNext: findNext)
     }
+
+    private func markWindowCloseBrowserClosed(_ tabID: BrowserTab.ID) {
+        pendingWindowCloseTabIDs.remove(tabID)
+        tabs.first { $0.id == tabID }?.onBrowserClose = nil
+
+        if pendingWindowCloseTabIDs.isEmpty {
+            finishWindowCloseIfNeeded()
+        }
+    }
+
+    private func finishWindowCloseIfNeeded() {
+        guard let completion = windowCloseCompletion else {
+            return
+        }
+
+        pendingWindowCloseTabIDs.removeAll()
+        windowCloseCompletion = nil
+        completion()
+    }
+
+    private func makeTab(navigateTo urlString: String) -> BrowserTab {
+        let tab = BrowserTab(initialURL: urlString, isIncognito: kind.isIncognito)
+        configureHistoryCallbacks(for: tab)
+        return tab
+    }
+
+    private func configureHistoryCallbacks(for tab: BrowserTab) {
+        tab.onURLChange = { [weak self, weak tab] urlString in
+            guard let self, let tab else {
+                return
+            }
+
+            self.recordHistoryVisit(urlString, tab: tab)
+        }
+
+        tab.onTitleChange = { [weak self, weak tab] title in
+            guard let self, let tab else {
+                return
+            }
+
+            self.recordHistoryTitle(title, tab: tab)
+        }
+    }
+
+    private func recordHistoryVisit(_ urlString: String, tab: BrowserTab) {
+        guard
+            kind == .normal,
+            tabs.contains(where: { $0.id == tab.id })
+        else {
+            return
+        }
+
+        historyStore.recordVisit(urlString: urlString, title: tab.displayTitle)
+    }
+
+    private func recordHistoryTitle(_ title: String, tab: BrowserTab) {
+        guard
+            kind == .normal,
+            tabs.contains(where: { $0.id == tab.id })
+        else {
+            return
+        }
+
+        historyStore.updateTitle(for: tab.urlString, title: title)
+    }
 }
 
 @Observable @MainActor
@@ -225,6 +438,8 @@ final class BrowserTab: Identifiable {
     typealias ID = UUID
 
     let id = UUID()
+    let isIncognito: Bool
+    var isPinned = false
     var title = "New Tab"
     var urlString: String
     var isLoading = false
@@ -233,14 +448,23 @@ final class BrowserTab: Identifiable {
     var favicon: NSImage?
     var pageBackgroundColor: NSColor?
 
+    @ObservationIgnored var onURLChange: ((String) -> Void)?
+    @ObservationIgnored var onTitleChange: ((String) -> Void)?
+    @ObservationIgnored var onBrowserClose: (() -> Void)?
+
     @ObservationIgnored private var loadedFaviconURL: String?
     @ObservationIgnored private var faviconFetchTask: Task<Void, Never>?
 
     @ObservationIgnored private let initialURL: String
     @ObservationIgnored private lazy var observer = BrowserControllerObserver(tab: self)
     @ObservationIgnored lazy var browserController: TungstenBrowserController = {
-        let controller = TungstenBrowserController(initialURL: initialURL)
+        let controller = TungstenBrowserController(initialURL: initialURL, incognito: isIncognito)
         controller.delegate = observer
+        controller.browserDidCloseHandler = { [weak self] in
+            Task { @MainActor [weak self] in
+                self?.onBrowserClose?()
+            }
+        }
         return controller
     }()
 
@@ -256,8 +480,9 @@ final class BrowserTab: Identifiable {
         return "New Tab"
     }
 
-    init(initialURL: String) {
+    init(initialURL: String, isIncognito: Bool) {
         self.initialURL = initialURL
+        self.isIncognito = isIncognito
         self.urlString = initialURL
     }
 
@@ -268,7 +493,18 @@ final class BrowserTab: Identifiable {
             pageBackgroundColor = nil
         }
         self.urlString = urlString
+        onURLChange?(urlString)
         browserController.navigate(toURLString: urlString)
+    }
+
+    func updateTitle(_ title: String) {
+        self.title = title
+        onTitleChange?(title)
+    }
+
+    func updateURL(_ urlString: String) {
+        self.urlString = urlString
+        onURLChange?(urlString)
     }
 
     func updatePageBackgroundColor(from cssString: String) {
@@ -336,6 +572,10 @@ final class BrowserTab: Identifiable {
         browserController.closeBrowser()
     }
 
+    func closeBrowserForWindowClose() {
+        browserController.closeBrowserForWindowClose()
+    }
+
     func resetForLastTabClose(to urlString: String) {
         faviconFetchTask?.cancel()
         faviconFetchTask = nil
@@ -361,13 +601,13 @@ private final class BrowserControllerObserver: NSObject, TungstenBrowserControll
 
     func browserController(_ controller: TungstenBrowserController, didUpdateTitle title: String) {
         Task { @MainActor [weak tab] in
-            tab?.title = title
+            tab?.updateTitle(title)
         }
     }
 
     func browserController(_ controller: TungstenBrowserController, didUpdateURL urlString: String) {
         Task { @MainActor [weak tab] in
-            tab?.urlString = urlString
+            tab?.updateURL(urlString)
         }
     }
 

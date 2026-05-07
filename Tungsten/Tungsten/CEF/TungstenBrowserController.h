@@ -28,10 +28,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface TungstenBrowserController : NSObject
 
-- (instancetype)initWithInitialURL:(NSString *)initialURL NS_DESIGNATED_INITIALIZER;
+- (instancetype)initWithInitialURL:(NSString *)initialURL;
+- (instancetype)initWithInitialURL:(NSString *)initialURL incognito:(BOOL)incognito NS_DESIGNATED_INITIALIZER;
 - (instancetype)init NS_UNAVAILABLE;
 
 @property (nonatomic, weak, nullable) id<TungstenBrowserControllerDelegate> delegate;
+@property (nonatomic, copy, nullable) void (^browserDidCloseHandler)(void);
 @property (nonatomic, strong, readonly) NSView *view;
 @property (nonatomic) CGFloat cornerRadius;
 
@@ -49,6 +51,7 @@ NS_ASSUME_NONNULL_BEGIN
         findNext:(BOOL)findNext NS_SWIFT_NAME(find(text:forward:matchCase:findNext:));
 - (void)stopFindingWithClearSelection:(BOOL)clearSelection NS_SWIFT_NAME(stopFinding(clearSelection:));
 - (void)closeBrowser;
+- (void)closeBrowserForWindowClose;
 - (void)layoutBrowserView;
 
 @end

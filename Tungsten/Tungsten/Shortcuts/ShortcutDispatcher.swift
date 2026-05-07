@@ -2,16 +2,26 @@ import Foundation
 
 @MainActor
 enum ShortcutDispatcher {
-    static func dispatch(_ action: ShortcutAction, browserModel: BrowserModel) -> Bool {
+    static func dispatch(_ action: ShortcutAction, context: BrowserCommandContext) -> Bool {
         guard action.isAvailable else {
             return false
         }
 
+        let browserModel = context.browserModel
+
         switch action.id {
         case .newTab:
             browserModel.addTab()
+        case .newWindow:
+            context.openNormalWindow()
+        case .newIncognitoWindow:
+            context.openIncognitoWindow()
         case .closeCurrentTab:
             browserModel.closeSelectedTab()
+        case .reopenLastClosedTab:
+            browserModel.reopenLastClosedTab()
+        case .pinOrUnpinCurrentTab:
+            browserModel.toggleSelectedTabPin()
         case .copyCurrentURL:
             browserModel.copySelectedTabURL()
         case .copyCurrentURLAsMarkdown:
@@ -20,6 +30,8 @@ enum ShortcutDispatcher {
             browserModel.focusAddressInput()
         case .toggleSidebar:
             browserModel.toggleSidebar()
+        case .clearUnpinnedTabs:
+            browserModel.clearUnpinnedTabs()
         case .selectTab1:
             browserModel.selectTab(atZeroBasedIndex: 0)
         case .selectTab2:
@@ -54,6 +66,8 @@ enum ShortcutDispatcher {
             } else {
                 browserModel.selectedTab?.reload()
             }
+        case .viewHistory:
+            browserModel.showHistory()
         case .zoomIn:
             browserModel.zoomIn()
         case .zoomOut:
@@ -62,13 +76,6 @@ enum ShortcutDispatcher {
             browserModel.resetZoom()
         case .findInPage:
             browserModel.showFindInPage()
-        case .newWindow,
-             .newIncognitoWindow,
-             .reopenLastClosedTab,
-             .pinOrUnpinCurrentTab,
-             .clearUnpinnedTabs,
-             .viewHistory:
-            return false
         }
 
         return true

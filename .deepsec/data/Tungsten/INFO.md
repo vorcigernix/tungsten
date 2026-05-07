@@ -4,12 +4,11 @@
 
 Tungsten is a native macOS SwiftUI browser shell backed by Chromium
 Embedded Framework. It is a small Xcode project, not a web service:
-`Landmarks/Landmarks/Browser/*` owns tabs and the omnibox,
-`Landmarks/Landmarks/CEF/TungstenCEFBridge.mm` embeds CEF through
+`Tungsten/Tungsten/Browser/*` owns tabs and the omnibox,
+`Tungsten/Tungsten/CEF/TungstenCEFBridge.mm` embeds CEF through
 Objective-C++, `CEFHelper/TungstenCEFHelperMain.mm` is the renderer/GPU
 helper entry point, and `scripts/*cef*.sh` downloads/copies the CEF
-runtime into the app bundle. Some `Landmarks` and Apple sample naming is
-historical.
+runtime into the app bundle.
 
 ## Auth shape
 
@@ -66,5 +65,5 @@ supply-chain trust boundaries.
   bundles, and `CefExecuteProcess` are required CEF subprocess plumbing.
 - `copy-cef-runtime.sh` intentionally deletes and recreates CEF framework
   contents under Xcode build output paths.
-- `Landmarks` names, Apple sample comments, and `SampleCode.xcconfig` are
-  leftover project scaffolding, not a separate product or trust domain.
+- Apple sample comments and `SampleCode.xcconfig` are leftover project
+  scaffolding, not a separate product or trust domain.

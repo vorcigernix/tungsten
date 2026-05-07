@@ -13,25 +13,25 @@
 ## File Structure
 
 New files:
-- `Landmarks/Landmarks/Browser/BrowserWindowKind.swift`
-- `Landmarks/Landmarks/Browser/BrowserWindowRoot.swift`
-- `Landmarks/Landmarks/Browser/BrowserCommandContext.swift`
-- `Landmarks/Landmarks/Browser/ClosedTab.swift`
-- `Landmarks/Landmarks/Browser/HistoryEntry.swift`
-- `Landmarks/Landmarks/Browser/HistoryStore.swift`
-- `Landmarks/Landmarks/Browser/HistoryView.swift`
+- `Tungsten/Tungsten/Browser/BrowserWindowKind.swift`
+- `Tungsten/Tungsten/Browser/BrowserWindowRoot.swift`
+- `Tungsten/Tungsten/Browser/BrowserCommandContext.swift`
+- `Tungsten/Tungsten/Browser/ClosedTab.swift`
+- `Tungsten/Tungsten/Browser/HistoryEntry.swift`
+- `Tungsten/Tungsten/Browser/HistoryStore.swift`
+- `Tungsten/Tungsten/Browser/HistoryView.swift`
 - `Tests/HistoryStoreTests.swift`
 - `Tests/BrowserTabStateTests.sh`
 
 Modified files:
-- `Landmarks/Landmarks/LandmarksApp.swift`
-- `Landmarks/Landmarks/Browser/BrowserModel.swift`
-- `Landmarks/Landmarks/Browser/BrowserSplitView.swift`
-- `Landmarks/Landmarks/CEF/TungstenBrowserController.h`
-- `Landmarks/Landmarks/CEF/TungstenCEFBridge.mm`
-- `Landmarks/Landmarks/Shortcuts/Core/ShortcutAction.swift`
-- `Landmarks/Landmarks/Shortcuts/ShortcutDispatcher.swift`
-- `Landmarks/Landmarks/Shortcuts/ShortcutEventMonitor.swift`
+- `Tungsten/Tungsten/TungstenApp.swift`
+- `Tungsten/Tungsten/Browser/BrowserModel.swift`
+- `Tungsten/Tungsten/Browser/BrowserSplitView.swift`
+- `Tungsten/Tungsten/CEF/TungstenBrowserController.h`
+- `Tungsten/Tungsten/CEF/TungstenCEFBridge.mm`
+- `Tungsten/Tungsten/Shortcuts/Core/ShortcutAction.swift`
+- `Tungsten/Tungsten/Shortcuts/ShortcutDispatcher.swift`
+- `Tungsten/Tungsten/Shortcuts/ShortcutEventMonitor.swift`
 - `Tests/ShortcutLogicTests.swift`
 
 ## Task 1: Lock the Remaining Shortcut Surface with Failing Tests
@@ -57,7 +57,7 @@ Keep the existing checks that omitted Arc concepts such as Little Arc, Spaces, a
 Run:
 
 ```bash
-swiftc Landmarks/Landmarks/Shortcuts/Core/*.swift Tests/ShortcutLogicTests.swift -o /tmp/TungstenShortcutLogicTests && /tmp/TungstenShortcutLogicTests
+swiftc Tungsten/Tungsten/Shortcuts/Core/*.swift Tests/ShortcutLogicTests.swift -o /tmp/TungstenShortcutLogicTests && /tmp/TungstenShortcutLogicTests
 ```
 
 Expected: FAIL because the six actions are still marked `.comingSoon`.
@@ -65,12 +65,12 @@ Expected: FAIL because the six actions are still marked `.comingSoon`.
 ## Task 2: Split Browser State Per Window
 
 **Files:**
-- Add: `Landmarks/Landmarks/Browser/BrowserWindowKind.swift`
-- Add: `Landmarks/Landmarks/Browser/BrowserWindowRoot.swift`
-- Add: `Landmarks/Landmarks/Browser/BrowserCommandContext.swift`
-- Modify: `Landmarks/Landmarks/LandmarksApp.swift`
-- Modify: `Landmarks/Landmarks/Shortcuts/ShortcutEventMonitor.swift`
-- Modify: `Landmarks/Landmarks/Shortcuts/ShortcutDispatcher.swift`
+- Add: `Tungsten/Tungsten/Browser/BrowserWindowKind.swift`
+- Add: `Tungsten/Tungsten/Browser/BrowserWindowRoot.swift`
+- Add: `Tungsten/Tungsten/Browser/BrowserCommandContext.swift`
+- Modify: `Tungsten/Tungsten/TungstenApp.swift`
+- Modify: `Tungsten/Tungsten/Shortcuts/ShortcutEventMonitor.swift`
+- Modify: `Tungsten/Tungsten/Shortcuts/ShortcutDispatcher.swift`
 
 - [ ] **Step 1: Add explicit window/profile identity**
 
@@ -129,7 +129,7 @@ Use `BrowserWindowRoot` and `@Environment(\.openWindow)` to wire `openNormalWind
 Run:
 
 ```bash
-xcodebuild -project Landmarks/Landmarks.xcodeproj -scheme Landmarks -destination 'platform=macOS' -derivedDataPath /tmp/TungstenDerivedDataComingSoonWindows build
+xcodebuild -project Tungsten/Tungsten.xcodeproj -scheme Tungsten -destination 'platform=macOS' -derivedDataPath /tmp/TungstenDerivedDataComingSoonWindows build
 ```
 
 Expected: `BUILD SUCCEEDED`.
@@ -137,10 +137,10 @@ Expected: `BUILD SUCCEEDED`.
 ## Task 3: Add Ephemeral CEF Contexts for Incognito Windows
 
 **Files:**
-- Modify: `Landmarks/Landmarks/CEF/TungstenBrowserController.h`
-- Modify: `Landmarks/Landmarks/CEF/TungstenCEFBridge.mm`
-- Modify: `Landmarks/Landmarks/Browser/BrowserModel.swift`
-- Modify: `Landmarks/Landmarks/Browser/BrowserSplitView.swift`
+- Modify: `Tungsten/Tungsten/CEF/TungstenBrowserController.h`
+- Modify: `Tungsten/Tungsten/CEF/TungstenCEFBridge.mm`
+- Modify: `Tungsten/Tungsten/Browser/BrowserModel.swift`
+- Modify: `Tungsten/Tungsten/Browser/BrowserSplitView.swift`
 
 - [ ] **Step 1: Extend the Objective-C facade**
 
@@ -176,7 +176,7 @@ In the sidebar controls, show a compact "Private" label or shield icon only for 
 Run:
 
 ```bash
-xcodebuild -project Landmarks/Landmarks.xcodeproj -scheme Landmarks -destination 'platform=macOS' -derivedDataPath /tmp/TungstenDerivedDataComingSoonIncognito build
+xcodebuild -project Tungsten/Tungsten.xcodeproj -scheme Tungsten -destination 'platform=macOS' -derivedDataPath /tmp/TungstenDerivedDataComingSoonIncognito build
 ```
 
 Expected: `BUILD SUCCEEDED`.
@@ -185,8 +185,8 @@ Expected: `BUILD SUCCEEDED`.
 
 **Files:**
 - Add: `Tests/BrowserTabStateTests.sh`
-- Modify: `Landmarks/Landmarks/Browser/BrowserModel.swift`
-- Modify: `Landmarks/Landmarks/Browser/BrowserSplitView.swift`
+- Modify: `Tungsten/Tungsten/Browser/BrowserModel.swift`
+- Modify: `Tungsten/Tungsten/Browser/BrowserSplitView.swift`
 
 - [ ] **Step 1: Write failing tab-state checks**
 
@@ -246,7 +246,7 @@ Run:
 
 ```bash
 ./Tests/BrowserTabStateTests.sh
-xcodebuild -project Landmarks/Landmarks.xcodeproj -scheme Landmarks -destination 'platform=macOS' -derivedDataPath /tmp/TungstenDerivedDataComingSoonPinned build
+xcodebuild -project Tungsten/Tungsten.xcodeproj -scheme Tungsten -destination 'platform=macOS' -derivedDataPath /tmp/TungstenDerivedDataComingSoonPinned build
 ```
 
 Expected: shell checks pass and Xcode reports `BUILD SUCCEEDED`.
@@ -254,8 +254,8 @@ Expected: shell checks pass and Xcode reports `BUILD SUCCEEDED`.
 ## Task 5: Implement Re-open Last Closed Tab
 
 **Files:**
-- Add: `Landmarks/Landmarks/Browser/ClosedTab.swift`
-- Modify: `Landmarks/Landmarks/Browser/BrowserModel.swift`
+- Add: `Tungsten/Tungsten/Browser/ClosedTab.swift`
+- Modify: `Tungsten/Tungsten/Browser/BrowserModel.swift`
 - Modify: `Tests/BrowserTabStateTests.sh`
 
 - [ ] **Step 1: Extend failing tab-state checks**
@@ -302,7 +302,7 @@ Run:
 
 ```bash
 ./Tests/BrowserTabStateTests.sh
-xcodebuild -project Landmarks/Landmarks.xcodeproj -scheme Landmarks -destination 'platform=macOS' -derivedDataPath /tmp/TungstenDerivedDataComingSoonReopen build
+xcodebuild -project Tungsten/Tungsten.xcodeproj -scheme Tungsten -destination 'platform=macOS' -derivedDataPath /tmp/TungstenDerivedDataComingSoonReopen build
 ```
 
 Expected: shell checks pass and Xcode reports `BUILD SUCCEEDED`.
@@ -310,13 +310,13 @@ Expected: shell checks pass and Xcode reports `BUILD SUCCEEDED`.
 ## Task 6: Implement History Capture, Persistence, and View
 
 **Files:**
-- Add: `Landmarks/Landmarks/Browser/HistoryEntry.swift`
-- Add: `Landmarks/Landmarks/Browser/HistoryStore.swift`
-- Add: `Landmarks/Landmarks/Browser/HistoryView.swift`
+- Add: `Tungsten/Tungsten/Browser/HistoryEntry.swift`
+- Add: `Tungsten/Tungsten/Browser/HistoryStore.swift`
+- Add: `Tungsten/Tungsten/Browser/HistoryView.swift`
 - Add: `Tests/HistoryStoreTests.swift`
-- Modify: `Landmarks/Landmarks/Browser/BrowserModel.swift`
-- Modify: `Landmarks/Landmarks/Browser/BrowserSplitView.swift`
-- Modify: `Landmarks/Landmarks/LandmarksApp.swift`
+- Modify: `Tungsten/Tungsten/Browser/BrowserModel.swift`
+- Modify: `Tungsten/Tungsten/Browser/BrowserSplitView.swift`
+- Modify: `Tungsten/Tungsten/TungstenApp.swift`
 
 - [ ] **Step 1: Write failing history-store tests**
 
@@ -331,7 +331,7 @@ Create `Tests/HistoryStoreTests.swift` with expectations that:
 Run:
 
 ```bash
-swiftc Landmarks/Landmarks/Browser/HistoryEntry.swift Landmarks/Landmarks/Browser/HistoryStore.swift Tests/HistoryStoreTests.swift -o /tmp/TungstenHistoryStoreTests && /tmp/TungstenHistoryStoreTests
+swiftc Tungsten/Tungsten/Browser/HistoryEntry.swift Tungsten/Tungsten/Browser/HistoryStore.swift Tests/HistoryStoreTests.swift -o /tmp/TungstenHistoryStoreTests && /tmp/TungstenHistoryStoreTests
 ```
 
 Expected: FAIL before implementation because the files do not exist.
@@ -386,8 +386,8 @@ Show the view as a sheet from `BrowserSplitView` when `browserModel.isHistoryVis
 Run:
 
 ```bash
-swiftc Landmarks/Landmarks/Browser/HistoryEntry.swift Landmarks/Landmarks/Browser/HistoryStore.swift Tests/HistoryStoreTests.swift -o /tmp/TungstenHistoryStoreTests && /tmp/TungstenHistoryStoreTests
-xcodebuild -project Landmarks/Landmarks.xcodeproj -scheme Landmarks -destination 'platform=macOS' -derivedDataPath /tmp/TungstenDerivedDataComingSoonHistory build
+swiftc Tungsten/Tungsten/Browser/HistoryEntry.swift Tungsten/Tungsten/Browser/HistoryStore.swift Tests/HistoryStoreTests.swift -o /tmp/TungstenHistoryStoreTests && /tmp/TungstenHistoryStoreTests
+xcodebuild -project Tungsten/Tungsten.xcodeproj -scheme Tungsten -destination 'platform=macOS' -derivedDataPath /tmp/TungstenDerivedDataComingSoonHistory build
 ```
 
 Expected: `HistoryStoreTests passed` and `BUILD SUCCEEDED`.
@@ -395,8 +395,8 @@ Expected: `HistoryStoreTests passed` and `BUILD SUCCEEDED`.
 ## Task 7: Promote and Dispatch the Six Actions
 
 **Files:**
-- Modify: `Landmarks/Landmarks/Shortcuts/Core/ShortcutAction.swift`
-- Modify: `Landmarks/Landmarks/Shortcuts/ShortcutDispatcher.swift`
+- Modify: `Tungsten/Tungsten/Shortcuts/Core/ShortcutAction.swift`
+- Modify: `Tungsten/Tungsten/Shortcuts/ShortcutDispatcher.swift`
 - Modify: `Tests/ShortcutLogicTests.swift`
 
 - [ ] **Step 1: Mark catalog entries available**
@@ -428,7 +428,7 @@ Keep `guard action.isAvailable` at the top.
 Run:
 
 ```bash
-swiftc Landmarks/Landmarks/Shortcuts/Core/*.swift Tests/ShortcutLogicTests.swift -o /tmp/TungstenShortcutLogicTests && /tmp/TungstenShortcutLogicTests
+swiftc Tungsten/Tungsten/Shortcuts/Core/*.swift Tests/ShortcutLogicTests.swift -o /tmp/TungstenShortcutLogicTests && /tmp/TungstenShortcutLogicTests
 ```
 
 Expected: `ShortcutLogicTests passed`.
@@ -443,11 +443,11 @@ Expected: `ShortcutLogicTests passed`.
 Run:
 
 ```bash
-swiftc Landmarks/Landmarks/Shortcuts/Core/*.swift Tests/ShortcutLogicTests.swift -o /tmp/TungstenShortcutLogicTests && /tmp/TungstenShortcutLogicTests
-swiftc Landmarks/Landmarks/Browser/HistoryEntry.swift Landmarks/Landmarks/Browser/HistoryStore.swift Tests/HistoryStoreTests.swift -o /tmp/TungstenHistoryStoreTests && /tmp/TungstenHistoryStoreTests
+swiftc Tungsten/Tungsten/Shortcuts/Core/*.swift Tests/ShortcutLogicTests.swift -o /tmp/TungstenShortcutLogicTests && /tmp/TungstenShortcutLogicTests
+swiftc Tungsten/Tungsten/Browser/HistoryEntry.swift Tungsten/Tungsten/Browser/HistoryStore.swift Tests/HistoryStoreTests.swift -o /tmp/TungstenHistoryStoreTests && /tmp/TungstenHistoryStoreTests
 ./Tests/BrowserTabStateTests.sh
 ./Tests/CEFBrowserLifecycleTests.sh
-xcodebuild -project Landmarks/Landmarks.xcodeproj -scheme Landmarks -destination 'platform=macOS' -derivedDataPath /tmp/TungstenDerivedDataComingSoonFinal build
+xcodebuild -project Tungsten/Tungsten.xcodeproj -scheme Tungsten -destination 'platform=macOS' -derivedDataPath /tmp/TungstenDerivedDataComingSoonFinal build
 ```
 
 Expected:

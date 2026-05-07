@@ -16,8 +16,8 @@
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "D82EA0F42D5692FD00493877"
                BuildableName = "Tungsten.app"
-               BlueprintName = "Landmarks"
-               ReferencedContainer = "container:Landmarks.xcodeproj">
+               BlueprintName = "Tungsten"
+               ReferencedContainer = "container:Tungsten.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -46,8 +46,8 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "D82EA0F42D5692FD00493877"
             BuildableName = "Tungsten.app"
-            BlueprintName = "Landmarks"
-            ReferencedContainer = "container:Landmarks.xcodeproj">
+            BlueprintName = "Tungsten"
+            ReferencedContainer = "container:Tungsten.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <LocationScenarioReference
@@ -67,8 +67,8 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "D82EA0F42D5692FD00493877"
             BuildableName = "Tungsten.app"
-            BlueprintName = "Landmarks"
-            ReferencedContainer = "container:Landmarks.xcodeproj">
+            BlueprintName = "Tungsten"
+            ReferencedContainer = "container:Tungsten.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

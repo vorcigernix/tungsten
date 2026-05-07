@@ -12,6 +12,12 @@ import SwiftUI
 
 struct BrowserSplitView: View {
     @Environment(BrowserModel.self) private var browserModel
+    @Environment(AppPreferences.self) private var appPreferences
+    // The transparent window + window-level visual-effect material force the
+    // whole window into alpha-blended compositing before CEF can present its
+    // first frame, which made cold launch feel laggy. Hold those off for a
+    // short beat so the opaque content paints first, then enable the frosting.
+    @State private var compositingEnabled = false
 
     var body: some View {
         @Bindable var browserModel = browserModel
@@ -55,8 +61,31 @@ struct BrowserSplitView: View {
         // behind the window to blur, so WindowTransparencyEnabler keeps the
         // host NSWindow non-opaque — otherwise the material would just blur
         // the window's own backing color and look flat.
-        .containerBackground(.regularMaterial, for: .window)
-        .background(WindowTransparencyEnabler())
+        //
+        // When the user disables transparency we paint a solid warm color
+        // behind everything and skip the window-transparency dance entirely.
+        .containerBackground(windowContainerStyle, for: .window)
+        .background(WindowTransparencyEnabler(enabled: appPreferences.transparencyEnabled && compositingEnabled))
+        .task {
+            try? await Task.sleep(nanoseconds: 350_000_000)
+            compositingEnabled = true
+        }
+        .sheet(isPresented: $browserModel.isHistoryVisible) {
+            HistoryView(historyStore: browserModel.historyStore) { entry in
+                browserModel.openHistoryEntry(entry)
+            }
+            .frame(minWidth: 640, minHeight: 520)
+        }
+    }
+
+    private var windowContainerStyle: AnyShapeStyle {
+        guard appPreferences.transparencyEnabled else {
+            return AnyShapeStyle(Color(nsColor: AppPreferences.opaqueWindowBackgroundColor))
+        }
+
+        return compositingEnabled
+            ? AnyShapeStyle(.regularMaterial)
+            : AnyShapeStyle(.windowBackground)
     }
 }
 
@@ -65,15 +94,51 @@ struct BrowserSplitView: View {
 /// stays opaque (it draws the page), so only areas SwiftUI leaves clear become
 /// transparent — i.e. the strip around the sidebar's rounded glass panel.
 private struct WindowTransparencyEnabler: NSViewRepresentable {
+    let enabled: Bool
+
+    final class Coordinator {
+        weak var window: NSWindow?
+        var transparent = false
+        var animationsDisabled = false
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
     func makeNSView(context: Context) -> NSView {
         NSView()
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
+        let coordinator = context.coordinator
+        let shouldBeTransparent = enabled
         DispatchQueue.main.async {
             guard let window = nsView.window else { return }
-            window.isOpaque = false
-            window.backgroundColor = .clear
+            coordinator.window = window
+
+            // Disable AppKit's window transform animations (close / zoom /
+            // miniaturize / order). On macOS 26 + non-opaque windows + CEF,
+            // those animations have torn-down captured references and crash
+            // inside `-[_NSWindowTransformAnimation dealloc]` during
+            // `CA::Transaction::commit`. Skipping the animations sidesteps
+            // the entire class of bug; new browser windows just appear, which
+            // matches what most browsers do anyway.
+            if coordinator.animationsDisabled == false {
+                coordinator.animationsDisabled = true
+                window.animationBehavior = .none
+            }
+
+            guard coordinator.transparent != shouldBeTransparent else { return }
+            coordinator.transparent = shouldBeTransparent
+
+            if shouldBeTransparent {
+                window.isOpaque = false
+                window.backgroundColor = .clear
+            } else {
+                window.isOpaque = true
+                window.backgroundColor = .windowBackgroundColor
+            }
             window.invalidateShadow()
         }
     }
@@ -89,6 +154,7 @@ private struct BrowserSidebar: View {
             List(selection: $browserModel.selectedTabID) {
                 SidebarControls(
                     tab: browserModel.selectedTab,
+                    isIncognito: browserModel.kind.isIncognito,
                     addTab: { browserModel.addTab() }
                 )
                 .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
@@ -97,6 +163,13 @@ private struct BrowserSidebar: View {
                     BrowserTabRow(tab: tab)
                         .tag(tab.id)
                         .contextMenu {
+                            Button(tab.isPinned ? "Unpin Tab" : "Pin Tab", systemImage: tab.isPinned ? "pin.slash" : "pin") {
+                                browserModel.togglePin(tab)
+                            }
+                            Button("Clear Unpinned Tabs", systemImage: "xmark.circle") {
+                                browserModel.clearUnpinnedTabs()
+                            }
+                            Divider()
                             Button("Close Tab", systemImage: "xmark") {
                                 browserModel.close(tab)
                             }
@@ -118,6 +191,7 @@ private struct BrowserSidebar: View {
 
 private struct SidebarControls: View {
     let tab: BrowserTab?
+    let isIncognito: Bool
     let addTab: () -> Void
 
     var body: some View {
@@ -149,6 +223,14 @@ private struct SidebarControls: View {
 
             Spacer(minLength: 8)
 
+            if isIncognito {
+                Label("Private", systemImage: "shield")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .labelStyle(.iconOnly)
+                    .help("Private Window")
+            }
+
             Button("New Tab", systemImage: "plus") {
                 addTab()
             }
@@ -165,8 +247,16 @@ private struct BrowserTabRow: View {
 
     var body: some View {
         Label {
-            Text(tab.displayTitle)
-                .lineLimit(1)
+            HStack(spacing: 6) {
+                Text(tab.displayTitle)
+                    .lineLimit(1)
+
+                if tab.isPinned {
+                    Image(systemName: "pin.fill")
+                        .imageScale(.small)
+                        .foregroundStyle(.secondary)
+                }
+            }
         } icon: {
             if tab.isLoading {
                 Image(systemName: "arrow.triangle.2.circlepath")
