@@ -1,0 +1,35 @@
+{
+  "cli_version": "0.6.1",
+  "checkpoint_id": "e984c5f9a1cf",
+  "strategy": "manual-commit",
+  "branch": "codex/arc-shortcuts-settings",
+  "checkpoints_count": 0,
+  "files_touched": [
+    ".deepsec/data/Tungsten/INFO.md",
+    "README.md",
+    "Tests/BrowserModelClosePolicyTests.sh",
+    "Tests/BrowserTabStateTests.sh",
+    "Tests/CEFBrowserLifecycleTests.sh",
+    "Tests/CEFTeardownTests.sh",
+    "Tungsten/Tungsten.xcodeproj/project.pbxproj",
+    "Tungsten/Tungsten.xcodeproj/xcshareddata/xcschemes/Tungsten.xcscheme",
+    "Tungsten/Tungsten/Tungsten.entitlements",
+    "scripts/build-debug.sh",
+    "scripts/build-release.sh"
+  ],
+  "sessions": [
+    {
+      "metadata": "/e9/84c5f9a1cf/0/metadata.json",
+      "transcript": "/e9/84c5f9a1cf/0/full.jsonl",
+      "content_hash": "/e9/84c5f9a1cf/0/content_hash.txt",
+      "prompt": "/e9/84c5f9a1cf/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 97,
+    "cache_creation_tokens": 359002,
+    "cache_read_tokens": 5507677,
+    "output_tokens": 43086,
+    "api_call_count": 68
+  }
+}
