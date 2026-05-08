@@ -57,15 +57,6 @@ final class BrowserModel {
         livePageHost.activePageSession
     }
 
-    var selectedTab: BrowserPageSession? {
-        activePageSession
-    }
-
-    var selectedTabID: BrowserPageSession.ID? {
-        get { activePageSession?.id }
-        set { _ = newValue }
-    }
-
     var isSelectedThreadGeneratingResponse: Bool {
         guard isGeneratingResponse, let selectedThreadID else {
             return false
@@ -289,42 +280,6 @@ final class BrowserModel {
         threads[index].activatePageTurn(pageTurnID)
         activateSelectedThreadPage()
         persistThreads()
-    }
-
-    func addTab(navigateTo urlString: String? = nil) {
-        createThread(navigateTo: urlString ?? defaultNewTabURL)
-    }
-
-    func closeSelectedTab() {
-        closeSelectedThread()
-    }
-
-    func toggleSelectedTabPin() {
-        toggleSelectedThreadPin()
-    }
-
-    func clearUnpinnedTabs() {
-        clearUnpinnedThreads()
-    }
-
-    func reopenLastClosedTab() {
-        reopenLastClosedThread()
-    }
-
-    func selectTab(atZeroBasedIndex index: Int) {
-        selectThread(atZeroBasedIndex: index)
-    }
-
-    func selectPreviousTab() {
-        selectPreviousThread()
-    }
-
-    func selectNextTab() {
-        selectNextThread()
-    }
-
-    func selectRecentTab() {
-        selectRecentThread()
     }
 
     func showHistory() {

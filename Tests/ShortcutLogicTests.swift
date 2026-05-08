@@ -5,6 +5,7 @@ import Foundation
 struct ShortcutLogicTests {
     static func main() throws {
         try testCatalogIncludesAvailableAndComingSoonActions()
+        try testThreadFirstActionLabels()
         try testCEFBackedActionsAreAvailable()
         try testRemainingBrowserActionsAreAvailable()
         try testOverridesReplaceDefaultsAndResetRestoresDefaults()
@@ -23,6 +24,18 @@ struct ShortcutLogicTests {
         try expect(actions.contains { $0.title == "Open Little Arc" } == false)
         try expect(actions.contains { $0.title.contains("Space") } == false)
         try expect(actions.contains { $0.title.contains("Split View") } == false)
+    }
+
+    static func testThreadFirstActionLabels() throws {
+        try expect(ShortcutCatalog.action(id: .newTab)?.title == "New Thread")
+        try expect(ShortcutCatalog.action(id: .closeCurrentTab)?.title == "Close Current Thread")
+        try expect(ShortcutCatalog.action(id: .reopenLastClosedTab)?.title == "Re-open Last Closed Thread")
+        try expect(ShortcutCatalog.action(id: .pinOrUnpinCurrentTab)?.title == "Pin or Unpin Current Thread")
+        try expect(ShortcutCatalog.action(id: .focusAddressInput)?.title == "Ask or Open URL")
+        try expect(ShortcutCatalog.action(id: .clearUnpinnedTabs)?.title == "Clear Unpinned Threads")
+        try expect(ShortcutCatalog.action(id: .selectTab1)?.title == "Go to Thread 1")
+        try expect(ShortcutCatalog.action(id: .selectPreviousTab)?.title == "Previous Thread")
+        try expect(ShortcutCatalog.action(id: .selectNextTab)?.title == "Next Thread")
     }
 
     static func testCEFBackedActionsAreAvailable() throws {

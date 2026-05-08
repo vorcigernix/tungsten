@@ -11,17 +11,17 @@ enum ShortcutDispatcher {
 
         switch action.id {
         case .newTab:
-            browserModel.addTab()
+            browserModel.createThread()
         case .newWindow:
             context.openNormalWindow()
         case .newIncognitoWindow:
             context.openIncognitoWindow()
         case .closeCurrentTab:
-            browserModel.closeSelectedTab()
+            browserModel.closeSelectedThread()
         case .reopenLastClosedTab:
-            browserModel.reopenLastClosedTab()
+            browserModel.reopenLastClosedThread()
         case .pinOrUnpinCurrentTab:
-            browserModel.toggleSelectedTabPin()
+            browserModel.toggleSelectedThreadPin()
         case .copyCurrentURL:
             browserModel.copySelectedTabURL()
         case .copyCurrentURLAsMarkdown:
@@ -31,40 +31,40 @@ enum ShortcutDispatcher {
         case .toggleSidebar:
             browserModel.toggleSidebar()
         case .clearUnpinnedTabs:
-            browserModel.clearUnpinnedTabs()
+            browserModel.clearUnpinnedThreads()
         case .selectTab1:
-            browserModel.selectTab(atZeroBasedIndex: 0)
+            browserModel.selectThread(atZeroBasedIndex: 0)
         case .selectTab2:
-            browserModel.selectTab(atZeroBasedIndex: 1)
+            browserModel.selectThread(atZeroBasedIndex: 1)
         case .selectTab3:
-            browserModel.selectTab(atZeroBasedIndex: 2)
+            browserModel.selectThread(atZeroBasedIndex: 2)
         case .selectTab4:
-            browserModel.selectTab(atZeroBasedIndex: 3)
+            browserModel.selectThread(atZeroBasedIndex: 3)
         case .selectTab5:
-            browserModel.selectTab(atZeroBasedIndex: 4)
+            browserModel.selectThread(atZeroBasedIndex: 4)
         case .selectTab6:
-            browserModel.selectTab(atZeroBasedIndex: 5)
+            browserModel.selectThread(atZeroBasedIndex: 5)
         case .selectTab7:
-            browserModel.selectTab(atZeroBasedIndex: 6)
+            browserModel.selectThread(atZeroBasedIndex: 6)
         case .selectTab8:
-            browserModel.selectTab(atZeroBasedIndex: 7)
+            browserModel.selectThread(atZeroBasedIndex: 7)
         case .selectTab9:
-            browserModel.selectTab(atZeroBasedIndex: 8)
+            browserModel.selectThread(atZeroBasedIndex: 8)
         case .selectRecentTab:
-            browserModel.selectRecentTab()
+            browserModel.selectRecentThread()
         case .selectPreviousTab:
-            browserModel.selectPreviousTab()
+            browserModel.selectPreviousThread()
         case .selectNextTab:
-            browserModel.selectNextTab()
+            browserModel.selectNextThread()
         case .goBack:
-            browserModel.selectedTab?.goBack()
+            browserModel.activePageSession?.goBack()
         case .goForward:
-            browserModel.selectedTab?.goForward()
+            browserModel.activePageSession?.goForward()
         case .reloadOrStopLoading:
-            if browserModel.selectedTab?.isLoading == true {
-                browserModel.selectedTab?.stopLoading()
+            if browserModel.activePageSession?.isLoading == true {
+                browserModel.activePageSession?.stopLoading()
             } else {
-                browserModel.selectedTab?.reload()
+                browserModel.activePageSession?.reload()
             }
         case .viewHistory:
             browserModel.showHistory()

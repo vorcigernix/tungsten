@@ -67,32 +67,32 @@ enum ShortcutCatalog {
     }
 
     private static let everydayActions: [ShortcutAction] = [
-        available(.newTab, "New Tab", .everyday, [.cmd("t")]),
+        available(.newTab, "New Thread", .everyday, [.cmd("t")]),
         available(.newWindow, "New Window", .everyday, [.cmd("n")]),
         available(.newIncognitoWindow, "New Incognito Window", .everyday, [.cmdShift("n")]),
-        available(.closeCurrentTab, "Close Current Tab", .everyday, [.cmd("w")]),
-        available(.reopenLastClosedTab, "Re-open Last Closed Tab", .everyday, [.cmdShift("t")]),
-        available(.pinOrUnpinCurrentTab, "Pin or Unpin Current Tab", .everyday, [.cmd("d")]),
+        available(.closeCurrentTab, "Close Current Thread", .everyday, [.cmd("w")]),
+        available(.reopenLastClosedTab, "Re-open Last Closed Thread", .everyday, [.cmdShift("t")]),
+        available(.pinOrUnpinCurrentTab, "Pin or Unpin Current Thread", .everyday, [.cmd("d")]),
         available(.copyCurrentURL, "Copy Current URL", .everyday, [.cmdShift("c")]),
         available(.copyCurrentURLAsMarkdown, "Copy Current URL as Markdown", .everyday, [.cmdOptionShift("c")]),
-        available(.focusAddressInput, "Change Current Tab URL", .everyday, [.cmd("l")]),
+        available(.focusAddressInput, "Ask or Open URL", .everyday, [.cmd("l")]),
         available(.toggleSidebar, "Show or Hide Sidebar", .everyday, [.cmd("s")]),
-        available(.clearUnpinnedTabs, "Clear Unpinned Tabs", .everyday, [.cmdShift("k")])
+        available(.clearUnpinnedTabs, "Clear Unpinned Threads", .everyday, [.cmdShift("k")])
     ]
 
     private static let quickNavigationActions: [ShortcutAction] = [
-        available(.selectTab1, "Go to Tab 1", .quickNavigation, [.cmd("1")]),
-        available(.selectTab2, "Go to Tab 2", .quickNavigation, [.cmd("2")]),
-        available(.selectTab3, "Go to Tab 3", .quickNavigation, [.cmd("3")]),
-        available(.selectTab4, "Go to Tab 4", .quickNavigation, [.cmd("4")]),
-        available(.selectTab5, "Go to Tab 5", .quickNavigation, [.cmd("5")]),
-        available(.selectTab6, "Go to Tab 6", .quickNavigation, [.cmd("6")]),
-        available(.selectTab7, "Go to Tab 7", .quickNavigation, [.cmd("7")]),
-        available(.selectTab8, "Go to Tab 8", .quickNavigation, [.cmd("8")]),
-        available(.selectTab9, "Go to Tab 9", .quickNavigation, [.cmd("9")]),
-        available(.selectRecentTab, "Toggle Recent Tabs", .quickNavigation, [.control(ShortcutBinding.tabKey)]),
-        available(.selectPreviousTab, "Previous Tab", .quickNavigation, [.cmdOption(ShortcutBinding.upArrowKey)]),
-        available(.selectNextTab, "Next Tab", .quickNavigation, [.cmdOption(ShortcutBinding.downArrowKey)]),
+        available(.selectTab1, "Go to Thread 1", .quickNavigation, [.cmd("1")]),
+        available(.selectTab2, "Go to Thread 2", .quickNavigation, [.cmd("2")]),
+        available(.selectTab3, "Go to Thread 3", .quickNavigation, [.cmd("3")]),
+        available(.selectTab4, "Go to Thread 4", .quickNavigation, [.cmd("4")]),
+        available(.selectTab5, "Go to Thread 5", .quickNavigation, [.cmd("5")]),
+        available(.selectTab6, "Go to Thread 6", .quickNavigation, [.cmd("6")]),
+        available(.selectTab7, "Go to Thread 7", .quickNavigation, [.cmd("7")]),
+        available(.selectTab8, "Go to Thread 8", .quickNavigation, [.cmd("8")]),
+        available(.selectTab9, "Go to Thread 9", .quickNavigation, [.cmd("9")]),
+        available(.selectRecentTab, "Toggle Recent Threads", .quickNavigation, [.control(ShortcutBinding.tabKey)]),
+        available(.selectPreviousTab, "Previous Thread", .quickNavigation, [.cmdOption(ShortcutBinding.upArrowKey)]),
+        available(.selectNextTab, "Next Thread", .quickNavigation, [.cmdOption(ShortcutBinding.downArrowKey)]),
         available(.goBack, "Go Back", .quickNavigation, [.cmd(ShortcutBinding.leftArrowKey), .cmd("[")]),
         available(.goForward, "Go Forward", .quickNavigation, [.cmd(ShortcutBinding.rightArrowKey), .cmd("]")]),
         available(.reloadOrStopLoading, "Reload or Stop Loading", .quickNavigation, [.cmd("r")])
