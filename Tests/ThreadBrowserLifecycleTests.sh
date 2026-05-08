@@ -45,6 +45,44 @@ require_pattern "$host_file" "originalOnClose\\?\\(\\)" "LivePageSessionHost pre
 require_pattern "$host_file" "closingPageSession = nil" "LivePageSessionHost releases pending window-close session"
 
 if ! awk '
+    /controller\.browserDidCloseHandler =/ { in_handler = 1 }
+    in_handler && /self\?\.onBrowserClose\?\(\)/ { saw_forward = 1 }
+    in_handler && /return controller/ {
+        if (saw_forward) {
+            exit 0
+        }
+        exit 1
+    }
+    END {
+        if (!saw_forward) {
+            exit 1
+        }
+    }
+' "$session_file"; then
+    echo "BrowserPageSession.browserDidCloseHandler must forward to onBrowserClose?()" >&2
+    exit 1
+fi
+
+if ! awk '
+    /func updateFavicon\(from urls: \[String\]\)/ { in_update_favicon = 1 }
+    in_update_favicon && /onFaviconURLChange\?\(candidate\)/ { saw_forward = 1 }
+    in_update_favicon && /faviconFetchTask = Task/ {
+        if (saw_forward) {
+            exit 0
+        }
+        exit 1
+    }
+    END {
+        if (!saw_forward) {
+            exit 1
+        }
+    }
+' "$session_file"; then
+    echo "BrowserPageSession.updateFavicon must forward accepted favicon candidates to onFaviconURLChange?(candidate)" >&2
+    exit 1
+fi
+
+if ! awk '
     /func activate\(pageTurn: BrowserTurn, isIncognito: Bool, configure: \(BrowserPageSession\) -> Void\)/ { in_activate = 1 }
     in_activate && /closeActivePage\(\)/ { saw_close = 1 }
     in_activate && /let session = BrowserPageSession/ {
