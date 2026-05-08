@@ -1,0 +1,107 @@
+git commit -a -m "release 0.1"
+
+---
+
+now how do I distribute the first version to my friends?
+
+---
+
+great, we have solid first version. now the cef is universal, we toggled some hw acceleration on, but since we are compatible from M1 up on macos, we can perhaps fine tune the performance even more. are there any opportunities?
+
+---
+
+tier 1 and points 4 and 5 are very solid first step, please make al of those and add a chrome://gpu smoke test. /Users/vorcigernix/Downloads/about-gpu-2026-05-07T18-03-22-554Z.txt is current report
+
+---
+
+our performance optimization messed with color reproduction, some pages now look lighter then they should (probably all of them) [Image #2] attaching sample
+
+---
+
+hope you see both images
+
+---
+
+okay, so first of all, this is not external display, this is same internal display on my macbook. one is chrome, one is tungsten. the problem was not there before we before we "stopped srgb recalculation" or what was that. [Image #3] [Image #4]
+
+---
+
+still lighter, do you want me to sample the picture again?
+
+---
+
+correct values: 237 106 52 (chrome) our values 255 136 82. it is better now than before, but still not same
+
+---
+
+same as before. out of curiosity, what's difference between graphite and ganesh?
+
+---
+
+oh, please return graphite and in case you are going to use legacy technology ack with be in advance
+
+---
+
+255 136 82
+
+---
+
+255 136 82
+
+---
+
+oh, I found the issue, the problem in not the initial render, colors look okay. but in a moment window loose focus the colors turn bland
+
+---
+
+sounds like a good theory, let's try to fix it
+
+---
+
+no, same behaviour
+
+---
+
+Built: /tmp/TungstenDerivedData/Build/Products/Release/Tungsten.app
+vorcigernix@Adams-MacBook-Air Tungsten % open -n /tmp/TungstenDerivedData/Build/Products/Release/Tungsten.app
+vorcigernix@Adams-MacBook-Air Tungsten % /tmp/TungstenDerivedData/Build/Products/Release/Tungsten.app/Contents/MacOS/Tungsten 2>&1 | grep "Tungsten color"
+2026-05-08 13:49:54.156 Tungsten[93310:95447293] [Tungsten color] before NSWindowDidBecomeMainNotification key=0 main=1 cs=Display P3 depth=520 canP3=1 canSRGB=1
+2026-05-08 13:49:54.156 Tungsten[93310:95447293] [Tungsten color] after  cs=Display P3
+2026-05-08 13:49:54.156 Tungsten[93310:95447293] [Tungsten color] before NSWindowDidBecomeKeyNotification key=1 main=1 cs=Display P3 depth=520 canP3=1 canSRGB=1
+2026-05-08 13:49:54.156 Tungsten[93310:95447293] [Tungsten color] after  cs=Display P3
+2026-05-08 13:50:05.750 Tungsten[93310:95447293] [Tungsten color] before NSWindowDidResignKeyNotification key=0 main=0 cs=Display P3 depth=520 canP3=1 canSRGB=1
+2026-05-08 13:50:05.750 Tungsten[93310:95447293] [Tungsten color] after  cs=Display P3
+2026-05-08 13:50:05.750 Tungsten[93310:95447293] [Tungsten color] before NSWindowDidResignMainNotification key=0 main=0 cs=Display P3 depth=520 canP3=1 canSRGB=1
+2026-05-08 13:50:05.750 Tungsten[93310:95447293] [Tungsten color] after  cs=Display P3
+2026-05-08 13:50:09.012 Tungsten[93310:95447293] [Tungsten color] before NSWindowDidBecomeMainNotification key=0 main=1 cs=Display P3 depth=520 canP3=1 canSRGB=1
+2026-05-08 13:50:09.012 Tungsten[93310:95447293] [Tungsten color] after  cs=Display P3
+2026-05-08 13:50:09.012 Tungsten[93310:95447293] [Tungsten color] before NSWindowDidBecomeKeyNotification key=1 main=1 cs=Display P3 depth=520 canP3=1 canSRGB=1
+2026-05-08 13:50:09.012 Tungsten[93310:95447293] [Tungsten color] after  cs=Display P3
+2026-05-08 13:50:10.333 Tungsten[93310:95447293] [Tungsten color] before NSWindowDidResignKeyNotification key=0 main=0 cs=Display P3 depth=520 canP3=1 canSRGB=1
+2026-05-08 13:50:10.333 Tungsten[93310:95447293] [Tungsten color] after  cs=Display P3
+2026-05-08 13:50:10.333 Tungsten[93310:95447293] [Tungsten color] before NSWindowDidResignMainNotification key=0 main=0 cs=Display P3 depth=520 canP3=1 canSRGB=1
+2026-05-08 13:50:10.333 Tungsten[93310:95447293] [Tungsten color] after  cs=Display P3
+2026-05-08 13:50:15.142 Tungsten[93310:95447293] [Tungsten color] before NSWindowDidBecomeMainNotification key=0 main=1 cs=Display P3 depth=520 canP3=1 canSRGB=1
+2026-05-08 13:50:15.142 Tungsten[93310:95447293] [Tungsten color] after  cs=Display P3
+2026-05-08 13:50:15.142 Tungsten[93310:95447293] [Tungsten color] before NSWindowDidBecomeKeyNotification key=1 main=1 cs=Display P3 depth=520 canP3=1 canSRGB=1
+2026-05-08 13:50:15.142 Tungsten[93310:95447293] [Tungsten color] after  cs=Display P3
+2026-05-08 13:50:17.016 Tungsten[93310:95447293] [Tungsten color] before NSWindowDidResignKeyNotification key=0 main=0 cs=Display P3 depth=520 canP3=1 canSRGB=1
+2026-05-08 13:50:17.016 Tungsten[93310:95447293] [Tungsten color] after  cs=Display P3
+2026-05-08 13:50:17.016 Tungsten[93310:95447293] [Tungsten color] before NSWindowDidResignMainNotification key=0 main=0 cs=Display P3 depth=520 canP3=1 canSRGB=1
+2026-05-08 13:50:17.016 Tungsten[93310:95447293] [Tungsten color] after  cs=Display P3
+2026-05-08 13:50:18.638 Tungsten[93310:95447293] [Tungsten color] before NSWindowDidBecomeMainNotification key=0 main=1 cs=Display P3 depth=520 canP3=1 canSRGB=1
+2026-05-08 13:50:18.638 Tungsten[93310:95447293] [Tungsten color] after  cs=Display P3
+2026-05-08 13:50:18.639 Tungsten[93310:95447293] [Tungsten color] before NSWindowDidBecomeKeyNotification key=1 main=1 cs=Display P3 depth=520 canP3=1 canSRGB=1
+2026-05-08 13:50:18.639 Tungsten[93310:95447293] [Tungsten color] after  cs=Display P3
+2026-05-08 13:50:20.989 Tungsten[93310:95447293] [Tungsten color] before NSWindowDidResignKeyNotification key=0 main=1 cs=Display P3 depth=520 canP3=1 canSRGB=1
+2026-05-08 13:50:20.989 Tungsten[93310:95447293] [Tungsten color] after  cs=Display P3
+2026-05-08 13:50:20.990 Tungsten[93310:95447293] [Tungsten color] before NSWindowDidResignMainNotification key=0 main=0 cs=Display P3 depth=520 canP3=1 canSRGB=1
+2026-05-08 13:50:20.990 Tungsten[93310:95447293] [Tungsten color] after  cs=Display P3
+2026-05-08 13:50:31.383 Tungsten[93310:95447293] [Tungsten color] before NSWindowDidResignKeyNotification key=0 main=0 cs=Display P3 depth=520 canP3=1 canSRGB=1
+2026-05-08 13:50:31.383 Tungsten[93310:95447293] [Tungsten color] after  cs=Display P3
+2026-05-08 13:50:31.384 Tungsten[93310:95447293] [Tungsten color] before NSWindowDidResignMainNotification key=0 main=0 cs=Display P3 depth=520 canP3=1 canSRGB=1
+2026-05-08 13:50:31.384 Tungsten[93310:95447293] [Tungsten color] after  cs=Display P3
+
+---
+
+yes, turning transparency off solves the problem

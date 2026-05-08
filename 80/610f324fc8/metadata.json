@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.6.1",
+  "checkpoint_id": "80610f324fc8",
+  "strategy": "manual-commit",
+  "branch": "codex/arc-shortcuts-settings",
+  "checkpoints_count": 17,
+  "files_touched": [
+    ".gitignore",
+    "Tests/ChromeGpuSmokeTest.sh",
+    "Tests/chrome_gpu_smoke.py",
+    "Tungsten/Tungsten/CEF/TungstenCEFBridge.mm",
+    "scripts/package-release.sh"
+  ],
+  "sessions": [
+    {
+      "metadata": "/80/610f324fc8/0/metadata.json",
+      "transcript": "/80/610f324fc8/0/full.jsonl",
+      "content_hash": "/80/610f324fc8/0/content_hash.txt",
+      "prompt": "/80/610f324fc8/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 242,
+    "cache_creation_tokens": 1139848,
+    "cache_read_tokens": 18292347,
+    "output_tokens": 152076,
+    "api_call_count": 133
+  }
+}
