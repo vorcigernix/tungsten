@@ -3,6 +3,7 @@ import Foundation
 @Observable @MainActor
 final class LivePageSessionHost {
     private(set) var activePageSession: BrowserPageSession?
+    @ObservationIgnored private var closingPageSession: BrowserPageSession?
 
     func activate(pageTurn: BrowserTurn, isIncognito: Bool, configure: (BrowserPageSession) -> Void) {
         guard pageTurn.kind == .page, let urlString = pageTurn.urlString else {
@@ -29,7 +30,22 @@ final class LivePageSessionHost {
     }
 
     func closeActivePageForWindowClose() {
-        activePageSession?.closeBrowserForWindowClose()
+        guard let session = activePageSession else {
+            return
+        }
+
         activePageSession = nil
+        closingPageSession = session
+
+        let originalOnClose = session.onBrowserClose
+        session.onBrowserClose = { [weak self, weak session] in
+            originalOnClose?()
+            guard let self, self.closingPageSession === session else {
+                return
+            }
+            self.closingPageSession = nil
+        }
+
+        session.closeBrowserForWindowClose()
     }
 }
