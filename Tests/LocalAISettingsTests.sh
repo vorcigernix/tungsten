@@ -2,6 +2,7 @@
 set -euo pipefail
 
 preferences_file="Tungsten/Tungsten/AppPreferences.swift"
+provider_file="Tungsten/Tungsten/Browser/AI/LocalAIProvider.swift"
 settings_file="Tungsten/Tungsten/Settings/GeneralSettingsView.swift"
 bridge_file="Tungsten/Tungsten/CEF/TungstenCEFBridge.mm"
 cef_app_header="Tungsten/Tungsten/CEF/TungstenCEFApp.h"
@@ -17,11 +18,12 @@ require_pattern() {
     fi
 }
 
-require_pattern "$preferences_file" "enum LocalAIProvider" "LocalAIProvider model"
-require_pattern "$preferences_file" "case google" "Google Local AI option"
-require_pattern "$preferences_file" "case apple" "Apple Local AI option"
-require_pattern "$preferences_file" "case disabled" "Disabled Local AI option"
+require_pattern "$provider_file" "enum LocalAIProvider" "LocalAIProvider model"
+require_pattern "$provider_file" "case google" "Google Local AI option"
+require_pattern "$provider_file" "case apple" "Apple Local AI option"
+require_pattern "$provider_file" "case disabled" "Disabled Local AI option"
 require_pattern "$preferences_file" "TungstenLocalAIProviderDefaultsKey" "Local AI persistence key (shared via bridging header)"
+require_pattern "$preferences_file" "self\\.localAIProvider = \\.apple" "Apple Local AI default"
 require_pattern "$settings_file" "Picker\\(\"Local AI\"" "Local AI settings picker"
 
 require_pattern "$cef_app_header" "FOUNDATION_EXPORT NSString \\*const TungstenLocalAIProviderDefaultsKey" "Local AI defaults key declaration"
