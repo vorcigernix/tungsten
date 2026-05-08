@@ -15,6 +15,10 @@ struct ThreadModelTests {
         try testDisplayTitlePrefersFirstQuestionOtherwiseFirstPageHost()
         try testDisplayTitlesTrimAndFallbackForEmptyValues()
         try testBrowserThreadCodableRoundTrip()
+        try testPersistentStoreCapsThreadsAtThirty()
+        try testPersistentStorePreservesSelectedThreadWhenCapping()
+        try testMemoryOnlyStoreDoesNotWriteDefaults()
+        try testMostRecentWindowSessionIsTracked()
         print("ThreadModelTests passed")
     }
 
@@ -174,6 +178,95 @@ struct ThreadModelTests {
 
         try expect(decoded == thread)
         try expect(decoded.activePageTurnID == pageID)
+    }
+
+    static func testPersistentStoreCapsThreadsAtThirty() throws {
+        let userDefaults = makeIsolatedUserDefaults()
+        let store = BrowserThreadStore(
+            userDefaults: userDefaults,
+            scope: .persistent(windowSessionID: "window-a")
+        )
+        let threads = makeThreads(count: 31)
+        let selectedThreadID = threads[30].id
+
+        store.save(threads: threads, selectedThreadID: selectedThreadID)
+
+        let loaded = store.load()
+        try expect(loaded.threads.count == 30)
+        try expect(loaded.threads.first?.displayTitle == "Question 1")
+        try expect(loaded.threads.last?.displayTitle == "Question 30")
+        try expect(loaded.selectedThreadID == selectedThreadID)
+    }
+
+    static func testPersistentStorePreservesSelectedThreadWhenCapping() throws {
+        let userDefaults = makeIsolatedUserDefaults()
+        let store = BrowserThreadStore(
+            userDefaults: userDefaults,
+            scope: .persistent(windowSessionID: "window-a")
+        )
+        let threads = makeThreads(count: 31)
+        let selectedThreadID = threads[0].id
+
+        store.save(threads: threads, selectedThreadID: selectedThreadID)
+
+        let loaded = store.load()
+        try expect(loaded.threads.count == 30)
+        try expect(loaded.threads.contains { $0.id == selectedThreadID })
+        try expect(loaded.selectedThreadID == selectedThreadID)
+    }
+
+    static func testMemoryOnlyStoreDoesNotWriteDefaults() throws {
+        let userDefaults = makeIsolatedUserDefaults()
+        let store = BrowserThreadStore(userDefaults: userDefaults, scope: .memoryOnly)
+        let threads = makeThreads(count: 1)
+
+        store.save(threads: threads, selectedThreadID: threads[0].id)
+
+        let loaded = store.load()
+        try expect(loaded.threads.isEmpty)
+        try expect(userDefaults.dictionaryRepresentation().keys.contains {
+            $0.contains("Tungsten.BrowserThreads")
+        } == false)
+    }
+
+    static func testMostRecentWindowSessionIsTracked() throws {
+        let userDefaults = makeIsolatedUserDefaults()
+
+        BrowserThreadStore.markWindowSessionActive(
+            "window-old",
+            userDefaults: userDefaults,
+            activeAt: Date(timeIntervalSince1970: 1)
+        )
+        BrowserThreadStore.markWindowSessionActive(
+            "window-new",
+            userDefaults: userDefaults,
+            activeAt: Date(timeIntervalSince1970: 2)
+        )
+
+        try expect(BrowserThreadStore.mostRecentWindowSessionID(userDefaults: userDefaults) == "window-new")
+    }
+
+    static func makeIsolatedUserDefaults() -> UserDefaults {
+        let suiteName = "ThreadModelTests.\(UUID().uuidString)"
+        let userDefaults = UserDefaults(suiteName: suiteName)!
+        userDefaults.removePersistentDomain(forName: suiteName)
+        return userDefaults
+    }
+
+    static func makeThreads(count: Int) -> [BrowserThread] {
+        (0..<count).map { index in
+            var thread = BrowserThread(
+                id: UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", index))!,
+                createdAt: Date(timeIntervalSince1970: TimeInterval(index)),
+                updatedAt: Date(timeIntervalSince1970: TimeInterval(index))
+            )
+            thread.appendQuestion(
+                "Question \(index)",
+                id: UUID(uuidString: String(format: "11111111-1111-1111-1111-%012d", index))!,
+                createdAt: Date(timeIntervalSince1970: TimeInterval(index))
+            )
+            return thread
+        }
     }
 
     static func expect(_ condition: @autoclosure () -> Bool, file: StaticString = #filePath, line: UInt = #line) throws {
