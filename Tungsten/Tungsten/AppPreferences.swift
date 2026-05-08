@@ -1,12 +1,29 @@
 import AppKit
 import Foundation
 
+enum LocalAIProvider: String, CaseIterable, Codable, Identifiable {
+    case google
+    case apple
+    case disabled
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .google:   return "Google Local AI"
+        case .apple:    return "Apple Local AI"
+        case .disabled: return "Disabled"
+        }
+    }
+}
+
 @Observable @MainActor
 final class AppPreferences {
     @ObservationIgnored private let userDefaults: UserDefaults
 
     private static let searchEngineKey = "Tungsten.SearchEngine.v1"
     private static let transparencyEnabledKey = "Tungsten.WindowTransparencyEnabled.v1"
+    private static let localAIProviderKey = "Tungsten.LocalAIProvider.v1"
 
     var searchEngine: SearchEngine {
         didSet {
@@ -19,6 +36,13 @@ final class AppPreferences {
         didSet {
             guard oldValue != transparencyEnabled else { return }
             userDefaults.set(transparencyEnabled, forKey: Self.transparencyEnabledKey)
+        }
+    }
+
+    var localAIProvider: LocalAIProvider {
+        didSet {
+            guard oldValue != localAIProvider else { return }
+            userDefaults.set(localAIProvider.rawValue, forKey: Self.localAIProviderKey)
         }
     }
 
@@ -36,6 +60,13 @@ final class AppPreferences {
             self.transparencyEnabled = true
         } else {
             self.transparencyEnabled = userDefaults.bool(forKey: Self.transparencyEnabledKey)
+        }
+
+        if let raw = userDefaults.string(forKey: Self.localAIProviderKey),
+           let stored = LocalAIProvider(rawValue: raw) {
+            self.localAIProvider = stored
+        } else {
+            self.localAIProvider = .disabled
         }
     }
 

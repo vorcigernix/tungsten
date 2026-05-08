@@ -14,8 +14,10 @@ NS_ASSUME_NONNULL_BEGIN
 + (instancetype)shared;
 
 @property (nonatomic, readonly, getter=isInitialized) BOOL initialized;
+@property (nonatomic, readonly, getter=isTerminating) BOOL terminating;
 
 - (void)initializeCEF;
+- (void)beginTermination;
 - (void)shutdownCEF;
 
 @end

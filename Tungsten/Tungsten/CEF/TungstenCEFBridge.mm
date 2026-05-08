@@ -56,6 +56,32 @@ CFRunLoopObserverRef g_beforeWaitingObserver = nullptr;
 
 constexpr int64_t kCefNoScheduledWork = INT_MAX;
 
+static NSString *const kLocalAIProviderDefaultsKey = @"Tungsten.LocalAIProvider.v1";
+static NSString *const kLocalAIProviderGoogle = @"google";
+
+const std::vector<std::string> kLocalAIChromiumFeatures = {
+    "AIPromptAPI",
+    "AIPromptAPIMultimodalInput",
+    "OnDeviceModelPerformanceParams",
+    "OptimizationGuideOnDeviceModel"
+};
+
+std::string JoinFeatureList(const std::vector<std::string> &features) {
+    std::string joined;
+    for (const std::string &feature : features) {
+        if (!joined.empty()) {
+            joined += ",";
+        }
+        joined += feature;
+    }
+    return joined;
+}
+
+bool IsGoogleLocalAIEnabled() {
+    NSString *storedProvider = [NSUserDefaults.standardUserDefaults stringForKey:kLocalAIProviderDefaultsKey];
+    return [storedProvider isEqualToString:kLocalAIProviderGoogle];
+}
+
 void PerformCefMessageLoopWork(void) {
     if (![[TungstenCEFApp shared] isInitialized]) {
         return;
@@ -224,16 +250,41 @@ public:
 
     void OnBeforeCommandLineProcessing(const CefString &process_type,
                                        CefRefPtr<CefCommandLine> command_line) override {
+        std::vector<std::string> disabledFeatures = {
+            "DialMediaRouteProvider",
+            "MediaRouter",
+            "Translate",
+            "OptimizationHints",
+            "AutofillServerCommunication"
+        };
+
+        std::vector<std::string> enabledFeatures = {
+            "PlatformHEVCDecoderSupport",
+            "VideoToolboxVp9Decoder",
+            "VideoToolboxAv1Decoder",
+            "UseMultiPlaneFormatForHardwareVideo",
+            "CanvasOopRasterization",
+            "ParallelDownloading"
+        };
+
+        std::vector<std::string> &localAIDestination =
+            IsGoogleLocalAIEnabled() ? enabledFeatures : disabledFeatures;
+        localAIDestination.insert(
+            localAIDestination.end(),
+            kLocalAIChromiumFeatures.begin(),
+            kLocalAIChromiumFeatures.end()
+        );
+
         // Features we explicitly turn off. We don't ship UI for any of these,
         // so paying their startup, memory, and background-traffic cost is pure
         // waste: Translate spawns a renderer worker for every page, MediaRouter
         // (Cast) keeps a discovery service alive, OptimizationHints chats with
         // a Google service, and AutofillServerCommunication uploads form
-        // structure to Google's autofill backend.
+        // structure to Google's autofill backend. Unless the user selects
+        // Google Local AI, Chromium's local model flags stay disabled too.
         command_line->AppendSwitchWithValue(
             "disable-features",
-            "DialMediaRouteProvider,MediaRouter,Translate,OptimizationHints,"
-            "AutofillServerCommunication"
+            JoinFeatureList(disabledFeatures)
         );
 
         // Hardware-decode coverage on Apple Silicon: HEVC for Apple TV+/Disney+,
@@ -244,11 +295,11 @@ public:
         // Silicon's unified memory makes that copy-elision a clean win.
         // CanvasOopRasterization moves canvas raster off the renderer main
         // thread; ParallelDownloading splits large downloads across streams.
+        // Google Local AI opts into Chrome's current Gemini Nano local prompt
+        // API features.
         command_line->AppendSwitchWithValue(
             "enable-features",
-            "PlatformHEVCDecoderSupport,VideoToolboxVp9Decoder,"
-            "VideoToolboxAv1Decoder,UseMultiPlaneFormatForHardwareVideo,"
-            "CanvasOopRasterization,ParallelDownloading"
+            JoinFeatureList(enabledFeatures)
         );
 
         // Force ANGLE/Metal explicitly so we don't fall back to the OpenGL path
@@ -494,6 +545,7 @@ private:
 
 @implementation TungstenCEFApp {
     BOOL _initialized;
+    BOOL _terminating;
     std::unique_ptr<CefScopedLibraryLoader> _libraryLoader;
     CefRefPtr<TungstenCefApp> _cefApp;
 }
@@ -511,8 +563,16 @@ private:
     return _initialized;
 }
 
+- (BOOL)isTerminating {
+    return _terminating;
+}
+
+- (void)beginTermination {
+    _terminating = YES;
+}
+
 - (void)initializeCEF {
-    if (_initialized) {
+    if (_initialized || _terminating) {
         return;
     }
 
@@ -772,7 +832,8 @@ private:
 }
 
 - (void)createBrowserIfNeeded {
-    if (_isClosingBrowser || _didCreateBrowser || self.view.window == nil) {
+    if (_isClosingBrowser || _didCreateBrowser || self.view.window == nil ||
+        [[TungstenCEFApp shared] isTerminating]) {
         return;
     }
 

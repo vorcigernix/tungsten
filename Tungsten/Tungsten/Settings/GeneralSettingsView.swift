@@ -21,6 +21,21 @@ struct GeneralSettingsView: View {
             }
 
             Section {
+                Picker("Local AI", selection: $appPreferences.localAIProvider) {
+                    ForEach(LocalAIProvider.allCases) { provider in
+                        Text(provider.displayName).tag(provider)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                Text("Google enables Chromium's local Gemini Nano prompt flags on next launch. Apple Local AI and Disabled keep those Chromium local model flags off.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            } header: {
+                Text("AI")
+            }
+
+            Section {
                 Toggle("Translucent window", isOn: $appPreferences.transparencyEnabled)
 
                 Text("Disable to use a solid warm backdrop and skip window-level frosted blur. Disabling can improve launch and rendering responsiveness on older Macs.")

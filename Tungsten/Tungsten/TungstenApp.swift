@@ -59,7 +59,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.applicationIconImage = icon
     }
 
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        TungstenCEFApp.shared().beginTermination()
+        return .terminateNow
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
+        TungstenCEFApp.shared().beginTermination()
         TungstenCEFApp.shared().shutdownCEF()
     }
 }
