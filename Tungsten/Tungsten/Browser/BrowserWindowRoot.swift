@@ -6,8 +6,10 @@ struct BrowserWindowRoot: View {
 
     private let kind: BrowserWindowKind
     private let shortcutManager: ShortcutManager
+    private let historyStore: HistoryStore
     private let appPreferences: AppPreferences
-    @State private var browserModel: BrowserModel
+    private let windowSessionCoordinator: BrowserWindowSessionCoordinator
+    @State private var browserModel: BrowserModel?
 
     init(
         kind: BrowserWindowKind,
@@ -18,36 +20,55 @@ struct BrowserWindowRoot: View {
     ) {
         self.kind = kind
         self.shortcutManager = shortcutManager
+        self.historyStore = historyStore
         self.appPreferences = appPreferences
-        _browserModel = State(initialValue: BrowserModel(
+        self.windowSessionCoordinator = windowSessionCoordinator
+    }
+
+    var body: some View {
+        Group {
+            if let browserModel {
+                BrowserSplitView()
+                    .environment(browserModel)
+                    .environment(appPreferences)
+                    .background(
+                        ShortcutEventMonitor(
+                            shortcutManager: shortcutManager,
+                            commandContext: BrowserCommandContext(
+                                browserModel: browserModel,
+                                openNormalWindow: { openWindow(id: BrowserWindowKind.normal.sceneID) },
+                                openIncognitoWindow: { openWindow(id: BrowserWindowKind.incognito.sceneID) }
+                            )
+                        )
+                    )
+                    .background(
+                        WindowCloseObserver { finishClose in
+                            browserModel.closeBrowsersForWindowClose(completion: finishClose)
+                        }
+                    )
+            } else {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .onAppear {
+                        initializeBrowserModelIfNeeded()
+                    }
+            }
+        }
+        .frame(minWidth: 1280, minHeight: 720)
+        .navigationTitle(kind.title)
+    }
+
+    private func initializeBrowserModelIfNeeded() {
+        guard browserModel == nil else {
+            return
+        }
+
+        browserModel = BrowserModel(
             kind: kind,
             historyStore: historyStore,
             appPreferences: appPreferences,
             threadStore: windowSessionCoordinator.makeThreadStore(kind: kind)
-        ))
-    }
-
-    var body: some View {
-        BrowserSplitView()
-            .environment(browserModel)
-            .environment(appPreferences)
-            .background(
-                ShortcutEventMonitor(
-                    shortcutManager: shortcutManager,
-                    commandContext: BrowserCommandContext(
-                        browserModel: browserModel,
-                        openNormalWindow: { openWindow(id: BrowserWindowKind.normal.sceneID) },
-                        openIncognitoWindow: { openWindow(id: BrowserWindowKind.incognito.sceneID) }
-                    )
-                )
-            )
-            .background(
-                WindowCloseObserver { finishClose in
-                    browserModel.closeBrowsersForWindowClose(completion: finishClose)
-                }
-            )
-            .frame(minWidth: 1280, minHeight: 720)
-            .navigationTitle(kind.title)
+        )
     }
 }
 

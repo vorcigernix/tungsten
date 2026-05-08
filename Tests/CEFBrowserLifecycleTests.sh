@@ -3,6 +3,7 @@ set -euo pipefail
 
 model_file="Tungsten/Tungsten/Browser/BrowserModel.swift"
 window_root_file="Tungsten/Tungsten/Browser/BrowserWindowRoot.swift"
+host_file="Tungsten/Tungsten/Browser/Threads/LivePageSessionHost.swift"
 controller_header="Tungsten/Tungsten/CEF/TungstenBrowserController.h"
 bridge_file="Tungsten/Tungsten/CEF/TungstenCEFBridge.mm"
 
@@ -22,23 +23,34 @@ if ! rg -q -- "browserDidCloseHandler" "$controller_header"; then
 fi
 
 if ! awk '
-    /func close\(_ tab: BrowserTab\)/ { in_close = 1 }
-    in_close && /tabs\.remove\(at:/ && !saw_close { exit 1 }
-    in_close && /tab\.closeBrowser\(\)/ { saw_close = 1 }
-    in_close && /^    }$/ { exit saw_close ? 0 : 1 }
-' "$model_file"; then
-    echo "BrowserModel.close must call tab.closeBrowser() before removing non-last tabs." >&2
+    /func closeActivePage\(\)/ { in_close = 1; found = 1 }
+    in_close && /activePageSession\?\.closeBrowser\(\)/ { saw_close = 1 }
+    in_close && /activePageSession = nil/ { saw_clear = 1 }
+    in_close && /^    }$/ { exit (saw_close && saw_clear) ? 0 : 1 }
+    END { if (!found) exit 1 }
+' "$host_file"; then
+    echo "LivePageSessionHost.closeActivePage must call closeBrowser() before clearing the active CEF page session." >&2
     exit 1
 fi
 
 if ! awk '
     /func closeBrowsersForWindowClose\(completion:/ { in_close = 1; found = 1 }
-    in_close && /tab\.closeBrowserForWindowClose\(\)/ { saw_close = 1 }
+    in_close && /livePageHost\.closeActivePageForWindowClose\(\)/ { saw_close = 1 }
     in_close && /completion\(\)/ { saw_completion = 1 }
     in_close && /^    }$/ { exit saw_close ? 0 : 1 }
     END { if (!found || !saw_completion) exit 1 }
 ' "$model_file"; then
-    echo "BrowserModel must expose a window-close cleanup path that asks every tab browser to perform CEF's non-forced close and completes after teardown." >&2
+    echo "BrowserModel must expose a window-close cleanup path that asks the live page host to perform CEF's non-forced close and completes after teardown." >&2
+    exit 1
+fi
+
+if ! awk '
+    /func closeActivePageForWindowClose\(\)/ { in_close = 1; found = 1 }
+    in_close && /session\.closeBrowserForWindowClose\(\)/ { saw_close = 1 }
+    in_close && /^    }$/ { exit saw_close ? 0 : 1 }
+    END { if (!found) exit 1 }
+' "$host_file"; then
+    echo "LivePageSessionHost.closeActivePageForWindowClose must forward to BrowserPageSession.closeBrowserForWindowClose()." >&2
     exit 1
 fi
 
