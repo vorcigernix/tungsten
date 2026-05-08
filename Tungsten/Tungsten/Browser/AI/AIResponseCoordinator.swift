@@ -7,9 +7,8 @@ enum AIResponseResult: Equatable {
 
 struct AIResponseCoordinator {
     let localAI: LocalAIAnswering
-    let searchEngine: SearchEngine
 
-    func response(for question: String) async -> AIResponseResult {
+    func response(for question: String, searchEngine: SearchEngine) async -> AIResponseResult {
         switch await localAI.answer(question) {
         case .answered(let answer):
             return .assistant(answer)

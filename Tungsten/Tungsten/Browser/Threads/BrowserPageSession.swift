@@ -47,7 +47,7 @@ final class BrowserPageSession: Identifiable {
             return host
         }
 
-        return "New Tab"
+        return "New Page"
     }
 
     init(pageTurnID: BrowserTurn.ID, initialURL: String, title: String = "New Page", isIncognito: Bool) {
@@ -59,7 +59,7 @@ final class BrowserPageSession: Identifiable {
     }
 
     convenience init(initialURL: String, isIncognito: Bool) {
-        self.init(pageTurnID: BrowserTurn.ID(), initialURL: initialURL, title: "New Tab", isIncognito: isIncognito)
+        self.init(pageTurnID: BrowserTurn.ID(), initialURL: initialURL, title: "New Page", isIncognito: isIncognito)
     }
 
     func navigate(to urlString: String) {
@@ -153,13 +153,13 @@ final class BrowserPageSession: Identifiable {
         browserController.closeBrowserForWindowClose()
     }
 
-    func resetForLastTabClose(to urlString: String) {
+    func resetForLastPageClose(to urlString: String) {
         faviconFetchTask?.cancel()
         faviconFetchTask = nil
         loadedFaviconURL = nil
         favicon = nil
         pageBackgroundColor = nil
-        title = "New Tab"
+        title = "New Page"
         isLoading = false
         canGoBack = false
         canGoForward = false

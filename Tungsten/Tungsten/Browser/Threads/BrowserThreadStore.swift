@@ -23,6 +23,14 @@ final class BrowserThreadStore {
     private let userDefaults: UserDefaults
     private let scope: BrowserThreadStoreScope
 
+    var persistentWindowSessionID: String? {
+        guard case let .persistent(windowSessionID) = scope else {
+            return nil
+        }
+
+        return windowSessionID
+    }
+
     init(userDefaults: UserDefaults = .standard, scope: BrowserThreadStoreScope) {
         self.userDefaults = userDefaults
         self.scope = scope

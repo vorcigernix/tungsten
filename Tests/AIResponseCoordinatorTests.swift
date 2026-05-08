@@ -5,33 +5,47 @@ struct AIResponseCoordinatorTests {
     static func main() async throws {
         try await testLocalSuccessReturnsAssistantAnswer()
         try await testUnavailableLocalAIReturnsFallbackPage()
+        try await testFallbackUsesCurrentSearchEngine()
         try await testProviderBackedResponderUsesAppleResponder()
+        try await testProviderBackedResponderUsesAppleForGooglePageAIProvider()
         try await testProviderBackedResponderReportsDisabledProvider()
         print("AIResponseCoordinatorTests passed")
     }
 
     static func testLocalSuccessReturnsAssistantAnswer() async throws {
-        let coordinator = AIResponseCoordinator(
-            localAI: StubLocalAI(result: .answered("Local answer")),
-            searchEngine: .perplexity
-        )
+        let coordinator = AIResponseCoordinator(localAI: StubLocalAI(result: .answered("Local answer")))
 
-        let result = await coordinator.response(for: "What is Tungsten?")
+        let result = await coordinator.response(for: "What is Tungsten?", searchEngine: .perplexity)
 
         try expect(result == .assistant("Local answer"))
     }
 
     static func testUnavailableLocalAIReturnsFallbackPage() async throws {
         let reason = "Local AI is unavailable."
-        let coordinator = AIResponseCoordinator(
-            localAI: StubLocalAI(result: .unavailable(reason)),
-            searchEngine: .perplexity
-        )
+        let coordinator = AIResponseCoordinator(localAI: StubLocalAI(result: .unavailable(reason)))
 
-        let result = await coordinator.response(for: "What is Tungsten?")
+        let result = await coordinator.response(for: "What is Tungsten?", searchEngine: .perplexity)
 
         try expect(result == .fallbackPage(
             systemMessage: reason,
+            urlString: "https://www.perplexity.ai/search?q=What%20is%20Tungsten?"
+        ))
+    }
+
+    static func testFallbackUsesCurrentSearchEngine() async throws {
+        let coordinator = AIResponseCoordinator(
+            localAI: StubLocalAI(result: .unavailable("Local AI is unavailable."))
+        )
+
+        let googleResult = await coordinator.response(for: "What is Tungsten?", searchEngine: .googleAIMode)
+        let perplexityResult = await coordinator.response(for: "What is Tungsten?", searchEngine: .perplexity)
+
+        try expect(googleResult == .fallbackPage(
+            systemMessage: "Local AI is unavailable.",
+            urlString: "https://www.google.com/search?q=What%20is%20Tungsten?&udm=50"
+        ))
+        try expect(perplexityResult == .fallbackPage(
+            systemMessage: "Local AI is unavailable.",
             urlString: "https://www.perplexity.ai/search?q=What%20is%20Tungsten?"
         ))
     }
@@ -45,6 +59,17 @@ struct AIResponseCoordinatorTests {
         let result = await responder.answer("What is Tungsten?")
 
         try expect(result == .answered("Stub answer"))
+    }
+
+    static func testProviderBackedResponderUsesAppleForGooglePageAIProvider() async throws {
+        let responder = ProviderBackedLocalAIResponder(
+            provider: { .google },
+            appleResponder: StubLocalAI(result: .answered("Apple sidebar answer"))
+        )
+
+        let result = await responder.answer("What is Tungsten?")
+
+        try expect(result == .answered("Apple sidebar answer"))
     }
 
     static func testProviderBackedResponderReportsDisabledProvider() async throws {

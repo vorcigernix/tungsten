@@ -9,7 +9,7 @@ enum LocalAIProvider: String, CaseIterable, Codable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .google:   return "Google Local AI"
+        case .google:   return "Google Gemini Nano (pages)"
         case .apple:    return "Apple Local AI"
         case .disabled: return "Disabled"
         }

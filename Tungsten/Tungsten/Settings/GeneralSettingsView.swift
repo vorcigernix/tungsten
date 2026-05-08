@@ -13,7 +13,7 @@ struct GeneralSettingsView: View {
                 }
                 .pickerStyle(.menu)
 
-                Text("Used for new tabs and address-bar searches that aren't direct URLs.")
+                Text("Used for new threads and address-bar searches that aren't direct URLs.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             } header: {
@@ -21,14 +21,14 @@ struct GeneralSettingsView: View {
             }
 
             Section {
-                Picker("Local AI", selection: $appPreferences.localAIProvider) {
+                Picker("AI behavior", selection: $appPreferences.localAIProvider) {
                     ForEach(LocalAIProvider.allCases) { provider in
                         Text(provider.displayName).tag(provider)
                     }
                 }
                 .pickerStyle(.menu)
 
-                Text("Google enables Chromium's local Gemini Nano prompt flags on next launch. Apple Local AI and Disabled keep those Chromium local model flags off.")
+                Text("Sidebar answers use Apple Local AI when available. Google Gemini Nano enables Chromium page AI flags on next launch; Disabled turns sidebar local answers and Chromium local model flags off.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             } header: {

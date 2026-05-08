@@ -23,9 +23,9 @@ enum ShortcutDispatcher {
         case .pinOrUnpinCurrentTab:
             browserModel.toggleSelectedThreadPin()
         case .copyCurrentURL:
-            browserModel.copySelectedTabURL()
+            browserModel.copyActivePageURL()
         case .copyCurrentURLAsMarkdown:
-            browserModel.copySelectedTabURLAsMarkdown()
+            browserModel.copyActivePageURLAsMarkdown()
         case .focusAddressInput:
             browserModel.focusAddressInput()
         case .toggleSidebar:

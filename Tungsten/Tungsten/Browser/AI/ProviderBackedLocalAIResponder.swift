@@ -17,7 +17,7 @@ struct ProviderBackedLocalAIResponder: LocalAIAnswering {
         case .apple:
             return await appleResponder.answer(question)
         case .google:
-            return .unavailable("Google local AI is enabled for Chromium pages; Tungsten opened AI search for this sidebar question.")
+            return await appleResponder.answer(question)
         case .disabled:
             return .unavailable("Local AI is disabled, so Tungsten opened AI search instead.")
         }

@@ -32,7 +32,7 @@ final class BrowserModel {
         }
     }
 
-    var defaultNewTabURL: String {
+    var defaultNewThreadURL: String {
         appPreferences.searchEngine.homepageURL
     }
 
@@ -102,10 +102,7 @@ final class BrowserModel {
         let resolvedLocalAI = localAI ?? ProviderBackedLocalAIResponder(
             provider: { appPreferences.localAIProvider }
         )
-        aiResponseCoordinator = AIResponseCoordinator(
-            localAI: resolvedLocalAI,
-            searchEngine: appPreferences.searchEngine
-        )
+        aiResponseCoordinator = AIResponseCoordinator(localAI: resolvedLocalAI)
 
         let snapshot = resolvedThreadStore.load()
         threads = snapshot.threads
@@ -126,7 +123,7 @@ final class BrowserModel {
     }
 
     func createThread() {
-        createThread(navigateTo: defaultNewTabURL)
+        createThread(navigateTo: defaultNewThreadURL)
     }
 
     func closeSelectedThread() {
@@ -295,7 +292,7 @@ final class BrowserModel {
         closeHistory()
     }
 
-    func copySelectedTabURL() {
+    func copyActivePageURL() {
         guard let urlString = activePageSession?.urlString else {
             return
         }
@@ -304,7 +301,7 @@ final class BrowserModel {
         NSPasteboard.general.setString(urlString, forType: .string)
     }
 
-    func copySelectedTabURLAsMarkdown() {
+    func copyActivePageURLAsMarkdown() {
         guard let pageSession = activePageSession else {
             return
         }
@@ -470,6 +467,7 @@ final class BrowserModel {
 
         responseTask?.cancel()
         let responseID = UUID()
+        let fallbackSearchEngine = appPreferences.searchEngine
         pendingResponseID = responseID
         pendingResponseThreadID = threadID
         isGeneratingResponse = true
@@ -479,7 +477,10 @@ final class BrowserModel {
                 return
             }
 
-            let result = await aiResponseCoordinator.response(for: question)
+            let result = await aiResponseCoordinator.response(
+                for: question,
+                searchEngine: fallbackSearchEngine
+            )
             guard Task.isCancelled == false else {
                 finishPendingResponseIfCurrent(responseID)
                 return

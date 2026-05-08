@@ -2,6 +2,7 @@ import Foundation
 
 @main
 struct ThreadModelTests {
+    @MainActor
     static func main() throws {
         try testDirectURLInputClassifiesAsPage()
         try testBareDomainInputClassifiesAsPage()
@@ -19,6 +20,7 @@ struct ThreadModelTests {
         try testPersistentStorePreservesSelectedThreadWhenCapping()
         try testMemoryOnlyStoreDoesNotWriteDefaults()
         try testMostRecentWindowSessionIsTracked()
+        try testWindowSessionCoordinatorRestoresAgainAfterLastNormalWindowCloses()
         print("ThreadModelTests passed")
     }
 
@@ -244,6 +246,29 @@ struct ThreadModelTests {
         )
 
         try expect(BrowserThreadStore.mostRecentWindowSessionID(userDefaults: userDefaults) == "window-new")
+    }
+
+    @MainActor
+    static func testWindowSessionCoordinatorRestoresAgainAfterLastNormalWindowCloses() throws {
+        let userDefaults = makeIsolatedUserDefaults()
+        BrowserThreadStore.markWindowSessionActive(
+            "restored-window",
+            userDefaults: userDefaults,
+            activeAt: Date(timeIntervalSince1970: 1)
+        )
+        let coordinator = BrowserWindowSessionCoordinator(userDefaults: userDefaults)
+
+        let restoredStore = coordinator.makeThreadStore(kind: .normal)
+        try expect(restoredStore.persistentWindowSessionID == "restored-window")
+
+        let secondStore = coordinator.makeThreadStore(kind: .normal)
+        try expect(secondStore.persistentWindowSessionID != "restored-window")
+
+        coordinator.releaseThreadStore(secondStore, kind: .normal)
+        coordinator.releaseThreadStore(restoredStore, kind: .normal)
+
+        let reopenedStore = coordinator.makeThreadStore(kind: .normal)
+        try expect(reopenedStore.persistentWindowSessionID == secondStore.persistentWindowSessionID)
     }
 
     static func makeIsolatedUserDefaults() -> UserDefaults {

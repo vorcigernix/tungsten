@@ -57,7 +57,7 @@ fi
 if ! rg -q -- "WindowCloseObserver" "$window_root_file" ||
    ! rg -q -- "windowShouldClose" "$window_root_file" ||
    ! rg -q -- "return false" "$window_root_file" ||
-   ! rg -q -- "closeBrowsersForWindowClose\\(completion:" "$window_root_file"; then
+   ! rg -q -- "closeBrowsersForWindowClose[[:space:]]*\\{" "$window_root_file"; then
     echo "BrowserWindowRoot must intercept NSWindow close, cancel immediate teardown, and close after CEF browsers finish." >&2
     exit 1
 fi

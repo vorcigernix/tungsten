@@ -19,12 +19,13 @@ require_pattern() {
 }
 
 require_pattern "$provider_file" "enum LocalAIProvider" "LocalAIProvider model"
-require_pattern "$provider_file" "case google" "Google Local AI option"
+require_pattern "$provider_file" "case google" "Google Gemini Nano page AI option"
 require_pattern "$provider_file" "case apple" "Apple Local AI option"
 require_pattern "$provider_file" "case disabled" "Disabled Local AI option"
 require_pattern "$preferences_file" "TungstenLocalAIProviderDefaultsKey" "Local AI persistence key (shared via bridging header)"
 require_pattern "$preferences_file" "self\\.localAIProvider = \\.apple" "Apple Local AI default"
-require_pattern "$settings_file" "Picker\\(\"Local AI\"" "Local AI settings picker"
+require_pattern "$settings_file" "Picker\\(\"AI behavior\"" "AI behavior settings picker"
+require_pattern "$settings_file" "Google Gemini Nano enables Chromium page AI flags" "Google Gemini Nano page AI explanation"
 
 require_pattern "$cef_app_header" "FOUNDATION_EXPORT NSString \\*const TungstenLocalAIProviderDefaultsKey" "Local AI defaults key declaration"
 require_pattern "$bridge_file" "TungstenLocalAIProviderDefaultsKey = @\"Tungsten.LocalAIProvider.v1\"" "Local AI defaults key definition"

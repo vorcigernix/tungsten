@@ -10,6 +10,7 @@ struct BrowserWindowRoot: View {
     private let appPreferences: AppPreferences
     private let windowSessionCoordinator: BrowserWindowSessionCoordinator
     @State private var browserModel: BrowserModel?
+    @State private var threadStore: BrowserThreadStore?
 
     init(
         kind: BrowserWindowKind,
@@ -43,7 +44,10 @@ struct BrowserWindowRoot: View {
                     )
                     .background(
                         WindowCloseObserver { finishClose in
-                            browserModel.closeBrowsersForWindowClose(completion: finishClose)
+                            browserModel.closeBrowsersForWindowClose {
+                                releaseThreadStoreIfNeeded()
+                                finishClose()
+                            }
                         }
                     )
             } else {
@@ -63,12 +67,24 @@ struct BrowserWindowRoot: View {
             return
         }
 
+        let threadStore = windowSessionCoordinator.makeThreadStore(kind: kind)
+        self.threadStore = threadStore
+
         browserModel = BrowserModel(
             kind: kind,
             historyStore: historyStore,
             appPreferences: appPreferences,
-            threadStore: windowSessionCoordinator.makeThreadStore(kind: kind)
+            threadStore: threadStore
         )
+    }
+
+    private func releaseThreadStoreIfNeeded() {
+        guard let threadStore else {
+            return
+        }
+
+        windowSessionCoordinator.releaseThreadStore(threadStore, kind: kind)
+        self.threadStore = nil
     }
 }
 
