@@ -9,6 +9,19 @@ import Foundation
 
 enum AddressResolver {
     static func navigationTarget(for input: String, searchEngine: SearchEngine = .googleAIMode) -> String? {
+        if let target = directNavigationTarget(for: input) {
+            return target
+        }
+
+        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.isEmpty == false else {
+            return nil
+        }
+
+        return searchEngine.searchURL(for: trimmed)
+    }
+
+    static func directNavigationTarget(for input: String) -> String? {
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trimmed.isEmpty == false else {
             return nil
@@ -22,7 +35,7 @@ enum AddressResolver {
             return "\(scheme)://\(trimmed)"
         }
 
-        return searchEngine.searchURL(for: trimmed)
+        return nil
     }
 
     private static let directNavigationSchemes: Set<String> = [
