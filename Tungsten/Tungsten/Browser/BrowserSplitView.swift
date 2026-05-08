@@ -52,7 +52,7 @@ struct BrowserSplitView: View {
                 }
                 .animation(.smooth(duration: 0.16), value: browserModel.isFindBarVisible)
             } else {
-                ContentUnavailableView("No Page", systemImage: "rectangle.dashed")
+                ContentUnavailableView("No Page", systemImage: "text.bubble")
             }
         }
         // Frosty glass fills the window-level gutters around the rounded
@@ -151,32 +151,21 @@ private struct BrowserSidebar: View {
         @Bindable var browserModel = browserModel
 
         VStack(spacing: 0) {
-            List(selection: $browserModel.selectedThreadID) {
-                SidebarControls(
-                    pageSession: browserModel.activePageSession,
-                    isIncognito: browserModel.kind.isIncognito,
-                    createThread: { browserModel.createThread() }
-                )
-                .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
+            ThreadHeader(
+                threads: browserModel.threads,
+                selectedThreadID: $browserModel.selectedThreadID,
+                onNewThread: { browserModel.createThread() },
+                onCloseThread: { browserModel.closeSelectedThread() }
+            )
 
-                ForEach(browserModel.threads) { thread in
-                    BrowserThreadRow(thread: thread)
-                        .tag(thread.id)
-                        .contextMenu {
-                            Button(thread.isPinned ? "Unpin Thread" : "Pin Thread", systemImage: thread.isPinned ? "pin.slash" : "pin") {
-                                browserModel.toggleThreadPin(thread)
-                            }
-                            Button("Clear Unpinned Threads", systemImage: "xmark.circle") {
-                                browserModel.clearUnpinnedThreads()
-                            }
-                            Divider()
-                            Button("Close Thread", systemImage: "xmark") {
-                                browserModel.close(thread)
-                            }
-                        }
-                }
-            }
-            .listStyle(.sidebar)
+            Divider()
+
+            ThreadTimeline(
+                thread: browserModel.selectedThread,
+                activePageTurnID: browserModel.selectedThread?.activePageTurnID,
+                isGeneratingResponse: browserModel.isGeneratingResponse,
+                onActivatePage: { browserModel.activatePageTurnInSelectedThread($0) }
+            )
 
             Divider()
 
@@ -189,76 +178,325 @@ private struct BrowserSidebar: View {
     }
 }
 
-private struct SidebarControls: View {
-    let pageSession: BrowserPageSession?
-    let isIncognito: Bool
-    let createThread: () -> Void
+private struct ThreadHeader: View {
+    @Environment(BrowserModel.self) private var browserModel
+
+    let threads: [BrowserThread]
+    @Binding var selectedThreadID: BrowserThread.ID?
+    let onNewThread: () -> Void
+    let onCloseThread: () -> Void
+
+    private var selectedThread: BrowserThread? {
+        guard let selectedThreadID else {
+            return nil
+        }
+
+        return threads.first { $0.id == selectedThreadID }
+    }
 
     var body: some View {
-        HStack(spacing: 8) {
-            Button("Back", systemImage: "chevron.backward") {
-                pageSession?.goBack()
-            }
-            .disabled(pageSession?.canGoBack != true)
-            .help("Back")
+        let pageSession = browserModel.activePageSession
 
-            Button("Forward", systemImage: "chevron.forward") {
-                pageSession?.goForward()
-            }
-            .disabled(pageSession?.canGoForward != true)
-            .help("Forward")
-
-            if pageSession?.isLoading == true {
-                Button("Stop", systemImage: "xmark") {
-                    pageSession?.stopLoading()
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Picker("Thread", selection: $selectedThreadID) {
+                    ForEach(threads) { thread in
+                        Label {
+                            Text(thread.displayTitle)
+                        } icon: {
+                            Image(systemName: thread.isPinned ? "pin.circle" : "text.bubble")
+                        }
+                        .tag(Optional(thread.id))
+                    }
                 }
-                .help("Stop")
-            } else {
-                Button("Reload", systemImage: "arrow.clockwise") {
-                    pageSession?.reload()
+                .labelsHidden()
+                .frame(maxWidth: .infinity)
+
+                Menu {
+                    Button(selectedThread?.isPinned == true ? "Unpin Thread" : "Pin Thread", systemImage: selectedThread?.isPinned == true ? "pin.slash" : "pin") {
+                        if let selectedThread {
+                            browserModel.toggleThreadPin(selectedThread)
+                        }
+                    }
+                    .disabled(selectedThread == nil)
+
+                    Button("Clear Unpinned Threads", systemImage: "xmark.circle") {
+                        browserModel.clearUnpinnedThreads()
+                    }
+                    .disabled(threads.allSatisfy(\.isPinned))
+                } label: {
+                    Image(systemName: "ellipsis.circle")
                 }
-                .disabled(pageSession == nil)
-                .help("Reload")
+                .help("Thread Actions")
+
+                Button("New Thread", systemImage: "plus") {
+                    onNewThread()
+                }
+                .labelStyle(.iconOnly)
+                .help("New Thread")
+
+                Button("Close Thread", systemImage: "xmark") {
+                    onCloseThread()
+                }
+                .labelStyle(.iconOnly)
+                .disabled(threads.isEmpty)
+                .help("Close Thread")
             }
 
-            Spacer(minLength: 8)
+            HStack(spacing: 8) {
+                Button("Back", systemImage: "chevron.backward") {
+                    pageSession?.goBack()
+                }
+                .labelStyle(.iconOnly)
+                .disabled(pageSession?.canGoBack != true)
+                .help("Back")
 
-            if isIncognito {
-                Label("Private", systemImage: "shield")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Button("Forward", systemImage: "chevron.forward") {
+                    pageSession?.goForward()
+                }
+                .labelStyle(.iconOnly)
+                .disabled(pageSession?.canGoForward != true)
+                .help("Forward")
+
+                if pageSession?.isLoading == true {
+                    Button("Stop", systemImage: "xmark") {
+                        pageSession?.stopLoading()
+                    }
                     .labelStyle(.iconOnly)
-                    .help("Private Window")
-            }
+                    .help("Stop")
+                } else {
+                    Button("Reload", systemImage: "arrow.clockwise") {
+                        pageSession?.reload()
+                    }
+                    .labelStyle(.iconOnly)
+                    .disabled(pageSession == nil)
+                    .help("Reload")
+                }
 
-            Button("New Thread", systemImage: "plus") {
-                createThread()
+                Spacer(minLength: 8)
+
+                if browserModel.kind.isIncognito {
+                    Label("Private", systemImage: "shield")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .labelStyle(.iconOnly)
+                        .help("Private Window")
+                }
             }
-            .help("New Thread")
         }
-        .labelStyle(.iconOnly)
         .buttonStyle(.borderless)
         .controlSize(.regular)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
     }
 }
 
-private struct BrowserThreadRow: View {
-    let thread: BrowserThread
+private struct ThreadTimeline: View {
+    let thread: BrowserThread?
+    let activePageTurnID: BrowserTurn.ID?
+    let isGeneratingResponse: Bool
+    let onActivatePage: (BrowserTurn.ID) -> Void
+
+    private var turns: [BrowserTurn] {
+        thread?.turns ?? []
+    }
+
+    private var scrollTarget: AnyHashable? {
+        if isGeneratingResponse {
+            return AnyHashable("pending-assistant")
+        }
+
+        return turns.last.map { AnyHashable($0.id) }
+    }
 
     var body: some View {
-        Label {
-            HStack(spacing: 6) {
-                Text(thread.displayTitle)
-                    .lineLimit(1)
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 10) {
+                    ForEach(turns) { turn in
+                        ThreadTurnBubble(
+                            turn: turn,
+                            isActivePage: turn.kind == .page && turn.id == activePageTurnID,
+                            onActivatePage: onActivatePage
+                        )
+                        .id(turn.id)
+                    }
 
-                if thread.isPinned {
-                    Image(systemName: "pin.fill")
-                        .imageScale(.small)
+                    if isGeneratingResponse {
+                        PendingAssistantBubble()
+                            .id("pending-assistant")
+                    }
+                }
+                .padding(12)
+            }
+            .onChange(of: turns.count) { _, _ in
+                scrollToLatest(with: proxy)
+            }
+            .onChange(of: isGeneratingResponse) { _, _ in
+                scrollToLatest(with: proxy)
+            }
+            .onAppear {
+                scrollToLatest(with: proxy, animated: false)
+            }
+        }
+    }
+
+    private func scrollToLatest(with proxy: ScrollViewProxy, animated: Bool = true) {
+        guard let scrollTarget else {
+            return
+        }
+
+        let action = {
+            proxy.scrollTo(scrollTarget, anchor: .bottom)
+        }
+
+        if animated {
+            withAnimation(.smooth(duration: 0.24)) {
+                action()
+            }
+        } else {
+            action()
+        }
+    }
+}
+
+private struct ThreadTurnBubble: View {
+    let turn: BrowserTurn
+    let isActivePage: Bool
+    let onActivatePage: (BrowserTurn.ID) -> Void
+
+    var body: some View {
+        switch turn.kind {
+        case .page:
+            pageRow
+        case .userQuestion:
+            alignedTextBubble(isUserQuestion: true, fill: Color.accentColor.opacity(0.16))
+        case .assistantResponse, .system:
+            alignedTextBubble(isUserQuestion: false, fill: Color(nsColor: .controlBackgroundColor).opacity(0.92))
+        }
+    }
+
+    private var pageRow: some View {
+        Button {
+            onActivatePage(turn.id)
+        } label: {
+            HStack(spacing: 9) {
+                Image(systemName: "globe")
+                    .imageScale(.medium)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 18)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(turn.displayTitle)
+                        .font(.callout)
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+
+                    Text(turn.urlString ?? turn.text)
+                        .font(.caption)
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(
+                        isActivePage ? Color.accentColor.opacity(0.75) : Color.secondary.opacity(0.15),
+                        lineWidth: isActivePage ? 1.5 : 1
+                    )
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func alignedTextBubble(isUserQuestion: Bool, fill: Color) -> some View {
+        HStack {
+            if isUserQuestion {
+                Spacer(minLength: 36)
+            }
+
+            Text(turn.displayTitle)
+                .font(.callout)
+                .foregroundStyle(.primary)
+                .textSelection(.enabled)
+                .lineLimit(nil)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .background(fill, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(Color.secondary.opacity(0.12), lineWidth: 1)
+                }
+                .frame(maxWidth: 280, alignment: isUserQuestion ? .trailing : .leading)
+
+            if isUserQuestion == false {
+                Spacer(minLength: 36)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: isUserQuestion ? .trailing : .leading)
+    }
+}
+
+private struct PendingAssistantBubble: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var rainbowRotation = 0.0
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ProgressView()
+                .controlSize(.small)
+
+            Text("Thinking")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .strokeBorder(
+                    AngularGradient(
+                        colors: [
+                            .red.opacity(0.5),
+                            .orange.opacity(0.5),
+                            .yellow.opacity(0.45),
+                            .green.opacity(0.5),
+                            .cyan.opacity(0.5),
+                            .blue.opacity(0.5),
+                            .purple.opacity(0.5),
+                            .red.opacity(0.5)
+                        ],
+                        center: .center
+                    ),
+                    lineWidth: 1.25
+                )
+                .rotationEffect(.degrees(rainbowRotation))
+        }
+        .onAppear {
+            guard reduceMotion == false else {
+                rainbowRotation = 0
+                return
+            }
+
+            withAnimation(.linear(duration: 3.2).repeatForever(autoreverses: false)) {
+                rainbowRotation = 360
+            }
+        }
+        .onChange(of: reduceMotion) { _, newValue in
+            if newValue {
+                rainbowRotation = 0
+            } else {
+                withAnimation(.linear(duration: 3.2).repeatForever(autoreverses: false)) {
+                    rainbowRotation = 360
                 }
             }
-        } icon: {
-            Image(systemName: thread.isPinned ? "pin.circle" : "globe")
         }
     }
 }
