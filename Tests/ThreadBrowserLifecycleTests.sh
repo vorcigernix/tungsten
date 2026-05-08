@@ -35,6 +35,8 @@ require_pattern "$host_file" "func activate\\(pageTurn: BrowserTurn, isIncognito
 require_pattern "$model_file" "activePageSession" "BrowserModel.activePageSession bridge"
 require_pattern "$model_file" "var threads: \\[BrowserThread\\]" "BrowserModel thread state"
 require_pattern "$model_file" "selectedThreadID" "BrowserModel selected thread state"
+require_pattern "$model_file" "var isGeneratingResponse = false" "BrowserModel response generation state"
+require_pattern "$model_file" "pendingResponseID" "BrowserModel pending response token"
 require_pattern "$session_file" "controller\\.delegate = observer" "BrowserPageSession controller delegate wiring"
 require_pattern "$session_file" "browserDidCloseHandler" "BrowserPageSession browser close handler"
 require_pattern "$session_file" "onFaviconURLChange" "BrowserPageSession favicon URL callback"

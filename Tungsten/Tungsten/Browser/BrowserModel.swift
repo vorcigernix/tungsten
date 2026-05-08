@@ -41,6 +41,7 @@ final class BrowserModel {
     var isSidebarVisible = true
     var isFindBarVisible = false
     var isHistoryVisible = false
+    var isGeneratingResponse = false
     var findText = ""
     var findFocusRequestID = 0
 
@@ -70,6 +71,8 @@ final class BrowserModel {
     @ObservationIgnored private let livePageHost = LivePageSessionHost()
     @ObservationIgnored nonisolated(unsafe) private let aiResponseCoordinator: AIResponseCoordinator
     @ObservationIgnored private var responseTask: Task<Void, Never>?
+    @ObservationIgnored private var pendingResponseID: UUID?
+    @ObservationIgnored private var pendingResponseThreadID: BrowserThread.ID?
     @ObservationIgnored private var closedThreads: [BrowserThread] = []
     @ObservationIgnored private var didCloseBrowsersForWindowClose = false
     @ObservationIgnored private var windowCloseCompletion: (() -> Void)?
@@ -140,6 +143,10 @@ final class BrowserModel {
             return
         }
 
+        if pendingResponseThreadID == thread.id {
+            cancelPendingResponse()
+        }
+
         if kind == .normal {
             closedThreads.append(thread)
         }
@@ -184,6 +191,11 @@ final class BrowserModel {
 
         guard pinnedThreads.count != threads.count else {
             return
+        }
+
+        if let pendingResponseThreadID,
+           pinnedThreads.contains(where: { $0.id == pendingResponseThreadID }) == false {
+            cancelPendingResponse()
         }
 
         if pinnedThreads.isEmpty {
@@ -424,7 +436,7 @@ final class BrowserModel {
         }
 
         didCloseBrowsersForWindowClose = true
-        responseTask?.cancel()
+        cancelPendingResponse()
         isFindBarVisible = false
         isHistoryVisible = false
         findText = ""
@@ -494,18 +506,37 @@ final class BrowserModel {
         persistThreads()
 
         responseTask?.cancel()
-        responseTask = Task { [weak self] in
+        let responseID = UUID()
+        pendingResponseID = responseID
+        pendingResponseThreadID = threadID
+        isGeneratingResponse = true
+
+        responseTask = Task { [weak self, responseID] in
             guard let self else {
                 return
             }
 
             let result = await aiResponseCoordinator.response(for: question)
-            handleAIResponse(result, for: threadID)
+            guard Task.isCancelled == false else {
+                finishPendingResponseIfCurrent(responseID)
+                return
+            }
+
+            handleAIResponse(result, for: threadID, responseID: responseID)
         }
     }
 
-    private func handleAIResponse(_ result: AIResponseResult, for threadID: BrowserThread.ID) {
+    private func handleAIResponse(
+        _ result: AIResponseResult,
+        for threadID: BrowserThread.ID,
+        responseID: UUID
+    ) {
+        guard pendingResponseID == responseID else {
+            return
+        }
+
         guard let index = threads.firstIndex(where: { $0.id == threadID }) else {
+            finishPendingResponseIfCurrent(responseID)
             return
         }
 
@@ -523,6 +554,26 @@ final class BrowserModel {
         }
 
         persistThreads()
+        finishPendingResponseIfCurrent(responseID)
+    }
+
+    private func finishPendingResponseIfCurrent(_ responseID: UUID) {
+        guard pendingResponseID == responseID else {
+            return
+        }
+
+        pendingResponseID = nil
+        pendingResponseThreadID = nil
+        responseTask = nil
+        isGeneratingResponse = false
+    }
+
+    private func cancelPendingResponse() {
+        responseTask?.cancel()
+        responseTask = nil
+        pendingResponseID = nil
+        pendingResponseThreadID = nil
+        isGeneratingResponse = false
     }
 
     private func activateSelectedThreadPage() {

@@ -1841,7 +1841,11 @@ Run:
 swiftc \
   Tungsten/Tungsten/Browser/SearchEngine.swift \
   Tungsten/Tungsten/Browser/AddressResolver.swift \
-  Tungsten/Tungsten/Browser/Threads/*.swift \
+  Tungsten/Tungsten/Browser/Threads/BrowserTurn.swift \
+  Tungsten/Tungsten/Browser/Threads/BrowserThread.swift \
+  Tungsten/Tungsten/Browser/Threads/BrowserThreadStoreScope.swift \
+  Tungsten/Tungsten/Browser/Threads/BrowserThreadStore.swift \
+  Tungsten/Tungsten/Browser/Threads/BrowserInputClassifier.swift \
   Tests/ThreadModelTests.swift \
   -o /tmp/TungstenThreadModelTests && /tmp/TungstenThreadModelTests
 bash Tests/ThreadBrowserLifecycleTests.sh
@@ -2272,13 +2276,21 @@ Run:
 swiftc \
   Tungsten/Tungsten/Browser/SearchEngine.swift \
   Tungsten/Tungsten/Browser/AddressResolver.swift \
-  Tungsten/Tungsten/Browser/Threads/*.swift \
+  Tungsten/Tungsten/Browser/Threads/BrowserTurn.swift \
+  Tungsten/Tungsten/Browser/Threads/BrowserThread.swift \
+  Tungsten/Tungsten/Browser/Threads/BrowserThreadStoreScope.swift \
+  Tungsten/Tungsten/Browser/Threads/BrowserThreadStore.swift \
+  Tungsten/Tungsten/Browser/Threads/BrowserInputClassifier.swift \
   Tests/ThreadModelTests.swift \
   -o /tmp/TungstenThreadModelTests && /tmp/TungstenThreadModelTests
 swiftc \
   Tungsten/Tungsten/Browser/SearchEngine.swift \
   Tungsten/Tungsten/Browser/AddressResolver.swift \
-  Tungsten/Tungsten/Browser/Threads/*.swift \
+  Tungsten/Tungsten/Browser/Threads/BrowserTurn.swift \
+  Tungsten/Tungsten/Browser/Threads/BrowserThread.swift \
+  Tungsten/Tungsten/Browser/Threads/BrowserThreadStoreScope.swift \
+  Tungsten/Tungsten/Browser/Threads/BrowserThreadStore.swift \
+  Tungsten/Tungsten/Browser/Threads/BrowserInputClassifier.swift \
   Tungsten/Tungsten/Browser/AI/*.swift \
   Tests/AIResponseCoordinatorTests.swift \
   -o /tmp/TungstenAIResponseCoordinatorTests && /tmp/TungstenAIResponseCoordinatorTests
