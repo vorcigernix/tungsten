@@ -1,0 +1,24 @@
+/caveman
+
+---
+
+/simplify
+
+---
+
+fix build error: Ld /tmp/TungstenDerivedData/Build/Products/Release/Tungsten.app/Contents/MacOS/Tungsten normal (in target 'Tungsten' from project 'Tungsten')
+    cd /Users/vorcigernix/Dev/Tungsten/Tungsten
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++ -Xlinker -reproducible -target arm64-apple-macos26.0 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk -Os -L/tmp/TungstenDerivedData/Build/Intermediates.noindex/EagerLinkingTBDs/Release -L/tmp/TungstenDerivedData/Build/Products/Release -F/tmp/TungstenDerivedData/Build/Intermediates.noindex/EagerLinkingTBDs/Release -F/tmp/TungstenDerivedData/Build/Products/Release -filelist /tmp/TungstenDerivedData/Build/Intermediates.noindex/Tungsten.build/Release/Tungsten.build/Objects-normal/arm64/Tungsten.LinkFileList -Xlinker -rpath -Xlinker @executable_path/../Frameworks -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /tmp/TungstenDerivedData/Build/Intermediates.noindex/Tungsten.build/Release/Tungsten.build/Objects-normal/arm64/Tungsten_lto.o -Xlinker -dependency_info -Xlinker /tmp/TungstenDerivedData/Build/Intermediates.noindex/Tungsten.build/Release/Tungsten.build/Objects-normal/arm64/Tungsten_dependency_info.dat -fobjc-arc -fobjc-link-runtime -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /tmp/TungstenDerivedData/Build/Intermediates.noindex/Tungsten.build/Release/Tungsten.build/Objects-normal/arm64/Tungsten.swiftmodule @/tmp/TungstenDerivedData/Build/Intermediates.noindex/Tungsten.build/Release/Tungsten.build/Objects-normal/arm64/Tungsten-linker-args.resp /Users/vorcigernix/Dev/Tungsten/Tungsten/../Vendor/CEF/current/lib/libcef_dll_wrapper.a -framework AppKit -framework Cocoa -framework Foundation -Xlinker -no_adhoc_codesign -o /tmp/TungstenDerivedData/Build/Products/Release/Tungsten.app/Contents/MacOS/Tungsten
+/Users/vorcigernix/Dev/Tungsten/Tungsten/Tungsten.xcodeproj: Tungsten: ld: warning: Could not parse or use implicit file '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/SwiftUICore.framework/Versions/A/SwiftUICore.tbd': cannot link directly with 'SwiftUICore' because product being built is not an allowed client of it
+Undefined symbols for architecture arm64:
+  "_TungstenLocalAIProviderDefaultsKey", referenced from:
+      one-time initialization function for (localAIProviderKey in _42F0EC6FEF0267C2720FBEC57698AE0D) in AppPreferences.o
+ld: symbol(s) not found for architecture arm64
+/Users/vorcigernix/Dev/Tungsten/Tungsten/Tungsten.xcodeproj: Tungsten: clang++: error: linker command failed with exit code 1 (use -v to see invocation)
+
+** BUILD FAILED **
+
+
+The following build commands failed:
+        Ld /tmp/TungstenDerivedData/Build/Products/Release/Tungsten.app/Contents/MacOS/Tungsten normal (in target 'Tungsten' from project 'Tungsten')
+        Building project Tungsten with scheme Tungsten and configuration Release

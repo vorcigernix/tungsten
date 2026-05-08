@@ -1,0 +1,28 @@
+{
+  "cli_version": "0.6.1",
+  "checkpoint_id": "5a1940bf7bb3",
+  "strategy": "manual-commit",
+  "branch": "codex/arc-shortcuts-settings",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "Tests/LocalAISettingsTests.sh",
+    "Tungsten/Tungsten/AppPreferences.swift",
+    "Tungsten/Tungsten/CEF/TungstenCEFApp.h",
+    "Tungsten/Tungsten/CEF/TungstenCEFBridge.mm"
+  ],
+  "sessions": [
+    {
+      "metadata": "/5a/1940bf7bb3/0/metadata.json",
+      "transcript": "/5a/1940bf7bb3/0/full.jsonl",
+      "content_hash": "/5a/1940bf7bb3/0/content_hash.txt",
+      "prompt": "/5a/1940bf7bb3/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 49,
+    "cache_creation_tokens": 99578,
+    "cache_read_tokens": 2116559,
+    "output_tokens": 24451,
+    "api_call_count": 30
+  }
+}
