@@ -163,7 +163,7 @@ private struct BrowserSidebar: View {
             ThreadTimeline(
                 thread: browserModel.selectedThread,
                 activePageTurnID: browserModel.selectedThread?.activePageTurnID,
-                isGeneratingResponse: browserModel.isGeneratingResponse,
+                isGeneratingResponse: browserModel.isSelectedThreadGeneratingResponse,
                 onActivatePage: { browserModel.activatePageTurnInSelectedThread($0) }
             )
 
@@ -225,7 +225,8 @@ private struct ThreadHeader: View {
                     }
                     .disabled(threads.allSatisfy(\.isPinned))
                 } label: {
-                    Image(systemName: "ellipsis.circle")
+                    Label("Thread Actions", systemImage: "ellipsis.circle")
+                        .labelStyle(.iconOnly)
                 }
                 .help("Thread Actions")
 
@@ -292,10 +293,16 @@ private struct ThreadHeader: View {
 }
 
 private struct ThreadTimeline: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     let thread: BrowserThread?
     let activePageTurnID: BrowserTurn.ID?
     let isGeneratingResponse: Bool
     let onActivatePage: (BrowserTurn.ID) -> Void
+
+    private var threadID: BrowserThread.ID? {
+        thread?.id
+    }
 
     private var turns: [BrowserTurn] {
         thread?.turns ?? []
@@ -332,6 +339,9 @@ private struct ThreadTimeline: View {
             .onChange(of: turns.count) { _, _ in
                 scrollToLatest(with: proxy)
             }
+            .onChange(of: threadID) { _, _ in
+                scrollToLatest(with: proxy, animated: false)
+            }
             .onChange(of: isGeneratingResponse) { _, _ in
                 scrollToLatest(with: proxy)
             }
@@ -350,7 +360,7 @@ private struct ThreadTimeline: View {
             proxy.scrollTo(scrollTarget, anchor: .bottom)
         }
 
-        if animated {
+        if animated && reduceMotion == false {
             withAnimation(.smooth(duration: 0.24)) {
                 action()
             }

@@ -66,6 +66,14 @@ final class BrowserModel {
         set { _ = newValue }
     }
 
+    var isSelectedThreadGeneratingResponse: Bool {
+        guard isGeneratingResponse, let selectedThreadID else {
+            return false
+        }
+
+        return pendingResponseThreadID == selectedThreadID
+    }
+
     @ObservationIgnored private var previousSelectedThreadID: BrowserThread.ID?
     @ObservationIgnored private let threadStore: BrowserThreadStore
     @ObservationIgnored private let livePageHost = LivePageSessionHost()
