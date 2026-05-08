@@ -185,6 +185,37 @@ NSString *ToNSString(const CefString &value) {
     return [NSString stringWithUTF8String:value.ToString().c_str()];
 }
 
+NSAppearance *NonVibrantBrowserAppearanceForWindow(NSWindow *window) {
+    NSAppearance *source = window.effectiveAppearance ?: NSApp.effectiveAppearance;
+    NSAppearanceName match = [source bestMatchFromAppearancesWithNames:@[
+        NSAppearanceNameDarkAqua,
+        NSAppearanceNameAqua
+    ]];
+    NSAppearanceName browserAppearanceName = [match isEqualToString:NSAppearanceNameDarkAqua]
+        ? NSAppearanceNameDarkAqua
+        : NSAppearanceNameAqua;
+    return [NSAppearance appearanceNamed:browserAppearanceName];
+}
+
+void ApplyCEFSubviewCompositing(NSView *view, NSAppearance *appearance) {
+    if (view == nil) {
+        return;
+    }
+
+    view.appearance = appearance;
+    view.wantsLayer = YES;
+
+    CALayer *layer = view.layer;
+    if (layer != nil) {
+        layer.opaque = YES;
+        layer.backgroundColor = NSColor.whiteColor.CGColor;
+    }
+
+    for (NSView *subview in view.subviews) {
+        ApplyCEFSubviewCompositing(subview, appearance);
+    }
+}
+
 class TungstenCefApp final : public CefApp, public CefBrowserProcessHandler {
 public:
     CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override {
@@ -193,21 +224,31 @@ public:
 
     void OnBeforeCommandLineProcessing(const CefString &process_type,
                                        CefRefPtr<CefCommandLine> command_line) override {
-        // Features we explicitly turn off. Keep in one comma-separated list because
-        // Chromium merges multiple --disable-features= flags but it's cleaner to
-        // pass a single value.
+        // Features we explicitly turn off. We don't ship UI for any of these,
+        // so paying their startup, memory, and background-traffic cost is pure
+        // waste: Translate spawns a renderer worker for every page, MediaRouter
+        // (Cast) keeps a discovery service alive, OptimizationHints chats with
+        // a Google service, and AutofillServerCommunication uploads form
+        // structure to Google's autofill backend.
         command_line->AppendSwitchWithValue(
             "disable-features",
-            "DialMediaRouteProvider"
+            "DialMediaRouteProvider,MediaRouter,Translate,OptimizationHints,"
+            "AutofillServerCommunication"
         );
 
-        // Features we want explicitly on. PlatformHEVCDecoderSupport unlocks
-        // hardware HEVC decode on macOS (used by Apple TV+, Disney+, YouTube
-        // HDR, etc.); CanvasOopRasterization moves canvas raster off the
-        // renderer's main thread which helps animation-heavy pages.
+        // Hardware-decode coverage on Apple Silicon: HEVC for Apple TV+/Disney+,
+        // VP9 for the bulk of YouTube/Twitch, AV1 for newer YouTube streams
+        // (M3+ has a hardware AV1 block; M1/M2 fall back gracefully).
+        // UseMultiPlaneFormatForHardwareVideo keeps decoded frames as
+        // multi-plane IOSurfaces all the way to the compositor — Apple
+        // Silicon's unified memory makes that copy-elision a clean win.
+        // CanvasOopRasterization moves canvas raster off the renderer main
+        // thread; ParallelDownloading splits large downloads across streams.
         command_line->AppendSwitchWithValue(
             "enable-features",
-            "PlatformHEVCDecoderSupport,CanvasOopRasterization"
+            "PlatformHEVCDecoderSupport,VideoToolboxVp9Decoder,"
+            "VideoToolboxAv1Decoder,UseMultiPlaneFormatForHardwareVideo,"
+            "CanvasOopRasterization,ParallelDownloading"
         );
 
         // Force ANGLE/Metal explicitly so we don't fall back to the OpenGL path
@@ -216,6 +257,14 @@ public:
 
         command_line->AppendSwitch("enable-zero-copy");
         command_line->AppendSwitch("enable-gpu-rasterization");
+
+        // Match the wide-gamut panel on every M1+ MacBook. Chromium's GPU
+        // raster path (Metal ANGLE + Skia Graphite) inside our embedding
+        // doesn't auto-detect the display profile correctly; without an
+        // explicit value, sRGB pixels reach a P3 surface unconverted and
+        // saturated colors read pale. Chrome wires this up via its own
+        // NSWindow setup; CEF embedders have to be explicit.
+        command_line->AppendSwitchWithValue("force-color-profile", "display-p3-d65");
 
         command_line->AppendSwitch("use-mock-keychain");
     }
@@ -384,8 +433,49 @@ private:
     return NSMakeSize(NSViewNoIntrinsicMetric, NSViewNoIntrinsicMetric);
 }
 
+// Tag the host window as Display P3. Chromium produces P3 pixels
+// (--force-color-profile=display-p3-d65); without explicit tagging at the
+// AppKit layer, the WindowServer applies an sRGB→display conversion that
+// inflates saturated channels. AppKit may also reset color tagging or
+// desaturate inactive-window content, so we reapply on every key-state
+// transition.
+- (void)applyDisplayP3ColorSpace {
+    if (self.window != nil) {
+        self.window.colorSpace = [NSColorSpace displayP3ColorSpace];
+    }
+}
+
+- (void)windowFocusOrBackingDidChange:(NSNotification *)note {
+    [self applyDisplayP3ColorSpace];
+    [self.controller layoutBrowserView];
+}
+
 - (void)viewDidMoveToWindow {
     [super viewDidMoveToWindow];
+
+    NSNotificationCenter *center = NSNotificationCenter.defaultCenter;
+    [center removeObserver:self];
+
+    NSWindow *window = self.window;
+    if (window != nil) {
+        [self applyDisplayP3ColorSpace];
+
+        NSNotificationName names[] = {
+            NSWindowDidBecomeKeyNotification,
+            NSWindowDidResignKeyNotification,
+            NSWindowDidBecomeMainNotification,
+            NSWindowDidResignMainNotification,
+            NSWindowDidChangeBackingPropertiesNotification,
+            NSWindowDidChangeScreenNotification,
+        };
+        for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); ++i) {
+            [center addObserver:self
+                       selector:@selector(windowFocusOrBackingDidChange:)
+                           name:names[i]
+                         object:window];
+        }
+    }
+
     dispatch_async(dispatch_get_main_queue(), ^{
         [self.controller layoutBrowserView];
     });
@@ -394,6 +484,10 @@ private:
 - (void)setFrameSize:(NSSize)newSize {
     [super setFrameSize:newSize];
     [self.controller layoutBrowserView];
+}
+
+- (void)dealloc {
+    [NSNotificationCenter.defaultCenter removeObserver:self];
 }
 
 @end
@@ -663,16 +757,15 @@ private:
         [self.view addSubview:browserView];
     }
 
-    // Force the page's CALayer to render opaque even when the host NSWindow
-    // is non-opaque (we toggle isOpaque=false in WindowTransparencyEnabler so
-    // the gutter shows desktop). Without this, AppKit composites the entire
-    // window with alpha, causing the page to look semi-transparent —
-    // especially on unfocused windows.
-    browserView.wantsLayer = YES;
-    browserView.layer.opaque = YES;
-    if (browserView.layer.backgroundColor == NULL) {
-        browserView.layer.backgroundColor = NSColor.windowBackgroundColor.CGColor;
-    }
+    // Keep Chromium out of AppKit's vibrant/glass drawing path. The host
+    // NSWindow is intentionally non-opaque for the frosted gutters; if the CEF
+    // subtree inherits the vibrant window appearance, AppKit recomposites web
+    // content when the window becomes inactive and the page looks faded. Use a
+    // plain Aqua/DarkAqua appearance and opaque layers for the Chromium island.
+    ApplyCEFSubviewCompositing(
+        browserView,
+        NonVibrantBrowserAppearanceForWindow(self.view.window)
+    );
 
     browserView.frame = self.view.bounds;
     browserView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
@@ -702,6 +795,11 @@ private:
     windowInfo.runtime_style = CEF_RUNTIME_STYLE_ALLOY;
 
     CefBrowserSettings browserSettings;
+    // Opaque white. With window transparency on, the SwiftUI window background
+    // is .regularMaterial (NSVisualEffectView), which desaturates when the
+    // window is inactive. Without an opaque CEF surface, that desaturation
+    // bleeds through and the rendered web content goes bland on focus loss.
+    browserSettings.background_color = 0xFFFFFFFF;
     std::string url = ToString(_pendingURL ?: _initialURL);
 
     CefRefPtr<CefRequestContext> requestContext = nullptr;

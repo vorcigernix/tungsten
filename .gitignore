@@ -22,3 +22,4 @@ xcuserdata/
 
 # CEF binary distribution and build output
 Vendor/CEF/
+dist/
