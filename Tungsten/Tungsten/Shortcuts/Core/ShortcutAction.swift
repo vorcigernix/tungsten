@@ -12,6 +12,8 @@ enum ShortcutAvailability: String, Codable {
 }
 
 enum ShortcutActionID: String, CaseIterable, Codable, Hashable {
+    // Persisted shortcut overrides use these raw values. Keep the tab-era IDs
+    // stable while the browser UI exposes them as thread actions.
     case newTab
     case newWindow
     case newIncognitoWindow

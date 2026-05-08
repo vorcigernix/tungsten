@@ -27,15 +27,30 @@ struct ShortcutLogicTests {
     }
 
     static func testThreadFirstActionLabels() throws {
-        try expect(ShortcutCatalog.action(id: .newTab)?.title == "New Thread")
-        try expect(ShortcutCatalog.action(id: .closeCurrentTab)?.title == "Close Current Thread")
-        try expect(ShortcutCatalog.action(id: .reopenLastClosedTab)?.title == "Re-open Last Closed Thread")
-        try expect(ShortcutCatalog.action(id: .pinOrUnpinCurrentTab)?.title == "Pin or Unpin Current Thread")
-        try expect(ShortcutCatalog.action(id: .focusAddressInput)?.title == "Ask or Open URL")
-        try expect(ShortcutCatalog.action(id: .clearUnpinnedTabs)?.title == "Clear Unpinned Threads")
-        try expect(ShortcutCatalog.action(id: .selectTab1)?.title == "Go to Thread 1")
-        try expect(ShortcutCatalog.action(id: .selectPreviousTab)?.title == "Previous Thread")
-        try expect(ShortcutCatalog.action(id: .selectNextTab)?.title == "Next Thread")
+        let expectedLabels: [(ShortcutActionID, String)] = [
+            (.newTab, "New Thread"),
+            (.closeCurrentTab, "Close Current Thread"),
+            (.reopenLastClosedTab, "Re-open Last Closed Thread"),
+            (.pinOrUnpinCurrentTab, "Pin or Unpin Current Thread"),
+            (.focusAddressInput, "Ask or Open URL"),
+            (.clearUnpinnedTabs, "Clear Unpinned Threads"),
+            (.selectTab1, "Go to Thread 1"),
+            (.selectTab2, "Go to Thread 2"),
+            (.selectTab3, "Go to Thread 3"),
+            (.selectTab4, "Go to Thread 4"),
+            (.selectTab5, "Go to Thread 5"),
+            (.selectTab6, "Go to Thread 6"),
+            (.selectTab7, "Go to Thread 7"),
+            (.selectTab8, "Go to Thread 8"),
+            (.selectTab9, "Go to Thread 9"),
+            (.selectRecentTab, "Toggle Recent Threads"),
+            (.selectPreviousTab, "Previous Thread"),
+            (.selectNextTab, "Next Thread")
+        ]
+
+        for (actionID, title) in expectedLabels {
+            try expect(ShortcutCatalog.action(id: actionID)?.title == title)
+        }
     }
 
     static func testCEFBackedActionsAreAvailable() throws {
