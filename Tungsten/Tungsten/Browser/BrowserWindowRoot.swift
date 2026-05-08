@@ -13,7 +13,8 @@ struct BrowserWindowRoot: View {
         kind: BrowserWindowKind,
         shortcutManager: ShortcutManager,
         historyStore: HistoryStore,
-        appPreferences: AppPreferences
+        appPreferences: AppPreferences,
+        windowSessionCoordinator: BrowserWindowSessionCoordinator
     ) {
         self.kind = kind
         self.shortcutManager = shortcutManager
@@ -21,7 +22,8 @@ struct BrowserWindowRoot: View {
         _browserModel = State(initialValue: BrowserModel(
             kind: kind,
             historyStore: historyStore,
-            appPreferences: appPreferences
+            appPreferences: appPreferences,
+            threadStore: windowSessionCoordinator.makeThreadStore(kind: kind)
         ))
     }
 

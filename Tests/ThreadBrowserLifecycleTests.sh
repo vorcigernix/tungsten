@@ -33,6 +33,8 @@ require_pattern "$session_file" "final class BrowserPageSession" "BrowserPageSes
 require_pattern "$host_file" "final class LivePageSessionHost" "LivePageSessionHost class"
 require_pattern "$host_file" "func activate\\(pageTurn: BrowserTurn, isIncognito: Bool, configure: \\(BrowserPageSession\\) -> Void\\)" "LivePageSessionHost.activate(pageTurn:isIncognito:configure:)"
 require_pattern "$model_file" "activePageSession" "BrowserModel.activePageSession bridge"
+require_pattern "$model_file" "var threads: \\[BrowserThread\\]" "BrowserModel thread state"
+require_pattern "$model_file" "selectedThreadID" "BrowserModel selected thread state"
 require_pattern "$session_file" "controller\\.delegate = observer" "BrowserPageSession controller delegate wiring"
 require_pattern "$session_file" "browserDidCloseHandler" "BrowserPageSession browser close handler"
 require_pattern "$session_file" "onFaviconURLChange" "BrowserPageSession favicon URL callback"
@@ -43,6 +45,11 @@ require_pattern "$session_file" "browserController\\.closeBrowserForWindowClose\
 require_pattern "$host_file" "closingPageSession" "LivePageSessionHost pending window-close session retention"
 require_pattern "$host_file" "originalOnClose\\?\\(\\)" "LivePageSessionHost preserves original close callback"
 require_pattern "$host_file" "closingPageSession = nil" "LivePageSessionHost releases pending window-close session"
+
+if rg -q "typealias BrowserTab = BrowserPageSession" "$model_file"; then
+    echo "BrowserModel must not keep BrowserTab as a BrowserPageSession typealias" >&2
+    exit 1
+fi
 
 if ! awk '
     /controller\.browserDidCloseHandler =/ { in_handler = 1 }

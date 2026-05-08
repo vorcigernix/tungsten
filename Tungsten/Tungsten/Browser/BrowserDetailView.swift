@@ -2,17 +2,17 @@
 See the LICENSE.txt file for this sample's licensing information.
 
 Abstract:
-The selected tab's browser surface.
+The active page session's browser surface.
 */
 
 import SwiftUI
 
 struct BrowserDetailView: View {
-    let tab: BrowserTab
+    let pageSession: BrowserPageSession
 
     var body: some View {
-        BrowserView(controller: tab.browserController)
-            .id(tab.id)
+        BrowserView(controller: pageSession.browserController)
+            .id(pageSession.pageTurnID)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             // Match the small transparent gutter the sidebar's rounded glass
             // panel has on all sides. The padding shows through to the

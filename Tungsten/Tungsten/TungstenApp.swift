@@ -14,6 +14,7 @@ struct TungstenApp: App {
     @State private var shortcutManager = ShortcutManager()
     @State private var historyStore = HistoryStore()
     @State private var appPreferences = AppPreferences()
+    @State private var windowSessionCoordinator = BrowserWindowSessionCoordinator()
 
     var body: some Scene {
         WindowGroup(BrowserWindowKind.normal.title, id: BrowserWindowKind.normal.sceneID) {
@@ -21,7 +22,8 @@ struct TungstenApp: App {
                 kind: .normal,
                 shortcutManager: shortcutManager,
                 historyStore: historyStore,
-                appPreferences: appPreferences
+                appPreferences: appPreferences,
+                windowSessionCoordinator: windowSessionCoordinator
             )
         }
         .defaultSize(width: 1440, height: 900)
@@ -31,7 +33,8 @@ struct TungstenApp: App {
                 kind: .incognito,
                 shortcutManager: shortcutManager,
                 historyStore: historyStore,
-                appPreferences: appPreferences
+                appPreferences: appPreferences,
+                windowSessionCoordinator: windowSessionCoordinator
             )
         }
         .defaultSize(width: 1440, height: 900)

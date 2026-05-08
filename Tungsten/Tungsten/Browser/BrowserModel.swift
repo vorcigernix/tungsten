@@ -2,33 +2,40 @@
 See the LICENSE.txt file for this sample's licensing information.
 
 Abstract:
-Browser tab state and navigation actions.
+Browser thread state and navigation actions.
 */
 
 import AppKit
 import Foundation
 
-typealias BrowserTab = BrowserPageSession
-
 @Observable @MainActor
 final class BrowserModel {
     let kind: BrowserWindowKind
     let appPreferences: AppPreferences
-    var tabs: [BrowserTab] = []
+    let historyStore: HistoryStore
+
+    var threads: [BrowserThread] = []
+    var selectedThreadID: BrowserThread.ID? {
+        didSet {
+            guard oldValue != selectedThreadID else {
+                return
+            }
+
+            if let oldValue {
+                previousSelectedThreadID = oldValue
+            }
+
+            isFindBarVisible = false
+            findText = ""
+            activateSelectedThreadPage()
+            persistThreads()
+        }
+    }
 
     var defaultNewTabURL: String {
         appPreferences.searchEngine.homepageURL
     }
-    var selectedTabID: BrowserTab.ID? {
-        didSet {
-            guard oldValue != selectedTabID else {
-                return
-            }
-            if let oldValue {
-                previousSelectedTabID = oldValue
-            }
-        }
-    }
+
     var addressText: String = ""
     var addressFocusRequestID = 0
     var isSidebarVisible = true
@@ -37,181 +44,267 @@ final class BrowserModel {
     var findText = ""
     var findFocusRequestID = 0
 
-    var selectedTab: BrowserTab? {
-        tabs.first { $0.id == selectedTabID }
+    var selectedThread: BrowserThread? {
+        guard let selectedThreadID else {
+            return nil
+        }
+
+        return threads.first { $0.id == selectedThreadID }
     }
 
-    var activePageSession: BrowserPageSession? { selectedTab }
+    var activePageSession: BrowserPageSession? {
+        livePageHost.activePageSession
+    }
 
-    private var previousSelectedTabID: BrowserTab.ID?
-    let historyStore: HistoryStore
-    private var closedTabs: [ClosedTab] = []
-    private var didCloseBrowsersForWindowClose = false
-    private var pendingWindowCloseTabIDs: Set<BrowserTab.ID> = []
-    private var windowCloseCompletion: (() -> Void)?
+    var selectedTab: BrowserPageSession? {
+        activePageSession
+    }
+
+    var selectedTabID: BrowserPageSession.ID? {
+        get { activePageSession?.id }
+        set { _ = newValue }
+    }
+
+    @ObservationIgnored private var previousSelectedThreadID: BrowserThread.ID?
+    @ObservationIgnored private let threadStore: BrowserThreadStore
+    @ObservationIgnored private let livePageHost = LivePageSessionHost()
+    @ObservationIgnored nonisolated(unsafe) private let aiResponseCoordinator: AIResponseCoordinator
+    @ObservationIgnored private var responseTask: Task<Void, Never>?
+    @ObservationIgnored private var closedThreads: [BrowserThread] = []
+    @ObservationIgnored private var didCloseBrowsersForWindowClose = false
+    @ObservationIgnored private var windowCloseCompletion: (() -> Void)?
 
     init(
         kind: BrowserWindowKind = .normal,
         historyStore: HistoryStore = HistoryStore(),
-        appPreferences: AppPreferences = AppPreferences()
+        appPreferences: AppPreferences = AppPreferences(),
+        threadStore: BrowserThreadStore? = nil,
+        localAI: LocalAIAnswering? = nil
     ) {
         self.kind = kind
         self.historyStore = historyStore
         self.appPreferences = appPreferences
-        addTab()
+
+        let resolvedThreadStore: BrowserThreadStore
+        if let threadStore {
+            resolvedThreadStore = threadStore
+        } else if kind.isIncognito {
+            resolvedThreadStore = BrowserThreadStore(scope: .memoryOnly)
+        } else {
+            resolvedThreadStore = BrowserThreadStore(
+                scope: .persistent(windowSessionID: BrowserThreadStore.makeWindowSessionID())
+            )
+        }
+        self.threadStore = resolvedThreadStore
+
+        let resolvedLocalAI = localAI ?? ProviderBackedLocalAIResponder(
+            provider: { appPreferences.localAIProvider }
+        )
+        aiResponseCoordinator = AIResponseCoordinator(
+            localAI: resolvedLocalAI,
+            searchEngine: appPreferences.searchEngine
+        )
+
+        let snapshot = resolvedThreadStore.load()
+        threads = snapshot.threads
+
+        if threads.isEmpty {
+            createThread()
+            activateSelectedThreadPage()
+            persistThreads()
+        } else if let snapshotSelectedThreadID = snapshot.selectedThreadID,
+                  threads.contains(where: { $0.id == snapshotSelectedThreadID }) {
+            selectedThreadID = snapshotSelectedThreadID
+            activateSelectedThreadPage()
+        } else {
+            selectedThreadID = threads.first?.id
+            activateSelectedThreadPage()
+            persistThreads()
+        }
     }
 
-    func addTab(navigateTo urlString: String? = nil) {
-        let target = urlString ?? defaultNewTabURL
-        let tab = makeTab(navigateTo: target)
-        tabs.append(tab)
-        selectedTabID = tab.id
+    func createThread() {
+        createThread(navigateTo: defaultNewTabURL)
     }
 
-    func close(_ tab: BrowserTab) {
-        guard let index = tabs.firstIndex(where: { $0.id == tab.id }) else {
+    func closeSelectedThread() {
+        guard let selectedThread else {
             return
         }
 
-        if tabs.count == 1 {
-            tab.resetForLastTabClose(to: defaultNewTabURL)
-            selectedTabID = tab.id
-            isFindBarVisible = false
-            findText = ""
+        close(selectedThread)
+    }
+
+    func close(_ thread: BrowserThread) {
+        guard let index = threads.firstIndex(where: { $0.id == thread.id }) else {
             return
         }
 
         if kind == .normal {
-            closedTabs.append(
-                ClosedTab(
-                    urlString: tab.urlString,
-                    title: tab.displayTitle,
-                    isPinned: tab.isPinned
-                )
-            )
+            closedThreads.append(thread)
         }
 
-        tab.closeBrowser()
-        tabs.remove(at: index)
+        let selectedWasClosed = selectedThreadID == thread.id
+        threads.remove(at: index)
 
-        if tabs.isEmpty {
-            addTab()
+        if threads.isEmpty {
+            selectedThreadID = nil
+            createThread()
             return
         }
 
-        if selectedTabID == tab.id {
-            let nextIndex = min(index, tabs.count - 1)
-            selectedTabID = tabs[nextIndex].id
-        }
-    }
-
-    func closeSelectedTab() {
-        guard let selectedTab else {
-            return
-        }
-        close(selectedTab)
-    }
-
-    func closeBrowsersForWindowClose(completion: @escaping () -> Void) {
-        guard didCloseBrowsersForWindowClose == false else {
-            if windowCloseCompletion == nil {
-                completion()
-            }
-            return
-        }
-
-        didCloseBrowsersForWindowClose = true
-        isFindBarVisible = false
-        isHistoryVisible = false
-        findText = ""
-
-        let closingTabs = tabs
-        pendingWindowCloseTabIDs = Set(closingTabs.map(\.id))
-        windowCloseCompletion = completion
-
-        guard closingTabs.isEmpty == false else {
-            finishWindowCloseIfNeeded()
-            return
-        }
-
-        for tab in closingTabs {
-            let tabID = tab.id
-            tab.onBrowserClose = { [weak self] in
-                self?.markWindowCloseBrowserClosed(tabID)
-            }
-        }
-
-        for tab in closingTabs {
-            tab.closeBrowserForWindowClose()
-        }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
-            self?.finishWindowCloseIfNeeded()
-        }
-    }
-
-    func toggleSelectedTabPin() {
-        guard let selectedTab else {
-            return
-        }
-
-        togglePin(selectedTab)
-    }
-
-    func togglePin(_ tab: BrowserTab) {
-        guard tabs.contains(where: { $0.id == tab.id }) else {
-            return
-        }
-
-        tab.isPinned.toggle()
-    }
-
-    func clearUnpinnedTabs() {
-        let pinnedTabs = tabs.filter(\.isPinned)
-        let removedTabs = tabs.filter { $0.isPinned == false }
-        let selectedWasRemoved = selectedTab.map { $0.isPinned == false } ?? false
-
-        guard removedTabs.isEmpty == false else {
-            return
-        }
-
-        for tab in removedTabs {
-            tab.closeBrowser()
-        }
-
-        if pinnedTabs.isEmpty {
-            tabs.removeAll()
-            isFindBarVisible = false
-            findText = ""
-            addTab()
-            return
-        }
-
-        let oldSelectedTabID = selectedTabID
-        tabs = pinnedTabs
-
-        if let oldSelectedTabID, tabs.contains(where: { $0.id == oldSelectedTabID }) {
-            selectedTabID = oldSelectedTabID
+        if selectedWasClosed {
+            let nextIndex = min(index, threads.count - 1)
+            selectedThreadID = threads[nextIndex].id
         } else {
-            selectedTabID = tabs.first?.id
+            persistThreads()
+        }
+    }
+
+    func toggleThreadPin(_ thread: BrowserThread) {
+        guard let index = threads.firstIndex(where: { $0.id == thread.id }) else {
+            return
+        }
+
+        threads[index].isPinned.toggle()
+        persistThreads()
+    }
+
+    func toggleSelectedThreadPin() {
+        guard let selectedThread else {
+            return
+        }
+
+        toggleThreadPin(selectedThread)
+    }
+
+    func clearUnpinnedThreads() {
+        let selectedWasRemoved = selectedThread.map { $0.isPinned == false } ?? false
+        let pinnedThreads = threads.filter(\.isPinned)
+
+        guard pinnedThreads.count != threads.count else {
+            return
+        }
+
+        if pinnedThreads.isEmpty {
+            selectedThreadID = nil
+            createThread()
+        } else {
+            let oldSelectedThreadID = selectedThreadID
+            threads = pinnedThreads
+
+            if let oldSelectedThreadID,
+               threads.contains(where: { $0.id == oldSelectedThreadID }) {
+                selectedThreadID = oldSelectedThreadID
+            } else {
+                selectedThreadID = threads.first?.id
+            }
         }
 
         if selectedWasRemoved {
             isFindBarVisible = false
             findText = ""
         }
+
+        persistThreads()
     }
 
-    func reopenLastClosedTab() {
-        guard kind == .normal, let closedTab = closedTabs.popLast() else {
+    func reopenLastClosedThread() {
+        guard kind == .normal, let closedThread = closedThreads.popLast() else {
             return
         }
 
-        let tab = makeTab(navigateTo: closedTab.urlString)
-        tab.title = closedTab.title
-        tab.isPinned = closedTab.isPinned
-        tabs.append(tab)
-        selectedTabID = tab.id
+        threads.append(closedThread)
+        selectedThreadID = closedThread.id
+    }
+
+    func selectThread(atZeroBasedIndex index: Int) {
+        guard threads.indices.contains(index) else {
+            return
+        }
+
+        selectedThreadID = threads[index].id
+    }
+
+    func selectPreviousThread() {
+        guard
+            let selectedThreadID,
+            let index = threads.firstIndex(where: { $0.id == selectedThreadID }),
+            index > threads.startIndex
+        else {
+            return
+        }
+
+        self.selectedThreadID = threads[index - 1].id
+    }
+
+    func selectNextThread() {
+        guard
+            let selectedThreadID,
+            let index = threads.firstIndex(where: { $0.id == selectedThreadID }),
+            index < threads.index(before: threads.endIndex)
+        else {
+            return
+        }
+
+        self.selectedThreadID = threads[index + 1].id
+    }
+
+    func selectRecentThread() {
+        guard
+            let previousSelectedThreadID,
+            threads.contains(where: { $0.id == previousSelectedThreadID })
+        else {
+            return
+        }
+
+        selectedThreadID = previousSelectedThreadID
+    }
+
+    func activatePageTurnInSelectedThread(_ pageTurnID: BrowserTurn.ID) {
+        guard let index = selectedThreadIndex else {
+            return
+        }
+
+        threads[index].activatePageTurn(pageTurnID)
+        activateSelectedThreadPage()
+        persistThreads()
+    }
+
+    func addTab(navigateTo urlString: String? = nil) {
+        createThread(navigateTo: urlString ?? defaultNewTabURL)
+    }
+
+    func closeSelectedTab() {
+        closeSelectedThread()
+    }
+
+    func toggleSelectedTabPin() {
+        toggleSelectedThreadPin()
+    }
+
+    func clearUnpinnedTabs() {
+        clearUnpinnedThreads()
+    }
+
+    func reopenLastClosedTab() {
+        reopenLastClosedThread()
+    }
+
+    func selectTab(atZeroBasedIndex index: Int) {
+        selectThread(atZeroBasedIndex: index)
+    }
+
+    func selectPreviousTab() {
+        selectPreviousThread()
+    }
+
+    func selectNextTab() {
+        selectNextThread()
+    }
+
+    func selectRecentTab() {
+        selectRecentThread()
     }
 
     func showHistory() {
@@ -223,17 +316,12 @@ final class BrowserModel {
     }
 
     func openHistoryEntry(_ entry: HistoryEntry) {
-        if let selectedTab {
-            selectedTab.navigate(to: entry.urlString)
-        } else {
-            addTab(navigateTo: entry.urlString)
-        }
-
+        appendPageTurnToSelectedThread(urlString: entry.urlString)
         closeHistory()
     }
 
     func copySelectedTabURL() {
-        guard let urlString = selectedTab?.urlString else {
+        guard let urlString = activePageSession?.urlString else {
             return
         }
 
@@ -242,21 +330,21 @@ final class BrowserModel {
     }
 
     func copySelectedTabURLAsMarkdown() {
-        guard let selectedTab else {
+        guard let pageSession = activePageSession else {
             return
         }
 
-        let title = selectedTab.displayTitle
+        let title = pageSession.displayTitle
             .replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "]", with: "\\]")
-        let markdown = "[\(title)](\(selectedTab.urlString))"
+        let markdown = "[\(title)](\(pageSession.urlString))"
 
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(markdown, forType: .string)
     }
 
     func focusAddressInput() {
-        addressText = selectedTab?.urlString ?? addressText
+        addressText = activePageSession?.urlString ?? addressText
         addressFocusRequestID += 1
     }
 
@@ -265,15 +353,15 @@ final class BrowserModel {
     }
 
     func zoomIn() {
-        selectedTab?.zoomIn()
+        activePageSession?.zoomIn()
     }
 
     func zoomOut() {
-        selectedTab?.zoomOut()
+        activePageSession?.zoomOut()
     }
 
     func resetZoom() {
-        selectedTab?.resetZoom()
+        activePageSession?.resetZoom()
     }
 
     func showFindInPage() {
@@ -286,7 +374,7 @@ final class BrowserModel {
     }
 
     func closeFindInPage() {
-        selectedTab?.stopFinding(clearSelection: true)
+        activePageSession?.stopFinding(clearSelection: true)
         isFindBarVisible = false
     }
 
@@ -294,7 +382,7 @@ final class BrowserModel {
         findText = text
 
         guard findText.isEmpty == false else {
-            selectedTab?.stopFinding(clearSelection: true)
+            activePageSession?.stopFinding(clearSelection: true)
             return
         }
 
@@ -309,58 +397,226 @@ final class BrowserModel {
         runFindInPage(findNext: true, forward: false)
     }
 
-    func selectTab(atZeroBasedIndex index: Int) {
-        guard tabs.indices.contains(index) else {
-            return
-        }
-        selectedTabID = tabs[index].id
-    }
-
-    func selectPreviousTab() {
-        guard
-            let selectedTabID,
-            let index = tabs.firstIndex(where: { $0.id == selectedTabID }),
-            index > tabs.startIndex
-        else {
-            return
-        }
-
-        self.selectedTabID = tabs[index - 1].id
-    }
-
-    func selectNextTab() {
-        guard
-            let selectedTabID,
-            let index = tabs.firstIndex(where: { $0.id == selectedTabID }),
-            index < tabs.index(before: tabs.endIndex)
-        else {
-            return
-        }
-
-        self.selectedTabID = tabs[index + 1].id
-    }
-
-    func selectRecentTab() {
-        guard
-            let previousSelectedTabID,
-            tabs.contains(where: { $0.id == previousSelectedTabID })
-        else {
-            return
-        }
-
-        selectedTabID = previousSelectedTabID
-    }
-
     func submitAddressBar() {
+        guard let submission = BrowserInputClassifier.submission(
+            for: addressText,
+            searchEngine: appPreferences.searchEngine
+        ) else {
+            return
+        }
+
+        addressText = ""
+
+        switch submission {
+        case .page(let urlString):
+            appendPageTurnToSelectedThread(urlString: urlString)
+        case .question(let question):
+            appendQuestionTurnToSelectedThread(question)
+        }
+    }
+
+    func closeBrowsersForWindowClose(completion: @escaping () -> Void) {
+        guard didCloseBrowsersForWindowClose == false else {
+            if windowCloseCompletion == nil {
+                completion()
+            }
+            return
+        }
+
+        didCloseBrowsersForWindowClose = true
+        responseTask?.cancel()
+        isFindBarVisible = false
+        isHistoryVisible = false
+        findText = ""
+        windowCloseCompletion = completion
+
+        guard let pageSession = activePageSession else {
+            finishWindowCloseIfNeeded()
+            return
+        }
+
+        let originalOnBrowserClose = pageSession.onBrowserClose
+        pageSession.onBrowserClose = { [weak self] in
+            originalOnBrowserClose?()
+            self?.finishWindowCloseIfNeeded()
+        }
+
+        livePageHost.closeActivePageForWindowClose()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+            self?.finishWindowCloseIfNeeded()
+        }
+    }
+
+    private var selectedThreadIndex: Int? {
+        guard let selectedThreadID else {
+            return nil
+        }
+
+        return threads.firstIndex { $0.id == selectedThreadID }
+    }
+
+    private func createThread(navigateTo urlString: String) {
+        var thread = BrowserThread()
+        let pageTurnID = thread.appendPage(urlString: urlString)
+        thread.activatePageTurn(pageTurnID)
+        threads.append(thread)
+        selectedThreadID = thread.id
+    }
+
+    private func appendPageTurnToSelectedThread(urlString: String) {
+        if selectedThreadIndex == nil {
+            createThread(navigateTo: urlString)
+            return
+        }
+
+        guard let index = selectedThreadIndex else {
+            return
+        }
+
+        let pageTurnID = threads[index].appendPage(urlString: urlString)
+        threads[index].activatePageTurn(pageTurnID)
+        activateSelectedThreadPage()
+        persistThreads()
+    }
+
+    private func appendQuestionTurnToSelectedThread(_ question: String) {
+        if selectedThreadIndex == nil {
+            createThread()
+        }
+
+        guard let threadID = selectedThreadID,
+              let index = selectedThreadIndex else {
+            return
+        }
+
+        threads[index].appendQuestion(question)
+        persistThreads()
+
+        responseTask?.cancel()
+        responseTask = Task { [weak self] in
+            guard let self else {
+                return
+            }
+
+            let result = await aiResponseCoordinator.response(for: question)
+            handleAIResponse(result, for: threadID)
+        }
+    }
+
+    private func handleAIResponse(_ result: AIResponseResult, for threadID: BrowserThread.ID) {
+        guard let index = threads.firstIndex(where: { $0.id == threadID }) else {
+            return
+        }
+
+        switch result {
+        case .assistant(let answer):
+            threads[index].appendAssistantResponse(answer)
+        case .fallbackPage(let systemMessage, let urlString):
+            threads[index].appendSystemMessage(systemMessage)
+            let pageTurnID = threads[index].appendPage(urlString: urlString)
+            threads[index].activatePageTurn(pageTurnID)
+
+            if selectedThreadID == threadID {
+                activateSelectedThreadPage()
+            }
+        }
+
+        persistThreads()
+    }
+
+    private func activateSelectedThreadPage() {
+        guard let pageTurn = selectedThread?.activePageTurn else {
+            livePageHost.closeActivePage()
+            return
+        }
+
+        livePageHost.activate(
+            pageTurn: pageTurn,
+            isIncognito: kind.isIncognito
+        ) { [weak self] pageSession in
+            self?.configurePageCallbacks(for: pageSession)
+        }
+    }
+
+    private func configurePageCallbacks(for pageSession: BrowserPageSession) {
+        pageSession.onURLChange = { [weak self, weak pageSession] urlString in
+            guard let self, let pageSession else {
+                return
+            }
+
+            self.updatePageTurnMetadata(
+                pageTurnID: pageSession.pageTurnID,
+                urlString: urlString
+            )
+            self.recordHistoryVisit(urlString, pageSession: pageSession)
+        }
+
+        pageSession.onTitleChange = { [weak self, weak pageSession] title in
+            guard let self, let pageSession else {
+                return
+            }
+
+            self.updatePageTurnMetadata(
+                pageTurnID: pageSession.pageTurnID,
+                title: title
+            )
+            self.recordHistoryTitle(title, pageSession: pageSession)
+        }
+
+        pageSession.onFaviconURLChange = { [weak self, weak pageSession] faviconURLString in
+            guard let self, let pageSession else {
+                return
+            }
+
+            self.updatePageTurnMetadata(
+                pageTurnID: pageSession.pageTurnID,
+                faviconURLString: faviconURLString
+            )
+        }
+    }
+
+    private func updatePageTurnMetadata(
+        pageTurnID: BrowserTurn.ID,
+        urlString: String? = nil,
+        title: String? = nil,
+        faviconURLString: String? = nil
+    ) {
+        guard let index = threads.firstIndex(where: { thread in
+            thread.turns.contains { $0.id == pageTurnID && $0.kind == .page }
+        }) else {
+            return
+        }
+
+        threads[index].updatePageMetadata(
+            turnID: pageTurnID,
+            urlString: urlString,
+            title: title,
+            faviconURLString: faviconURLString
+        )
+        persistThreads()
+    }
+
+    private func recordHistoryVisit(_ urlString: String, pageSession: BrowserPageSession) {
         guard
-            let target = AddressResolver.navigationTarget(for: addressText, searchEngine: appPreferences.searchEngine),
-            let selectedTab
+            kind == .normal,
+            activePageSession === pageSession
         else {
             return
         }
 
-        selectedTab.navigate(to: target)
-        addressText = ""
+        historyStore.recordVisit(urlString: urlString, title: pageSession.displayTitle)
+    }
+
+    private func recordHistoryTitle(_ title: String, pageSession: BrowserPageSession) {
+        guard
+            kind == .normal,
+            activePageSession === pageSession
+        else {
+            return
+        }
+
+        historyStore.updateTitle(for: pageSession.urlString, title: title)
     }
 
     private func runFindInPage(findNext: Bool, forward: Bool) {
@@ -368,16 +624,7 @@ final class BrowserModel {
             return
         }
 
-        selectedTab?.findInPage(findText, forward: forward, matchCase: false, findNext: findNext)
-    }
-
-    private func markWindowCloseBrowserClosed(_ tabID: BrowserTab.ID) {
-        pendingWindowCloseTabIDs.remove(tabID)
-        tabs.first { $0.id == tabID }?.onBrowserClose = nil
-
-        if pendingWindowCloseTabIDs.isEmpty {
-            finishWindowCloseIfNeeded()
-        }
+        activePageSession?.findInPage(findText, forward: forward, matchCase: false, findNext: findNext)
     }
 
     private func finishWindowCloseIfNeeded() {
@@ -385,54 +632,11 @@ final class BrowserModel {
             return
         }
 
-        pendingWindowCloseTabIDs.removeAll()
         windowCloseCompletion = nil
         completion()
     }
 
-    private func makeTab(navigateTo urlString: String) -> BrowserTab {
-        let tab = BrowserTab(initialURL: urlString, isIncognito: kind.isIncognito)
-        configureHistoryCallbacks(for: tab)
-        return tab
-    }
-
-    private func configureHistoryCallbacks(for tab: BrowserTab) {
-        tab.onURLChange = { [weak self, weak tab] urlString in
-            guard let self, let tab else {
-                return
-            }
-
-            self.recordHistoryVisit(urlString, tab: tab)
-        }
-
-        tab.onTitleChange = { [weak self, weak tab] title in
-            guard let self, let tab else {
-                return
-            }
-
-            self.recordHistoryTitle(title, tab: tab)
-        }
-    }
-
-    private func recordHistoryVisit(_ urlString: String, tab: BrowserTab) {
-        guard
-            kind == .normal,
-            tabs.contains(where: { $0.id == tab.id })
-        else {
-            return
-        }
-
-        historyStore.recordVisit(urlString: urlString, title: tab.displayTitle)
-    }
-
-    private func recordHistoryTitle(_ title: String, tab: BrowserTab) {
-        guard
-            kind == .normal,
-            tabs.contains(where: { $0.id == tab.id })
-        else {
-            return
-        }
-
-        historyStore.updateTitle(for: tab.urlString, title: title)
+    private func persistThreads() {
+        threadStore.save(threads: threads, selectedThreadID: selectedThreadID)
     }
 }

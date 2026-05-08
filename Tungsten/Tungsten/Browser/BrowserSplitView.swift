@@ -21,7 +21,7 @@ struct BrowserSplitView: View {
 
     var body: some View {
         @Bindable var browserModel = browserModel
-        let tab = browserModel.selectedTab
+        let pageSession = browserModel.activePageSession
         let sidebarVisibility = Binding<NavigationSplitViewVisibility> {
             browserModel.isSidebarVisible ? .all : .detailOnly
         } set: { visibility in
@@ -32,9 +32,9 @@ struct BrowserSplitView: View {
             BrowserSidebar()
                 .navigationSplitViewColumnWidth(min: 320, ideal: 400, max: 560)
         } detail: {
-            if let tab {
+            if let pageSession {
                 ZStack(alignment: .topTrailing) {
-                    BrowserDetailView(tab: tab)
+                    BrowserDetailView(pageSession: pageSession)
 
                     if browserModel.isFindBarVisible {
                         FindBar(
@@ -52,7 +52,7 @@ struct BrowserSplitView: View {
                 }
                 .animation(.smooth(duration: 0.16), value: browserModel.isFindBarVisible)
             } else {
-                ContentUnavailableView("No Tabs", systemImage: "rectangle.dashed")
+                ContentUnavailableView("No Page", systemImage: "rectangle.dashed")
             }
         }
         // Frosty glass fills the window-level gutters around the rounded
@@ -151,27 +151,27 @@ private struct BrowserSidebar: View {
         @Bindable var browserModel = browserModel
 
         VStack(spacing: 0) {
-            List(selection: $browserModel.selectedTabID) {
+            List(selection: $browserModel.selectedThreadID) {
                 SidebarControls(
-                    tab: browserModel.selectedTab,
+                    pageSession: browserModel.activePageSession,
                     isIncognito: browserModel.kind.isIncognito,
-                    addTab: { browserModel.addTab() }
+                    createThread: { browserModel.createThread() }
                 )
                 .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
 
-                ForEach(browserModel.tabs) { tab in
-                    BrowserTabRow(tab: tab)
-                        .tag(tab.id)
+                ForEach(browserModel.threads) { thread in
+                    BrowserThreadRow(thread: thread)
+                        .tag(thread.id)
                         .contextMenu {
-                            Button(tab.isPinned ? "Unpin Tab" : "Pin Tab", systemImage: tab.isPinned ? "pin.slash" : "pin") {
-                                browserModel.togglePin(tab)
+                            Button(thread.isPinned ? "Unpin Thread" : "Pin Thread", systemImage: thread.isPinned ? "pin.slash" : "pin") {
+                                browserModel.toggleThreadPin(thread)
                             }
-                            Button("Clear Unpinned Tabs", systemImage: "xmark.circle") {
-                                browserModel.clearUnpinnedTabs()
+                            Button("Clear Unpinned Threads", systemImage: "xmark.circle") {
+                                browserModel.clearUnpinnedThreads()
                             }
                             Divider()
-                            Button("Close Tab", systemImage: "xmark") {
-                                browserModel.close(tab)
+                            Button("Close Thread", systemImage: "xmark") {
+                                browserModel.close(thread)
                             }
                         }
                 }
@@ -190,34 +190,34 @@ private struct BrowserSidebar: View {
 }
 
 private struct SidebarControls: View {
-    let tab: BrowserTab?
+    let pageSession: BrowserPageSession?
     let isIncognito: Bool
-    let addTab: () -> Void
+    let createThread: () -> Void
 
     var body: some View {
         HStack(spacing: 8) {
             Button("Back", systemImage: "chevron.backward") {
-                tab?.goBack()
+                pageSession?.goBack()
             }
-            .disabled(tab?.canGoBack != true)
+            .disabled(pageSession?.canGoBack != true)
             .help("Back")
 
             Button("Forward", systemImage: "chevron.forward") {
-                tab?.goForward()
+                pageSession?.goForward()
             }
-            .disabled(tab?.canGoForward != true)
+            .disabled(pageSession?.canGoForward != true)
             .help("Forward")
 
-            if tab?.isLoading == true {
+            if pageSession?.isLoading == true {
                 Button("Stop", systemImage: "xmark") {
-                    tab?.stopLoading()
+                    pageSession?.stopLoading()
                 }
                 .help("Stop")
             } else {
                 Button("Reload", systemImage: "arrow.clockwise") {
-                    tab?.reload()
+                    pageSession?.reload()
                 }
-                .disabled(tab == nil)
+                .disabled(pageSession == nil)
                 .help("Reload")
             }
 
@@ -231,10 +231,10 @@ private struct SidebarControls: View {
                     .help("Private Window")
             }
 
-            Button("New Tab", systemImage: "plus") {
-                addTab()
+            Button("New Thread", systemImage: "plus") {
+                createThread()
             }
-            .help("New Tab")
+            .help("New Thread")
         }
         .labelStyle(.iconOnly)
         .buttonStyle(.borderless)
@@ -242,33 +242,23 @@ private struct SidebarControls: View {
     }
 }
 
-private struct BrowserTabRow: View {
-    let tab: BrowserTab
+private struct BrowserThreadRow: View {
+    let thread: BrowserThread
 
     var body: some View {
         Label {
             HStack(spacing: 6) {
-                Text(tab.displayTitle)
+                Text(thread.displayTitle)
                     .lineLimit(1)
 
-                if tab.isPinned {
+                if thread.isPinned {
                     Image(systemName: "pin.fill")
                         .imageScale(.small)
                         .foregroundStyle(.secondary)
                 }
             }
         } icon: {
-            if tab.isLoading {
-                Image(systemName: "arrow.triangle.2.circlepath")
-                    .symbolEffect(.rotate, isActive: true)
-            } else if let favicon = tab.favicon {
-                Image(nsImage: favicon)
-                    .resizable()
-                    .interpolation(.high)
-                    .frame(width: 16, height: 16)
-            } else {
-                Image(systemName: "globe")
-            }
+            Image(systemName: thread.isPinned ? "pin.circle" : "globe")
         }
     }
 }
