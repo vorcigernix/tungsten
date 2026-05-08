@@ -1088,11 +1088,6 @@ if ! rg -q "activePageSession" "$model_file"; then
     exit 1
 fi
 
-if rg -q "var tabs: \\[BrowserTab\\]" "$model_file"; then
-    echo "BrowserModel must no longer own a classical tabs array." >&2
-    exit 1
-fi
-
 echo "ThreadBrowserLifecycleTests passed"
 ```
 
@@ -1210,13 +1205,21 @@ final class LivePageSessionHost {
 
 - [ ] **Step 5: Update `BrowserModel` to compile with extracted type**
 
-In `BrowserModel.swift`, remove the embedded `BrowserTab` and `BrowserControllerObserver` definitions after their extraction. Temporarily replace `tabs: [BrowserTab]` usages with `threads` in Task 5. In this task, the minimal compile bridge is:
+In `BrowserModel.swift`, remove the embedded `BrowserTab` and `BrowserControllerObserver` definitions after their extraction. Keep the existing tab-oriented `BrowserModel` behavior compiling in this task by using a temporary compatibility alias:
 
 ```swift
 typealias BrowserTab = BrowserPageSession
 ```
 
-Place the typealias near the top of `BrowserModel.swift` only for this task if the file still contains tab-oriented methods. Remove the typealias in Task 5 after the full model migration.
+Place the typealias near the top of `BrowserModel.swift` only for this task. Add a temporary computed bridge if needed:
+
+```swift
+var activePageSession: BrowserPageSession? {
+    selectedTab
+}
+```
+
+Remove the typealias and old `tabs` array in Task 5 after the full model migration.
 
 - [ ] **Step 6: Run lifecycle test and build**
 
