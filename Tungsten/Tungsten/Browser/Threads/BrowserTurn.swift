@@ -19,8 +19,11 @@ struct BrowserTurn: Identifiable, Codable, Equatable {
     var displayTitle: String {
         switch kind {
         case .page:
-            if let title, title.isEmpty == false {
-                return title
+            if let title {
+                let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+                if trimmedTitle.isEmpty == false {
+                    return trimmedTitle
+                }
             }
 
             if let urlString,
@@ -29,9 +32,11 @@ struct BrowserTurn: Identifiable, Codable, Equatable {
                 return host
             }
 
-            return urlString ?? text
+            let fallback = (urlString ?? text).trimmingCharacters(in: .whitespacesAndNewlines)
+            return fallback.isEmpty ? "Untitled" : fallback
         case .userQuestion, .assistantResponse, .system:
-            return text
+            let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmedText.isEmpty ? "Untitled" : trimmedText
         }
     }
 

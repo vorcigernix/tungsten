@@ -25,9 +25,11 @@ struct BrowserThread: Identifiable, Codable, Equatable {
     }
 
     var displayTitle: String {
-        if let question = turns.first(where: { $0.kind == .userQuestion }),
-           question.text.isEmpty == false {
-            return question.text
+        if let question = turns.first(where: { $0.kind == .userQuestion }) {
+            let title = question.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            if title.isEmpty == false {
+                return String(title.prefix(64))
+            }
         }
 
         if let page = turns.first(where: { $0.kind == .page }) {
@@ -44,11 +46,12 @@ struct BrowserThread: Identifiable, Codable, Equatable {
     }
 
     var activePageTurn: BrowserTurn? {
-        guard let activePageTurnID else {
-            return nil
+        if let activePageTurnID,
+           let turn = turns.first(where: { $0.id == activePageTurnID && $0.kind == .page }) {
+            return turn
         }
 
-        return turns.first { $0.id == activePageTurnID && $0.kind == .page }
+        return turns.last { $0.kind == .page }
     }
 
     @discardableResult
@@ -56,7 +59,7 @@ struct BrowserThread: Identifiable, Codable, Equatable {
         _ text: String,
         id: UUID = UUID(),
         createdAt: Date = Date()
-    ) -> BrowserTurn {
+    ) -> BrowserTurn.ID {
         append(BrowserTurn.question(text, id: id, createdAt: createdAt))
     }
 
@@ -65,7 +68,7 @@ struct BrowserThread: Identifiable, Codable, Equatable {
         _ text: String,
         id: UUID = UUID(),
         createdAt: Date = Date()
-    ) -> BrowserTurn {
+    ) -> BrowserTurn.ID {
         append(BrowserTurn.assistant(text, id: id, createdAt: createdAt))
     }
 
@@ -74,7 +77,7 @@ struct BrowserThread: Identifiable, Codable, Equatable {
         _ text: String,
         id: UUID = UUID(),
         createdAt: Date = Date()
-    ) -> BrowserTurn {
+    ) -> BrowserTurn.ID {
         append(BrowserTurn.system(text, id: id, createdAt: createdAt))
     }
 
@@ -85,7 +88,7 @@ struct BrowserThread: Identifiable, Codable, Equatable {
         faviconURLString: String? = nil,
         id: UUID = UUID(),
         createdAt: Date = Date()
-    ) -> BrowserTurn {
+    ) -> BrowserTurn.ID {
         let turn = BrowserTurn.page(
             urlString: urlString,
             title: title,
@@ -96,22 +99,31 @@ struct BrowserThread: Identifiable, Codable, Equatable {
         return append(turn)
     }
 
-    mutating func activatePageTurn(_ id: UUID) {
+    mutating func activatePageTurn(_ id: UUID, updatedAt: Date = Date()) {
         guard turns.contains(where: { $0.id == id && $0.kind == .page }) else {
             return
         }
 
         activePageTurnID = id
+        self.updatedAt = updatedAt
     }
 
     mutating func updatePageMetadata(
         turnID: UUID,
+        urlString: String? = nil,
         title: String? = nil,
         faviconURLString: String? = nil,
         updatedAt: Date = Date()
     ) {
         guard let index = turns.firstIndex(where: { $0.id == turnID && $0.kind == .page }) else {
             return
+        }
+
+        if let urlString {
+            turns[index].urlString = urlString
+            if turns[index].title == nil {
+                turns[index].text = urlString
+            }
         }
 
         if let title {
@@ -127,7 +139,7 @@ struct BrowserThread: Identifiable, Codable, Equatable {
     }
 
     @discardableResult
-    private mutating func append(_ turn: BrowserTurn) -> BrowserTurn {
+    private mutating func append(_ turn: BrowserTurn) -> BrowserTurn.ID {
         turns.append(turn)
         updatedAt = turn.createdAt
 
@@ -135,6 +147,6 @@ struct BrowserThread: Identifiable, Codable, Equatable {
             activePageTurnID = turn.id
         }
 
-        return turn
+        return turn.id
     }
 }
