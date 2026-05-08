@@ -1246,6 +1246,7 @@ git commit -m "refactor: extract live browser page session"
 **Files:**
 - Create: `Tungsten/Tungsten/Browser/Threads/BrowserWindowSessionCoordinator.swift`
 - Modify: `Tungsten/Tungsten/Browser/BrowserModel.swift`
+- Modify: `Tungsten/Tungsten/Browser/BrowserSplitView.swift`
 - Modify: `Tungsten/Tungsten/Browser/BrowserWindowRoot.swift`
 - Modify: `Tungsten/Tungsten/Browser/BrowserDetailView.swift`
 - Modify: `Tungsten/Tungsten/TungstenApp.swift`
@@ -1734,7 +1735,39 @@ final class BrowserWindowSessionCoordinator {
 
 This preserves the single-window cold-launch behavior while making each additional new normal window start with its own separate thread store.
 
-- [ ] **Step 9: Pass the coordinator from `TungstenApp`**
+- [ ] **Step 9: Add minimal split-view compatibility**
+
+Before the full sidebar timeline in Task 6, update `BrowserSplitView.swift` just enough to compile and keep the existing browser shell usable:
+
+- Replace `let tab = browserModel.selectedTab` with `let pageSession = browserModel.activePageSession`.
+- Replace `BrowserDetailView(tab: tab)` with `BrowserDetailView(pageSession: pageSession)`.
+- Replace `SidebarControls(tab: browserModel.selectedTab, ...)` with `SidebarControls(pageSession: browserModel.activePageSession, ...)`.
+- Change `SidebarControls` parameter type from `BrowserTab?` to `BrowserPageSession?` and update local references from `tab` to `pageSession`.
+- Replace the tab `ForEach(browserModel.tabs)` list with a temporary thread list:
+
+```swift
+ForEach(browserModel.threads) { thread in
+    BrowserThreadRow(thread: thread)
+        .tag(thread.id)
+        .contextMenu {
+            Button(thread.isPinned ? "Unpin Thread" : "Pin Thread", systemImage: thread.isPinned ? "pin.slash" : "pin") {
+                browserModel.toggleThreadPin(thread)
+            }
+            Button("Clear Unpinned Threads", systemImage: "xmark.circle") {
+                browserModel.clearUnpinnedThreads()
+            }
+            Divider()
+            Button("Close Thread", systemImage: "xmark") {
+                browserModel.close(thread)
+            }
+        }
+}
+```
+
+- Bind the list selection to `$browserModel.selectedThreadID`.
+- Add a temporary `BrowserThreadRow` that shows `thread.displayTitle` and an active-page globe/pin icon. Task 6 will replace this with the real chat timeline.
+
+- [ ] **Step 10: Pass the coordinator from `TungstenApp`**
 
 In `TungstenApp`, add:
 
@@ -1766,7 +1799,7 @@ BrowserWindowRoot(
 )
 ```
 
-- [ ] **Step 10: Update `BrowserWindowRoot` store creation**
+- [ ] **Step 11: Update `BrowserWindowRoot` store creation**
 
 Add a `windowSessionCoordinator` parameter and pass a store into `BrowserModel`:
 
@@ -1785,7 +1818,7 @@ _browserModel = State(initialValue: BrowserModel(
 ))
 ```
 
-- [ ] **Step 11: Update `BrowserDetailView`**
+- [ ] **Step 12: Update `BrowserDetailView`**
 
 Change the property:
 
@@ -1800,7 +1833,7 @@ BrowserView(controller: pageSession.browserController)
     .id(pageSession.pageTurnID)
 ```
 
-- [ ] **Step 12: Run tests and build**
+- [ ] **Step 13: Run tests and build**
 
 Run:
 
@@ -1817,10 +1850,10 @@ bash Tests/ThreadBrowserLifecycleTests.sh
 
 Expected: thread model tests and lifecycle structural tests pass; Xcode reports `BUILD SUCCEEDED`.
 
-- [ ] **Step 13: Commit**
+- [ ] **Step 14: Commit**
 
 ```bash
-git add Tungsten/Tungsten/Browser/Threads/BrowserWindowSessionCoordinator.swift Tungsten/Tungsten/Browser/BrowserModel.swift Tungsten/Tungsten/Browser/BrowserWindowRoot.swift Tungsten/Tungsten/Browser/BrowserDetailView.swift Tungsten/Tungsten/TungstenApp.swift Tests/ThreadBrowserLifecycleTests.sh
+git add Tungsten/Tungsten/Browser/Threads/BrowserWindowSessionCoordinator.swift Tungsten/Tungsten/Browser/BrowserModel.swift Tungsten/Tungsten/Browser/BrowserSplitView.swift Tungsten/Tungsten/Browser/BrowserWindowRoot.swift Tungsten/Tungsten/Browser/BrowserDetailView.swift Tungsten/Tungsten/TungstenApp.swift Tests/ThreadBrowserLifecycleTests.sh
 git commit -m "feat: migrate browser model to threads"
 ```
 
