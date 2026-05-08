@@ -56,8 +56,11 @@ CFRunLoopObserverRef g_beforeWaitingObserver = nullptr;
 
 constexpr int64_t kCefNoScheduledWork = INT_MAX;
 
-static NSString *const kLocalAIProviderDefaultsKey = @"Tungsten.LocalAIProvider.v1";
-static NSString *const kLocalAIProviderGoogle = @"google";
+extern "C" NSString *const TungstenLocalAIProviderDefaultsKey = @"Tungsten.LocalAIProvider.v1";
+
+namespace {
+
+NSString *const kLocalAIProviderGoogle = @"google";
 
 const std::vector<std::string> kLocalAIChromiumFeatures = {
     "AIPromptAPI",
@@ -78,9 +81,11 @@ std::string JoinFeatureList(const std::vector<std::string> &features) {
 }
 
 bool IsGoogleLocalAIEnabled() {
-    NSString *storedProvider = [NSUserDefaults.standardUserDefaults stringForKey:kLocalAIProviderDefaultsKey];
+    NSString *storedProvider = [NSUserDefaults.standardUserDefaults stringForKey:TungstenLocalAIProviderDefaultsKey];
     return [storedProvider isEqualToString:kLocalAIProviderGoogle];
 }
+
+}  // namespace
 
 void PerformCefMessageLoopWork(void) {
     if (![[TungstenCEFApp shared] isInitialized]) {
@@ -267,21 +272,26 @@ public:
             "ParallelDownloading"
         };
 
-        std::vector<std::string> &localAIDestination =
-            IsGoogleLocalAIEnabled() ? enabledFeatures : disabledFeatures;
-        localAIDestination.insert(
-            localAIDestination.end(),
-            kLocalAIChromiumFeatures.begin(),
-            kLocalAIChromiumFeatures.end()
-        );
+        // Local AI: route Chromium's Gemini Nano prompt feature flags into
+        // either the enable or disable list based on the user's setting.
+        // Without an explicit decision the flags would float — this keeps the
+        // behavior tied to Settings instead of chrome://flags.
+        if (IsGoogleLocalAIEnabled()) {
+            enabledFeatures.insert(enabledFeatures.end(),
+                                   kLocalAIChromiumFeatures.begin(),
+                                   kLocalAIChromiumFeatures.end());
+        } else {
+            disabledFeatures.insert(disabledFeatures.end(),
+                                    kLocalAIChromiumFeatures.begin(),
+                                    kLocalAIChromiumFeatures.end());
+        }
 
         // Features we explicitly turn off. We don't ship UI for any of these,
         // so paying their startup, memory, and background-traffic cost is pure
         // waste: Translate spawns a renderer worker for every page, MediaRouter
         // (Cast) keeps a discovery service alive, OptimizationHints chats with
         // a Google service, and AutofillServerCommunication uploads form
-        // structure to Google's autofill backend. Unless the user selects
-        // Google Local AI, Chromium's local model flags stay disabled too.
+        // structure to Google's autofill backend.
         command_line->AppendSwitchWithValue(
             "disable-features",
             JoinFeatureList(disabledFeatures)
@@ -295,8 +305,6 @@ public:
         // Silicon's unified memory makes that copy-elision a clean win.
         // CanvasOopRasterization moves canvas raster off the renderer main
         // thread; ParallelDownloading splits large downloads across streams.
-        // Google Local AI opts into Chrome's current Gemini Nano local prompt
-        // API features.
         command_line->AppendSwitchWithValue(
             "enable-features",
             JoinFeatureList(enabledFeatures)

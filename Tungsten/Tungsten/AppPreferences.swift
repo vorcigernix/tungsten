@@ -23,7 +23,7 @@ final class AppPreferences {
 
     private static let searchEngineKey = "Tungsten.SearchEngine.v1"
     private static let transparencyEnabledKey = "Tungsten.WindowTransparencyEnabled.v1"
-    private static let localAIProviderKey = "Tungsten.LocalAIProvider.v1"
+    private static let localAIProviderKey = TungstenLocalAIProviderDefaultsKey
 
     var searchEngine: SearchEngine {
         didSet {

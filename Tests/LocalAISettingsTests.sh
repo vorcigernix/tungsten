@@ -4,6 +4,7 @@ set -euo pipefail
 preferences_file="Tungsten/Tungsten/AppPreferences.swift"
 settings_file="Tungsten/Tungsten/Settings/GeneralSettingsView.swift"
 bridge_file="Tungsten/Tungsten/CEF/TungstenCEFBridge.mm"
+cef_app_header="Tungsten/Tungsten/CEF/TungstenCEFApp.h"
 
 require_pattern() {
     local file="$1"
@@ -20,14 +21,17 @@ require_pattern "$preferences_file" "enum LocalAIProvider" "LocalAIProvider mode
 require_pattern "$preferences_file" "case google" "Google Local AI option"
 require_pattern "$preferences_file" "case apple" "Apple Local AI option"
 require_pattern "$preferences_file" "case disabled" "Disabled Local AI option"
-require_pattern "$preferences_file" "Tungsten.LocalAIProvider.v1" "Local AI persistence key"
+require_pattern "$preferences_file" "TungstenLocalAIProviderDefaultsKey" "Local AI persistence key (shared via bridging header)"
 require_pattern "$settings_file" "Picker\\(\"Local AI\"" "Local AI settings picker"
+
+require_pattern "$cef_app_header" "FOUNDATION_EXPORT NSString \\*const TungstenLocalAIProviderDefaultsKey" "Local AI defaults key declaration"
+require_pattern "$bridge_file" "TungstenLocalAIProviderDefaultsKey = @\"Tungsten.LocalAIProvider.v1\"" "Local AI defaults key definition"
 
 require_pattern "$bridge_file" "AIPromptAPI" "Gemini Nano prompt feature"
 require_pattern "$bridge_file" "AIPromptAPIMultimodalInput" "Gemini Nano multimodal feature"
 require_pattern "$bridge_file" "OptimizationGuideOnDeviceModel" "Optimization Guide local model feature"
 require_pattern "$bridge_file" "OnDeviceModelPerformanceParams" "Optimization Guide on-device model flag parameters"
-require_pattern "$bridge_file" "Tungsten.LocalAIProvider.v1" "CEF Local AI preference lookup"
+require_pattern "$bridge_file" "TungstenLocalAIProviderDefaultsKey" "CEF Local AI preference lookup"
 
 if ! awk '
     /windowInfo\.runtime_style = CEF_RUNTIME_STYLE_ALLOY/ { found_alloy = 1 }

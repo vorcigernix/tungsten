@@ -9,6 +9,11 @@ Objective-C facade for CEF process lifetime.
 
 NS_ASSUME_NONNULL_BEGIN
 
+/// Canonical NSUserDefaults key for the Local AI provider setting. Shared so
+/// the Swift settings layer and the CEF command-line setup read the same key
+/// without duplicating the version-tagged literal.
+FOUNDATION_EXPORT NSString *const TungstenLocalAIProviderDefaultsKey;
+
 @interface TungstenCEFApp : NSObject
 
 + (instancetype)shared;
