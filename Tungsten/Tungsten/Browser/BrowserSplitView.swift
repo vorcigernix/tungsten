@@ -175,6 +175,79 @@ private struct BrowserSidebar: View {
                 onSubmit: { browserModel.submitAddressBar() }
             )
         }
+        .overlay {
+            SidebarResponseAura(isActive: browserModel.isSelectedThreadGeneratingResponse)
+        }
+    }
+}
+
+private struct SidebarResponseAura: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    let isActive: Bool
+    @State private var isShifted = false
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 18, style: .continuous)
+            .fill(fillGradient.opacity(isActive ? 0.08 : 0))
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .strokeBorder(strokeGradient, lineWidth: 1.5)
+                    .opacity(isActive ? 0.95 : 0)
+            }
+            .shadow(
+                color: Color.cyan.opacity(isActive ? (isShifted ? 0.2 : 0.1) : 0),
+                radius: isShifted ? 18 : 10,
+                y: 0
+            )
+            .padding(6)
+            .allowsHitTesting(false)
+            .animation(.smooth(duration: 0.2), value: isActive)
+            .onAppear(perform: updateAnimation)
+            .onChange(of: isActive) { _, _ in updateAnimation() }
+            .onChange(of: reduceMotion) { _, _ in updateAnimation() }
+    }
+
+    private var strokeGradient: LinearGradient {
+        LinearGradient(
+            colors: [
+                .red.opacity(0.72),
+                .orange.opacity(0.7),
+                .yellow.opacity(0.62),
+                .green.opacity(0.68),
+                .cyan.opacity(0.74),
+                .blue.opacity(0.72),
+                .purple.opacity(0.72),
+                .red.opacity(0.72)
+            ],
+            startPoint: isShifted ? .topLeading : .bottomLeading,
+            endPoint: isShifted ? .bottomTrailing : .topTrailing
+        )
+    }
+
+    private var fillGradient: LinearGradient {
+        LinearGradient(
+            colors: [
+                .red,
+                .cyan,
+                .purple,
+                .yellow
+            ],
+            startPoint: isShifted ? .topLeading : .bottomTrailing,
+            endPoint: isShifted ? .bottomTrailing : .topLeading
+        )
+    }
+
+    private func updateAnimation() {
+        guard isActive, reduceMotion == false else {
+            withAnimation(.smooth(duration: 0.2)) {
+                isShifted = false
+            }
+            return
+        }
+
+        withAnimation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true)) {
+            isShifted.toggle()
+        }
     }
 }
 
@@ -712,9 +785,6 @@ private extension BrowserThread {
 }
 
 private struct PendingAssistantBubble: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var rainbowRotation = 0.0
-
     var body: some View {
         HStack(spacing: 8) {
             ProgressView()
@@ -729,42 +799,7 @@ private struct PendingAssistantBubble: View {
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .strokeBorder(
-                    AngularGradient(
-                        colors: [
-                            .red.opacity(0.5),
-                            .orange.opacity(0.5),
-                            .yellow.opacity(0.45),
-                            .green.opacity(0.5),
-                            .cyan.opacity(0.5),
-                            .blue.opacity(0.5),
-                            .purple.opacity(0.5),
-                            .red.opacity(0.5)
-                        ],
-                        center: .center
-                    ),
-                    lineWidth: 1.25
-                )
-                .rotationEffect(.degrees(rainbowRotation))
-        }
-        .onAppear {
-            guard reduceMotion == false else {
-                rainbowRotation = 0
-                return
-            }
-
-            withAnimation(.linear(duration: 3.2).repeatForever(autoreverses: false)) {
-                rainbowRotation = 360
-            }
-        }
-        .onChange(of: reduceMotion) { _, newValue in
-            if newValue {
-                rainbowRotation = 0
-            } else {
-                withAnimation(.linear(duration: 3.2).repeatForever(autoreverses: false)) {
-                    rainbowRotation = 360
-                }
-            }
+                .strokeBorder(Color.secondary.opacity(0.14), lineWidth: 1)
         }
     }
 }
@@ -843,7 +878,7 @@ private struct ChatInput: View {
     let focusRequestID: Int
     let onSubmit: () -> Void
 
-    @FocusState private var isFocused: Bool
+    @State private var isFocused = false
 
     private var canSubmit: Bool {
         text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
@@ -852,21 +887,14 @@ private struct ChatInput: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .bottom, spacing: 8) {
-                ZStack(alignment: .topLeading) {
-                    TextEditor(text: $text)
-                        .font(.body)
-                        .scrollContentBackground(.hidden)
-                        .frame(minHeight: 58, maxHeight: 96)
-                        .focused($isFocused)
-
-                    if text.isEmpty {
-                        Text("Ask anything or paste a URL")
-                            .foregroundStyle(.secondary)
-                            .padding(.top, 8)
-                            .padding(.leading, 5)
-                            .allowsHitTesting(false)
-                    }
-                }
+                PromptTextEditor(
+                    text: $text,
+                    placeholder: "Ask anything or paste a URL",
+                    focusRequestID: focusRequestID,
+                    isFocused: $isFocused,
+                    onCommandReturn: submit
+                )
+                .frame(minHeight: 58, maxHeight: 96)
                 .frame(maxWidth: .infinity)
 
                 Button(action: submit) {
@@ -897,14 +925,145 @@ private struct ChatInput: View {
         .padding(.horizontal, 12)
         .padding(.top, 10)
         .padding(.bottom, 12)
-        .onChange(of: focusRequestID) { _, _ in
-            isFocused = true
-        }
     }
 
     private func submit() {
         guard canSubmit else { return }
         onSubmit()
+    }
+}
+
+private struct PromptTextEditor: NSViewRepresentable {
+    @Binding var text: String
+    let placeholder: String
+    let focusRequestID: Int
+    @Binding var isFocused: Bool
+    let onCommandReturn: () -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(parent: self)
+    }
+
+    func makeNSView(context: Context) -> NSScrollView {
+        let scrollView = NSScrollView()
+        scrollView.drawsBackground = false
+        scrollView.borderType = .noBorder
+        scrollView.hasVerticalScroller = true
+        scrollView.autohidesScrollers = true
+
+        let textView = PlaceholderTextView()
+        textView.delegate = context.coordinator
+        textView.drawsBackground = false
+        textView.isRichText = false
+        textView.importsGraphics = false
+        textView.allowsUndo = true
+        textView.isAutomaticQuoteSubstitutionEnabled = false
+        textView.isAutomaticDashSubstitutionEnabled = false
+        textView.font = .preferredFont(forTextStyle: .body)
+        textView.textColor = .labelColor
+        textView.placeholder = placeholder
+        textView.onCommandReturn = onCommandReturn
+        textView.textContainerInset = NSSize(width: 0, height: 0)
+        textView.textContainer?.lineFragmentPadding = 0
+        textView.textContainer?.widthTracksTextView = true
+        textView.isVerticallyResizable = true
+        textView.isHorizontallyResizable = false
+        textView.autoresizingMask = [.width]
+        textView.minSize = NSSize(width: 0, height: 0)
+        textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        scrollView.documentView = textView
+        context.coordinator.textView = textView
+
+        return scrollView
+    }
+
+    func updateNSView(_ scrollView: NSScrollView, context: Context) {
+        context.coordinator.parent = self
+        guard let textView = scrollView.documentView as? PlaceholderTextView else {
+            return
+        }
+
+        if textView.string != text {
+            textView.string = text
+            textView.needsDisplay = true
+        }
+        textView.placeholder = placeholder
+        textView.onCommandReturn = onCommandReturn
+
+        if context.coordinator.appliedFocusRequestID != focusRequestID {
+            context.coordinator.appliedFocusRequestID = focusRequestID
+            DispatchQueue.main.async {
+                textView.window?.makeFirstResponder(textView)
+            }
+        }
+    }
+
+    final class Coordinator: NSObject, NSTextViewDelegate {
+        var parent: PromptTextEditor
+        weak var textView: PlaceholderTextView?
+        var appliedFocusRequestID: Int
+
+        init(parent: PromptTextEditor) {
+            self.parent = parent
+            self.appliedFocusRequestID = parent.focusRequestID
+        }
+
+        func textDidChange(_ notification: Notification) {
+            guard let textView = notification.object as? PlaceholderTextView else {
+                return
+            }
+
+            parent.text = textView.string
+            textView.needsDisplay = true
+        }
+
+        func textDidBeginEditing(_ notification: Notification) {
+            parent.isFocused = true
+            textView?.needsDisplay = true
+        }
+
+        func textDidEndEditing(_ notification: Notification) {
+            parent.isFocused = false
+            textView?.needsDisplay = true
+        }
+    }
+}
+
+private final class PlaceholderTextView: NSTextView {
+    var placeholder = "" {
+        didSet { needsDisplay = true }
+    }
+
+    var onCommandReturn: (() -> Void)?
+
+    override func keyDown(with event: NSEvent) {
+        let modifierFlags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        if modifierFlags.contains(.command),
+           event.charactersIgnoringModifiers == "\r" {
+            onCommandReturn?()
+            return
+        }
+
+        super.keyDown(with: event)
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        super.draw(dirtyRect)
+
+        guard string.isEmpty else {
+            return
+        }
+
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font ?? NSFont.preferredFont(forTextStyle: .body),
+            .foregroundColor: NSColor.placeholderTextColor
+        ]
+        let padding = textContainer?.lineFragmentPadding ?? 0
+        let origin = NSPoint(
+            x: textContainerOrigin.x + padding,
+            y: textContainerOrigin.y
+        )
+        placeholder.draw(at: origin, withAttributes: attributes)
     }
 }
 

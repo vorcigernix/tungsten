@@ -60,9 +60,18 @@ require_pattern "$split_view_file" "turn\\.faviconURLString" "page bubble favico
 require_pattern "$split_view_file" "isPageLoading \\? \"xmark\" : \"arrow\\.clockwise\"" "stable reload/stop icon swap"
 require_pattern "$split_view_file" "\\.frame\\(width: 28, height: 24\\)" "fixed reload/stop button frame"
 require_pattern "$split_view_file" "\\.frame\\(width: 16, height: 16\\)" "fixed reload/stop symbol frame"
+require_pattern "$split_view_file" "SidebarResponseAura\\(isActive: browserModel\\.isSelectedThreadGeneratingResponse\\)" "sidebar-level AI response animation"
+require_pattern "$split_view_file" "private struct SidebarResponseAura" "sidebar response aura view"
+require_pattern "$split_view_file" "PromptTextEditor\\(" "chat input AppKit prompt editor"
+require_pattern "$split_view_file" "textContainerInset = NSSize\\(width: 0, height: 0\\)" "prompt editor shared caret/placeholder inset"
 
 if rg -q "typealias BrowserTab = BrowserPageSession" "$model_file"; then
     echo "BrowserModel must not keep BrowserTab as a BrowserPageSession typealias" >&2
+    exit 1
+fi
+
+if rg -q "AngularGradient|rainbowRotation|rotationEffect" "$split_view_file"; then
+    echo "AI response animation must not be a rotating rainbow bubble." >&2
     exit 1
 fi
 
