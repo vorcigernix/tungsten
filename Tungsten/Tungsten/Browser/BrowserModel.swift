@@ -468,6 +468,7 @@ final class BrowserModel {
         responseTask?.cancel()
         let responseID = UUID()
         let fallbackSearchEngine = appPreferences.searchEngine
+        let pageContext = activePageSession
         pendingResponseID = responseID
         pendingResponseThreadID = threadID
         isGeneratingResponse = true
@@ -477,9 +478,11 @@ final class BrowserModel {
                 return
             }
 
+            let pageContentContext = await pageContext?.pageContentContext()
             let result = await aiResponseCoordinator.response(
                 for: question,
-                searchEngine: fallbackSearchEngine
+                searchEngine: fallbackSearchEngine,
+                pageContext: pageContentContext
             )
             guard Task.isCancelled == false else {
                 finishPendingResponseIfCurrent(responseID)

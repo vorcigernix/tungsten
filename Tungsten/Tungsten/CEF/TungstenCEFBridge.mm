@@ -27,6 +27,7 @@ Objective-C++ bridge between SwiftUI/AppKit and Chromium Embedded Framework.
 @interface TungstenBrowserController ()
 - (void)cefBrowserDidClose;
 - (void)closeBrowserWithForce:(BOOL)forceClose;
+- (void)completePageContentRequestWithPayload:(NSString *)payloadString;
 @end
 
 namespace {
@@ -439,36 +440,20 @@ public:
         });
     }
 
-    // Probe the main frame's body background color when load finishes. The
-    // JavaScript prints the color through console.log with a sentinel marker;
-    // OnConsoleMessage filters it out. We use console.log instead of the
-    // DevTools protocol because it's a single-line implementation.
-    void OnLoadEnd(CefRefPtr<CefBrowser> browser,
-                   CefRefPtr<CefFrame> frame,
-                   int httpStatusCode) override {
-        if (!frame->IsMain()) {
-            return;
-        }
-        const std::string js =
-            "(()=>{try{const c=getComputedStyle(document.body).backgroundColor;"
-            "console.log('TUNGSTEN_BG:'+c);}catch(e){}})()";
-        frame->ExecuteJavaScript(js, "tungsten://internal/bg-probe", 0);
-    }
-
     bool OnConsoleMessage(CefRefPtr<CefBrowser> browser,
                           cef_log_severity_t level,
                           const CefString &message,
                           const CefString &source,
                           int line) override {
         const std::string msg = message.ToString();
-        static const std::string kMarker = "TUNGSTEN_BG:";
-        if (msg.compare(0, kMarker.size(), kMarker) != 0) {
+        static const std::string kPageTextMarker = "TUNGSTEN_PAGE_TEXT:";
+        if (msg.compare(0, kPageTextMarker.size(), kPageTextMarker) != 0) {
             return false;
         }
-        NSString *colorString = [NSString stringWithUTF8String:msg.substr(kMarker.size()).c_str()];
+        NSString *payloadString = [NSString stringWithUTF8String:msg.substr(kPageTextMarker.size()).c_str()];
         dispatch_async(dispatch_get_main_queue(), ^{
             TungstenBrowserController *controller = controller_;
-            [controller.delegate browserController:controller didUpdatePageBackgroundColorString:colorString];
+            [controller completePageContentRequestWithPayload:payloadString];
         });
         return true;  // suppress from DevTools console
     }
@@ -662,6 +647,7 @@ private:
     CefRefPtr<TungstenBrowserClient> _client;
     CefRefPtr<CefRequestContext> _requestContext;
     void *_closeRetainToken;
+    NSMutableDictionary<NSString *, TungstenPageContentCompletion> *_pageContentCompletions;
 }
 
 @synthesize browserDidCloseHandler = _browserDidCloseHandler;
@@ -679,6 +665,7 @@ private:
     _initialURL = [initialURL copy];
     _pendingURL = [initialURL copy];
     _isIncognito = incognito;
+    _pageContentCompletions = [NSMutableDictionary dictionary];
 
     TungstenBrowserContainerView *containerView = [[TungstenBrowserContainerView alloc] initWithFrame:NSZeroRect];
     containerView.controller = self;
@@ -805,6 +792,82 @@ private:
     if (browser) {
         browser->GetHost()->StopFinding(clearSelection);
     }
+}
+
+- (void)extractPageContentWithCompletion:(TungstenPageContentCompletion)completion {
+    if (completion == nil || _isClosingBrowser) {
+        if (completion != nil) {
+            completion(nil, nil);
+        }
+        return;
+    }
+
+    CefRefPtr<CefBrowser> browser = _client ? _client->browser() : nullptr;
+    CefRefPtr<CefFrame> frame = browser ? browser->GetMainFrame() : nullptr;
+    if (!frame) {
+        completion(nil, nil);
+        return;
+    }
+
+    NSString *requestID = NSUUID.UUID.UUIDString;
+    _pageContentCompletions[requestID] = [completion copy];
+
+    NSString *script = [NSString stringWithFormat:
+        @"(()=>{"
+         "const id='%@';"
+         "const cap=(value)=>{const text=String(value||'').trim();return text.length>40000?text.slice(0,40000):text};"
+         "try{"
+           "const selected=cap(window.getSelection?window.getSelection().toString():'');"
+           "const body=cap((document.body&&document.body.innerText)||(document.documentElement&&document.documentElement.innerText)||'');"
+           "console.log('TUNGSTEN_PAGE_TEXT:'+JSON.stringify({id,selectedText:selected,bodyText:body}));"
+         "}catch(e){"
+           "console.log('TUNGSTEN_PAGE_TEXT:'+JSON.stringify({id,selectedText:'',bodyText:''}));"
+         "}"
+        "})()",
+        requestID
+    ];
+
+    frame->ExecuteJavaScript(ToString(script), "tungsten://internal/page-content", 0);
+
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, static_cast<int64_t>(2 * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
+        TungstenPageContentCompletion pendingCompletion = _pageContentCompletions[requestID];
+        if (pendingCompletion == nil) {
+            return;
+        }
+        [_pageContentCompletions removeObjectForKey:requestID];
+        pendingCompletion(nil, nil);
+    });
+}
+
+- (void)completePageContentRequestWithPayload:(NSString *)payloadString {
+    NSData *data = [payloadString dataUsingEncoding:NSUTF8StringEncoding];
+    if (data == nil) {
+        return;
+    }
+
+    NSDictionary *payload = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+    if (![payload isKindOfClass:NSDictionary.class]) {
+        return;
+    }
+
+    NSString *requestID = payload[@"id"];
+    if (![requestID isKindOfClass:NSString.class]) {
+        return;
+    }
+
+    TungstenPageContentCompletion completion = _pageContentCompletions[requestID];
+    if (completion == nil) {
+        return;
+    }
+    [_pageContentCompletions removeObjectForKey:requestID];
+
+    NSString *selectedText = payload[@"selectedText"];
+    NSString *bodyText = payload[@"bodyText"];
+    completion(
+        [selectedText isKindOfClass:NSString.class] ? selectedText : nil,
+        [bodyText isKindOfClass:NSString.class] ? bodyText : nil
+    );
 }
 
 - (void)layoutBrowserView {

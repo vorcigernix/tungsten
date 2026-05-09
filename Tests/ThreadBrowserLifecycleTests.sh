@@ -42,6 +42,8 @@ require_pattern "$model_file" "pendingResponseID" "BrowserModel pending response
 require_pattern "$session_file" "controller\\.delegate = observer" "BrowserPageSession controller delegate wiring"
 require_pattern "$session_file" "browserDidCloseHandler" "BrowserPageSession browser close handler"
 require_pattern "$session_file" "onFaviconURLChange" "BrowserPageSession favicon URL callback"
+require_pattern "$session_file" "func pageContentContext\\(\\) async -> PageContentContext\\?" "BrowserPageSession page content context async API"
+require_pattern "$session_file" "browserController\\.extractPageContent" "BrowserPageSession page content extraction bridge"
 require_pattern "$session_file" "func closeBrowser\\(" "BrowserPageSession closeBrowser forwarding method"
 require_pattern "$session_file" "browserController\\.closeBrowser\\(" "BrowserPageSession closeBrowser forwarding call"
 require_pattern "$session_file" "func closeBrowserForWindowClose\\(" "BrowserPageSession closeBrowserForWindowClose forwarding method"

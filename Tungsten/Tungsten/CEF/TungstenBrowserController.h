@@ -11,6 +11,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class TungstenBrowserController;
 
+typedef void (^TungstenPageContentCompletion)(NSString *_Nullable selectedText,
+                                              NSString *_Nullable bodyText);
+
 @protocol TungstenBrowserControllerDelegate <NSObject>
 
 - (void)browserController:(TungstenBrowserController *)controller didUpdateTitle:(NSString *)title;
@@ -21,8 +24,6 @@ NS_ASSUME_NONNULL_BEGIN
             canGoForward:(BOOL)canGoForward;
 - (void)browserController:(TungstenBrowserController *)controller
      didUpdateFaviconURLs:(NSArray<NSString *> *)faviconURLs;
-- (void)browserController:(TungstenBrowserController *)controller
-        didUpdatePageBackgroundColorString:(NSString *)colorString;
 
 @end
 
@@ -50,6 +51,8 @@ NS_ASSUME_NONNULL_BEGIN
        matchCase:(BOOL)matchCase
         findNext:(BOOL)findNext NS_SWIFT_NAME(find(text:forward:matchCase:findNext:));
 - (void)stopFindingWithClearSelection:(BOOL)clearSelection NS_SWIFT_NAME(stopFinding(clearSelection:));
+- (void)extractPageContentWithCompletion:(TungstenPageContentCompletion)completion
+    NS_SWIFT_NAME(extractPageContent(completion:));
 - (void)closeBrowser;
 - (void)closeBrowserForWindowClose;
 - (void)layoutBrowserView;

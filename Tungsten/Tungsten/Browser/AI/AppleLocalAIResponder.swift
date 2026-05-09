@@ -4,10 +4,10 @@ import FoundationModels
 #endif
 
 struct AppleLocalAIResponder: LocalAIAnswering {
-    func answer(_ question: String) async -> LocalAIResult {
+    func answer(_ question: String, pageContext: PageContentContext?) async -> LocalAIResult {
         #if canImport(FoundationModels)
         if #available(macOS 26.0, *) {
-            return await answerWithFoundationModels(question)
+            return await answerWithFoundationModels(question, pageContext: pageContext)
         } else {
             return .unavailable("Apple local AI is unavailable on this Mac, so Tungsten opened AI search instead.")
         }
@@ -18,14 +18,17 @@ struct AppleLocalAIResponder: LocalAIAnswering {
 
     #if canImport(FoundationModels)
     @available(macOS 26.0, *)
-    private func answerWithFoundationModels(_ question: String) async -> LocalAIResult {
+    private func answerWithFoundationModels(_ question: String, pageContext: PageContentContext?) async -> LocalAIResult {
         switch SystemLanguageModel.default.availability {
         case .available:
             do {
                 let session = LanguageModelSession(
-                    instructions: "Answer browser sidebar questions concisely. Prefer direct answers, include caveats when needed, and do not invent URLs."
+                    instructions: pageContext == nil
+                        ? "Answer browser sidebar questions concisely. Prefer direct answers, include caveats when needed, and do not invent URLs."
+                        : "Answer browser sidebar questions concisely using the provided current-page context. If the page context does not contain enough information, say so clearly. Do not invent facts or URLs."
                 )
-                let response = try await session.respond(to: question)
+                let prompt = pageContext?.prompt(for: question) ?? question
+                let response = try await session.respond(to: prompt)
                 let answer = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard answer.isEmpty == false else {
                     return .unavailable("Apple local AI returned an empty answer, so Tungsten opened AI search instead.")

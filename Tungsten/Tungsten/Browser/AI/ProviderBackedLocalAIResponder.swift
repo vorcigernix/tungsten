@@ -12,12 +12,12 @@ struct ProviderBackedLocalAIResponder: LocalAIAnswering {
         self.appleResponder = appleResponder
     }
 
-    func answer(_ question: String) async -> LocalAIResult {
+    func answer(_ question: String, pageContext: PageContentContext?) async -> LocalAIResult {
         switch provider() {
         case .apple:
-            return await appleResponder.answer(question)
+            return await appleResponder.answer(question, pageContext: pageContext)
         case .google:
-            return await appleResponder.answer(question)
+            return await appleResponder.answer(question, pageContext: pageContext)
         case .disabled:
             return .unavailable("Local AI is disabled, so Tungsten opened AI search instead.")
         }

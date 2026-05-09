@@ -22,6 +22,24 @@ if ! rg -q -- "browserDidCloseHandler" "$controller_header"; then
     exit 1
 fi
 
+if ! rg -q -- "extractPageContentWithCompletion" "$controller_header" ||
+   ! rg -q -- "TungstenPageContentCompletion" "$controller_header"; then
+    echo "TungstenBrowserController must expose a page-content extraction callback for local AI page questions." >&2
+    exit 1
+fi
+
+if ! rg -q -- "TUNGSTEN_PAGE_TEXT" "$bridge_file" ||
+   ! rg -q -- "document\\.body&&document\\.body\\.innerText" "$bridge_file" ||
+   ! rg -q -- "window\\.getSelection" "$bridge_file"; then
+    echo "CEF bridge must extract selected text/body text from the active page for local AI context." >&2
+    exit 1
+fi
+
+if rg -q -- "TUNGSTEN_BG|bg-probe|didUpdatePageBackgroundColorString|pageBackgroundColor" "$controller_header" "$bridge_file" "$model_file"; then
+    echo "Obsolete CEF page background probing must stay removed." >&2
+    exit 1
+fi
+
 if ! awk '
     /func closeActivePage\(\)/ { in_close = 1; found = 1 }
     in_close && /activePageSession\?\.closeBrowser\(\)/ { saw_close = 1 }

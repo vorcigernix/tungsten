@@ -6,5 +6,11 @@ enum LocalAIResult: Equatable {
 }
 
 protocol LocalAIAnswering {
-    func answer(_ question: String) async -> LocalAIResult
+    func answer(_ question: String, pageContext: PageContentContext?) async -> LocalAIResult
+}
+
+extension LocalAIAnswering {
+    func answer(_ question: String) async -> LocalAIResult {
+        await answer(question, pageContext: nil)
+    }
 }
