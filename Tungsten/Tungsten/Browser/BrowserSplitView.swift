@@ -189,46 +189,58 @@ private struct SidebarResponseAura: View {
     private static let strokeColors: [Color] = [
         .red, .orange, .yellow, .green, .cyan, .blue, .purple, .red
     ]
+    private static let cornerRadius: CGFloat = 14
 
     var body: some View {
         Group {
             if isActive {
-                auraStroke
+                auraGlow
             } else {
                 Color.clear
             }
         }
-        .padding(6)
         .allowsHitTesting(false)
-        .animation(.smooth(duration: 0.25), value: isActive)
+        .animation(.smooth(duration: 0.3), value: isActive)
     }
 
     @ViewBuilder
-    private var auraStroke: some View {
+    private var auraGlow: some View {
         if reduceMotion {
-            strokeShape(angleDegrees: 0)
+            glowStack(angleDegrees: 0)
         } else {
             TimelineView(.animation) { context in
                 let elapsed = context.date.timeIntervalSinceReferenceDate
                 let phase = elapsed
                     .truncatingRemainder(dividingBy: Self.rotationPeriodSeconds)
                 let angle = phase / Self.rotationPeriodSeconds * 360
-                strokeShape(angleDegrees: angle)
+                glowStack(angleDegrees: angle)
             }
         }
     }
 
-    private func strokeShape(angleDegrees: Double) -> some View {
-        RoundedRectangle(cornerRadius: 18, style: .continuous)
-            .strokeBorder(
-                AngularGradient(
-                    colors: Self.strokeColors,
-                    center: .center,
-                    angle: .degrees(angleDegrees)
-                ),
-                lineWidth: 1.75
-            )
-            .shadow(color: .cyan.opacity(0.18), radius: 14, y: 0)
+    private func glowStack(angleDegrees: Double) -> some View {
+        let gradient = AngularGradient(
+            colors: Self.strokeColors,
+            center: .center,
+            angle: .degrees(angleDegrees)
+        )
+
+        return ZStack {
+            RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
+                .stroke(gradient, lineWidth: 22)
+                .blur(radius: 18)
+                .opacity(0.55)
+
+            RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
+                .stroke(gradient, lineWidth: 8)
+                .blur(radius: 5)
+                .opacity(0.75)
+
+            RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
+                .strokeBorder(gradient, lineWidth: 1.25)
+                .opacity(0.65)
+        }
+        .compositingGroup()
     }
 }
 
