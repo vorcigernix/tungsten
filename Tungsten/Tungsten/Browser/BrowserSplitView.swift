@@ -184,70 +184,51 @@ private struct BrowserSidebar: View {
 private struct SidebarResponseAura: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let isActive: Bool
-    @State private var isShifted = false
+
+    private static let rotationPeriodSeconds: Double = 6
+    private static let strokeColors: [Color] = [
+        .red, .orange, .yellow, .green, .cyan, .blue, .purple, .red
+    ]
 
     var body: some View {
+        Group {
+            if isActive {
+                auraStroke
+            } else {
+                Color.clear
+            }
+        }
+        .padding(6)
+        .allowsHitTesting(false)
+        .animation(.smooth(duration: 0.25), value: isActive)
+    }
+
+    @ViewBuilder
+    private var auraStroke: some View {
+        if reduceMotion {
+            strokeShape(angleDegrees: 0)
+        } else {
+            TimelineView(.animation) { context in
+                let elapsed = context.date.timeIntervalSinceReferenceDate
+                let phase = elapsed
+                    .truncatingRemainder(dividingBy: Self.rotationPeriodSeconds)
+                let angle = phase / Self.rotationPeriodSeconds * 360
+                strokeShape(angleDegrees: angle)
+            }
+        }
+    }
+
+    private func strokeShape(angleDegrees: Double) -> some View {
         RoundedRectangle(cornerRadius: 18, style: .continuous)
-            .fill(fillGradient.opacity(isActive ? 0.08 : 0))
-            .overlay {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .strokeBorder(strokeGradient, lineWidth: 1.5)
-                    .opacity(isActive ? 0.95 : 0)
-            }
-            .shadow(
-                color: Color.cyan.opacity(isActive ? (isShifted ? 0.2 : 0.1) : 0),
-                radius: isShifted ? 18 : 10,
-                y: 0
+            .strokeBorder(
+                AngularGradient(
+                    colors: Self.strokeColors,
+                    center: .center,
+                    angle: .degrees(angleDegrees)
+                ),
+                lineWidth: 1.75
             )
-            .padding(6)
-            .allowsHitTesting(false)
-            .animation(.smooth(duration: 0.2), value: isActive)
-            .onAppear(perform: updateAnimation)
-            .onChange(of: isActive) { _, _ in updateAnimation() }
-            .onChange(of: reduceMotion) { _, _ in updateAnimation() }
-    }
-
-    private var strokeGradient: LinearGradient {
-        LinearGradient(
-            colors: [
-                .red.opacity(0.72),
-                .orange.opacity(0.7),
-                .yellow.opacity(0.62),
-                .green.opacity(0.68),
-                .cyan.opacity(0.74),
-                .blue.opacity(0.72),
-                .purple.opacity(0.72),
-                .red.opacity(0.72)
-            ],
-            startPoint: isShifted ? .topLeading : .bottomLeading,
-            endPoint: isShifted ? .bottomTrailing : .topTrailing
-        )
-    }
-
-    private var fillGradient: LinearGradient {
-        LinearGradient(
-            colors: [
-                .red,
-                .cyan,
-                .purple,
-                .yellow
-            ],
-            startPoint: isShifted ? .topLeading : .bottomTrailing,
-            endPoint: isShifted ? .bottomTrailing : .topLeading
-        )
-    }
-
-    private func updateAnimation() {
-        guard isActive, reduceMotion == false else {
-            withAnimation(.smooth(duration: 0.2)) {
-                isShifted = false
-            }
-            return
-        }
-
-        withAnimation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true)) {
-            isShifted.toggle()
-        }
+            .shadow(color: .cyan.opacity(0.18), radius: 14, y: 0)
     }
 }
 
