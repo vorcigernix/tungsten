@@ -1,0 +1,25 @@
+{
+  "cli_version": "0.6.1",
+  "checkpoint_id": "ce26f3e1afa9",
+  "strategy": "manual-commit",
+  "branch": "codex/thread-first-browser",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "docs/superpowers/specs/2026-05-09-sidebar-aura-bubble-redesign-design.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/ce/26f3e1afa9/0/metadata.json",
+      "transcript": "/ce/26f3e1afa9/0/full.jsonl",
+      "content_hash": "/ce/26f3e1afa9/0/content_hash.txt",
+      "prompt": "/ce/26f3e1afa9/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 75,
+    "cache_creation_tokens": 108730,
+    "cache_read_tokens": 1181551,
+    "output_tokens": 15673,
+    "api_call_count": 26
+  }
+}

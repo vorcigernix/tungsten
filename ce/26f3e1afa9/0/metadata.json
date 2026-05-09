@@ -1,0 +1,49 @@
+{
+  "cli_version": "0.6.1",
+  "checkpoint_id": "ce26f3e1afa9",
+  "session_id": "339704c9-0a46-4865-9abd-dcac0034c7d7",
+  "strategy": "manual-commit",
+  "created_at": "2026-05-09T08:55:12.523723Z",
+  "branch": "codex/thread-first-browser",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "docs/superpowers/specs/2026-05-09-sidebar-aura-bubble-redesign-design.md"
+  ],
+  "agent": "Claude Code",
+  "model": "",
+  "turn_id": "fc21dbd4e864",
+  "token_usage": {
+    "input_tokens": 75,
+    "cache_creation_tokens": 108730,
+    "cache_read_tokens": 1181551,
+    "output_tokens": 15673,
+    "api_call_count": 26
+  },
+  "session_metrics": {
+    "turn_count": 7
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-05-09T08:55:12.517872Z",
+    "agent_lines": 287,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 287,
+    "total_lines_changed": 287,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 52,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 52
+      }
+    }
+  ]
+}
