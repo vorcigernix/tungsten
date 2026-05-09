@@ -185,6 +185,7 @@ private struct ThreadHeader: View {
     @Binding var selectedThreadID: BrowserThread.ID?
     let onNewThread: () -> Void
     let onCloseThread: () -> Void
+    @State private var isThreadHistoryPresented = false
 
     private var selectedThread: BrowserThread? {
         guard let selectedThreadID else {
@@ -199,18 +200,52 @@ private struct ThreadHeader: View {
 
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
-                Picker("Thread", selection: $selectedThreadID) {
-                    ForEach(threads) { thread in
-                        Label {
-                            Text(thread.displayTitle)
-                        } icon: {
-                            Image(systemName: thread.isPinned ? "pin.circle" : "text.bubble")
-                        }
-                        .tag(Optional(thread.id))
-                    }
+                Button {
+                    isThreadHistoryPresented.toggle()
+                } label: {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .imageScale(.medium)
                 }
-                .labelsHidden()
+                .help("Thread History")
+                .popover(isPresented: $isThreadHistoryPresented, arrowEdge: .bottom) {
+                    ThreadHistoryPopover(
+                        threads: threads,
+                        selectedThreadID: selectedThreadID,
+                        onSelectThread: { threadID in
+                            selectedThreadID = threadID
+                            isThreadHistoryPresented = false
+                        },
+                        onNewThread: {
+                            onNewThread()
+                            isThreadHistoryPresented = false
+                        }
+                    )
+                }
+
+                Button {
+                    isThreadHistoryPresented = true
+                } label: {
+                    HStack(spacing: 8) {
+                        FaviconIcon(
+                            faviconURLString: selectedThread?.activePageTurn?.faviconURLString,
+                            fallbackSystemName: "text.bubble",
+                            size: 18
+                        )
+
+                        Text(selectedThread?.displayTitle ?? "New Thread")
+                            .font(.headline)
+                            .lineLimit(1)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                        Image(systemName: "chevron.down")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
                 .frame(maxWidth: .infinity)
+                .help("Open Thread History")
 
                 Menu {
                     Button(selectedThread?.isPinned == true ? "Unpin Thread" : "Pin Thread", systemImage: selectedThread?.isPinned == true ? "pin.slash" : "pin") {
@@ -225,7 +260,7 @@ private struct ThreadHeader: View {
                     }
                     .disabled(threads.allSatisfy(\.isPinned))
                 } label: {
-                    Label("Thread Actions", systemImage: "ellipsis.circle")
+                    Label("Thread Actions", systemImage: "line.3.horizontal")
                         .labelStyle(.iconOnly)
                 }
                 .help("Thread Actions")
@@ -289,6 +324,172 @@ private struct ThreadHeader: View {
         .controlSize(.regular)
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
+    }
+}
+
+private struct ThreadHistoryPopover: View {
+    let threads: [BrowserThread]
+    let selectedThreadID: BrowserThread.ID?
+    let onSelectThread: (BrowserThread.ID) -> Void
+    let onNewThread: () -> Void
+
+    @State private var searchText = ""
+
+    private var filteredThreads: [BrowserThread] {
+        let trimmedSearch = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let sortedThreads = threads.sorted { lhs, rhs in
+            lhs.updatedAt > rhs.updatedAt
+        }
+
+        guard trimmedSearch.isEmpty == false else {
+            return sortedThreads
+        }
+
+        return sortedThreads.filter { thread in
+            thread.matchesHistorySearch(trimmedSearch)
+        }
+    }
+
+    private var pinnedThreads: [BrowserThread] {
+        filteredThreads.filter(\.isPinned)
+    }
+
+    private var recentThreads: [BrowserThread] {
+        filteredThreads.filter { $0.isPinned == false }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(.secondary)
+
+                TextField("Search threads", text: $searchText)
+                    .textFieldStyle(.plain)
+
+                Button("New Thread", systemImage: "plus") {
+                    onNewThread()
+                }
+                .labelStyle(.iconOnly)
+                .help("New Thread")
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(Color.secondary.opacity(0.14), lineWidth: 1)
+            }
+
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 12) {
+                    if pinnedThreads.isEmpty == false {
+                        ThreadHistorySection(
+                            title: "Pinned",
+                            threads: pinnedThreads,
+                            selectedThreadID: selectedThreadID,
+                            onSelectThread: onSelectThread
+                        )
+                    }
+
+                    if recentThreads.isEmpty == false {
+                        ThreadHistorySection(
+                            title: "Recent",
+                            threads: recentThreads,
+                            selectedThreadID: selectedThreadID,
+                            onSelectThread: onSelectThread
+                        )
+                    }
+
+                    if filteredThreads.isEmpty {
+                        ContentUnavailableView("No Threads", systemImage: "magnifyingglass")
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 28)
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+        }
+        .buttonStyle(.borderless)
+        .controlSize(.regular)
+        .padding(12)
+        .frame(width: 360, height: 430)
+    }
+}
+
+private struct ThreadHistorySection: View {
+    let title: String
+    let threads: [BrowserThread]
+    let selectedThreadID: BrowserThread.ID?
+    let onSelectThread: (BrowserThread.ID) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(title)
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+                .padding(.horizontal, 4)
+
+            ForEach(threads) { thread in
+                ThreadHistoryRow(
+                    thread: thread,
+                    isSelected: thread.id == selectedThreadID,
+                    onSelect: { onSelectThread(thread.id) }
+                )
+            }
+        }
+    }
+}
+
+private struct ThreadHistoryRow: View {
+    let thread: BrowserThread
+    let isSelected: Bool
+    let onSelect: () -> Void
+
+    private var pageSubtitle: String {
+        if let activePageTurn = thread.activePageTurn,
+           let urlString = activePageTurn.urlString,
+           urlString.isEmpty == false {
+            return urlString
+        }
+
+        return thread.updatedAt.formatted(date: .abbreviated, time: .shortened)
+    }
+
+    var body: some View {
+        Button(action: onSelect) {
+            HStack(spacing: 9) {
+                FaviconIcon(
+                    faviconURLString: thread.activePageTurn?.faviconURLString,
+                    fallbackSystemName: thread.isPinned ? "pin.fill" : "text.bubble",
+                    size: 20
+                )
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(thread.displayTitle)
+                        .font(.callout)
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+
+                    Text(pageSubtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 7)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                isSelected ? Color.accentColor.opacity(0.14) : Color.clear,
+                in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -391,10 +592,11 @@ private struct ThreadTurnBubble: View {
             onActivatePage(turn.id)
         } label: {
             HStack(spacing: 9) {
-                Image(systemName: "globe")
-                    .imageScale(.medium)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 18)
+                FaviconIcon(
+                    faviconURLString: turn.faviconURLString,
+                    fallbackSystemName: "globe",
+                    size: 18
+                )
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(turn.displayTitle)
@@ -450,6 +652,60 @@ private struct ThreadTurnBubble: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: isUserQuestion ? .trailing : .leading)
+    }
+}
+
+private struct FaviconIcon: View {
+    let faviconURLString: String?
+    let fallbackSystemName: String
+    let size: CGFloat
+
+    @State private var image: NSImage?
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                .fill(Color.secondary.opacity(0.1))
+
+            if let image {
+                Image(nsImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
+            } else {
+                Image(systemName: fallbackSystemName)
+                    .font(.system(size: size * 0.62, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(width: size, height: size)
+        .task(id: faviconURLString) {
+            await loadImage()
+        }
+    }
+
+    private func loadImage() async {
+        guard let faviconURLString else {
+            image = nil
+            return
+        }
+
+        image = await FaviconLoader.shared.image(for: faviconURLString)
+    }
+}
+
+private extension BrowserThread {
+    func matchesHistorySearch(_ query: String) -> Bool {
+        let normalizedQuery = query.localizedLowercase
+        if displayTitle.localizedLowercase.contains(normalizedQuery) {
+            return true
+        }
+
+        return turns.contains { turn in
+            turn.displayTitle.localizedLowercase.contains(normalizedQuery) ||
+            turn.text.localizedLowercase.contains(normalizedQuery) ||
+            (turn.urlString?.localizedLowercase.contains(normalizedQuery) ?? false)
+        }
     }
 }
 

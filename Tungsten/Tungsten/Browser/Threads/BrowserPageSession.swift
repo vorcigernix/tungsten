@@ -250,7 +250,7 @@ private extension NSColor {
     }
 }
 
-private actor FaviconLoader {
+actor FaviconLoader {
     static let shared = FaviconLoader()
 
     private var cache: [String: NSImage] = [:]

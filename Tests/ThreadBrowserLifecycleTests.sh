@@ -2,6 +2,7 @@
 set -euo pipefail
 
 model_file="Tungsten/Tungsten/Browser/BrowserModel.swift"
+split_view_file="Tungsten/Tungsten/Browser/BrowserSplitView.swift"
 session_file="Tungsten/Tungsten/Browser/Threads/BrowserPageSession.swift"
 host_file="Tungsten/Tungsten/Browser/Threads/LivePageSessionHost.swift"
 
@@ -28,6 +29,7 @@ require_pattern() {
 
 require_file "$session_file" "BrowserPageSession.swift"
 require_file "$host_file" "LivePageSessionHost.swift"
+require_file "$split_view_file" "BrowserSplitView.swift"
 
 require_pattern "$session_file" "final class BrowserPageSession" "BrowserPageSession class"
 require_pattern "$host_file" "final class LivePageSessionHost" "LivePageSessionHost class"
@@ -47,9 +49,20 @@ require_pattern "$session_file" "browserController\\.closeBrowserForWindowClose\
 require_pattern "$host_file" "closingPageSession" "LivePageSessionHost pending window-close session retention"
 require_pattern "$host_file" "originalOnClose\\?\\(\\)" "LivePageSessionHost preserves original close callback"
 require_pattern "$host_file" "closingPageSession = nil" "LivePageSessionHost releases pending window-close session"
+require_pattern "$split_view_file" "ThreadHistoryPopover" "thread history popover"
+require_pattern "$split_view_file" "clock\\.arrow\\.circlepath" "thread history toolbar icon"
+require_pattern "$split_view_file" "matchesHistorySearch" "thread history search filter"
+require_pattern "$split_view_file" "FaviconIcon" "shared favicon rendering view"
+require_pattern "$split_view_file" "FaviconLoader\\.shared\\.image" "thread UI favicon loading"
+require_pattern "$split_view_file" "turn\\.faviconURLString" "page bubble favicon source"
 
 if rg -q "typealias BrowserTab = BrowserPageSession" "$model_file"; then
     echo "BrowserModel must not keep BrowserTab as a BrowserPageSession typealias" >&2
+    exit 1
+fi
+
+if rg -q "Picker\\(\"Thread\"" "$split_view_file"; then
+    echo "ThreadHeader must use a history/search popover instead of a thread dropdown picker" >&2
     exit 1
 fi
 
