@@ -637,9 +637,21 @@ private struct ThreadTurnBubble: View {
         case .page:
             pageRow
         case .userQuestion:
-            alignedTextBubble(isUserQuestion: true, fill: Color.accentColor.opacity(0.16))
+            alignedTextBubble(
+                isUserQuestion: true,
+                fill: Color.accentColor.opacity(0.18),
+                highlightOpacity: 0.10,
+                shadowOpacity: 0.08,
+                shadowRadius: 3
+            )
         case .assistantResponse, .system:
-            alignedTextBubble(isUserQuestion: false, fill: Color(nsColor: .controlBackgroundColor).opacity(0.92))
+            alignedTextBubble(
+                isUserQuestion: false,
+                fill: Color(nsColor: .controlBackgroundColor).opacity(0.95),
+                highlightOpacity: 0.06,
+                shadowOpacity: 0.10,
+                shadowRadius: 4
+            )
         }
     }
 
@@ -683,25 +695,49 @@ private struct ThreadTurnBubble: View {
         .buttonStyle(.plain)
     }
 
-    private func alignedTextBubble(isUserQuestion: Bool, fill: Color) -> some View {
+    private func alignedTextBubble(
+        isUserQuestion: Bool,
+        fill: Color,
+        highlightOpacity: Double,
+        shadowOpacity: Double,
+        shadowRadius: CGFloat
+    ) -> some View {
         HStack {
             if isUserQuestion {
                 Spacer(minLength: 36)
             }
 
             Text(turn.displayTitle)
-                .font(.callout)
+                .font(.system(size: 14))
                 .foregroundStyle(.primary)
                 .textSelection(.enabled)
                 .lineLimit(nil)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 7)
-                .background(fill, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(fill)
+                        .shadow(
+                            color: .black.opacity(shadowOpacity),
+                            radius: shadowRadius,
+                            y: 1
+                        )
+                }
                 .overlay {
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .strokeBorder(Color.secondary.opacity(0.12), lineWidth: 1)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(highlightOpacity),
+                                    Color.clear
+                                ],
+                                startPoint: .top,
+                                endPoint: .center
+                            )
+                        )
+                        .allowsHitTesting(false)
                 }
-                .frame(maxWidth: 280, alignment: isUserQuestion ? .trailing : .leading)
+                .frame(maxWidth: 320, alignment: isUserQuestion ? .trailing : .leading)
 
             if isUserQuestion == false {
                 Spacer(minLength: 36)
