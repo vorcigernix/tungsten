@@ -566,11 +566,7 @@ private struct ThreadTimeline: View {
     }
 
     private var scrollTarget: AnyHashable? {
-        if isGeneratingResponse {
-            return AnyHashable("pending-assistant")
-        }
-
-        return turns.last.map { AnyHashable($0.id) }
+        turns.last.map { AnyHashable($0.id) }
     }
 
     var body: some View {
@@ -584,11 +580,6 @@ private struct ThreadTimeline: View {
                             onActivatePage: onActivatePage
                         )
                         .id(turn.id)
-                    }
-
-                    if isGeneratingResponse {
-                        PendingAssistantBubble()
-                            .id("pending-assistant")
                     }
                 }
                 .padding(12)
@@ -797,26 +788,6 @@ private extension BrowserThread {
             turn.displayTitle.localizedLowercase.contains(normalizedQuery) ||
             turn.text.localizedLowercase.contains(normalizedQuery) ||
             (turn.urlString?.localizedLowercase.contains(normalizedQuery) ?? false)
-        }
-    }
-}
-
-private struct PendingAssistantBubble: View {
-    var body: some View {
-        HStack(spacing: 8) {
-            ProgressView()
-                .controlSize(.small)
-
-            Text("Thinking")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 7)
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .strokeBorder(Color.secondary.opacity(0.14), lineWidth: 1)
         }
     }
 }
