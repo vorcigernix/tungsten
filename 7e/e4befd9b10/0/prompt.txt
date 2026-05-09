@@ -622,3 +622,15 @@ Bluetooth: Version (null), 0 services, 0 devices, 0 incoming serial ports
 Network Service: Wi-Fi, AirPort, en0
 Thunderbolt Bus: MacBook Air, Apple Inc.
 Thunderbolt Bus: MacBook Air, Apple Inc.
+
+---
+
+it is production build, was working fine before
+
+---
+
+okay, it was some stale data, after running the commands above all is good. animation is on wrong element, it does not animate the sidebar but an inner element. also, I expected blurred animated, siri like animation and this is just a flat line changing colors
+
+---
+
+implement
