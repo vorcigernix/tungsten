@@ -197,6 +197,7 @@ private struct ThreadHeader: View {
 
     var body: some View {
         let pageSession = browserModel.activePageSession
+        let isPageLoading = pageSession?.isLoading == true
 
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
@@ -294,20 +295,21 @@ private struct ThreadHeader: View {
                 .disabled(pageSession?.canGoForward != true)
                 .help("Forward")
 
-                if pageSession?.isLoading == true {
-                    Button("Stop", systemImage: "xmark") {
+                Button {
+                    if isPageLoading {
                         pageSession?.stopLoading()
-                    }
-                    .labelStyle(.iconOnly)
-                    .help("Stop")
-                } else {
-                    Button("Reload", systemImage: "arrow.clockwise") {
+                    } else {
                         pageSession?.reload()
                     }
-                    .labelStyle(.iconOnly)
-                    .disabled(pageSession == nil)
-                    .help("Reload")
+                } label: {
+                    Image(systemName: isPageLoading ? "xmark" : "arrow.clockwise")
+                        .imageScale(.medium)
+                        .frame(width: 16, height: 16)
                 }
+                .frame(width: 28, height: 24)
+                .disabled(pageSession == nil)
+                .accessibilityLabel(isPageLoading ? "Stop" : "Reload")
+                .help(isPageLoading ? "Stop" : "Reload")
 
                 Spacer(minLength: 8)
 

@@ -57,6 +57,9 @@ require_pattern "$split_view_file" "matchesHistorySearch" "thread history search
 require_pattern "$split_view_file" "FaviconIcon" "shared favicon rendering view"
 require_pattern "$split_view_file" "FaviconLoader\\.shared\\.image" "thread UI favicon loading"
 require_pattern "$split_view_file" "turn\\.faviconURLString" "page bubble favicon source"
+require_pattern "$split_view_file" "isPageLoading \\? \"xmark\" : \"arrow\\.clockwise\"" "stable reload/stop icon swap"
+require_pattern "$split_view_file" "\\.frame\\(width: 28, height: 24\\)" "fixed reload/stop button frame"
+require_pattern "$split_view_file" "\\.frame\\(width: 16, height: 16\\)" "fixed reload/stop symbol frame"
 
 if rg -q "typealias BrowserTab = BrowserPageSession" "$model_file"; then
     echo "BrowserModel must not keep BrowserTab as a BrowserPageSession typealias" >&2
