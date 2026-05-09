@@ -1,0 +1,624 @@
+not a great work: -------------------------------------
+Translated Report (Full Report Below)
+-------------------------------------
+Process:             Tungsten [91231]
+Path:                /private/tmp/*/Tungsten.app/Contents/MacOS/Tungsten
+Identifier:          dev.tungsten.browser
+Version:             1.0 (1)
+Code Type:           ARM-64 (Native)
+Role:                Foreground
+Parent Process:      launchd [1]
+Coalition:           dev.tungsten.browser [425871]
+User ID:             501
+
+Date/Time:           2026-05-09 11:33:29.7572 +0200
+Launch Time:         2026-05-09 11:33:27.5613 +0200
+Hardware Model:      Mac16,12
+OS Version:          macOS 26.3.1 (25D2128)
+Release Type:        User
+
+Crash Reporter Key:  REDACTED
+Incident Identifier: BF0BDDDB-7A8C-400A-B8A2-B8F3D1F68A84
+
+Sleep/Wake UUID:       44840412-1F8C-4FC8-BA25-F29E061E1A7B
+
+Time Awake Since Boot: 3600000 seconds
+Time Since Wake:       10856 seconds
+
+System Integrity Protection: enabled
+
+Triggered by Thread: 0, Dispatch Queue: com.apple.main-thread
+
+Exception Type:    EXC_BAD_ACCESS (SIGSEGV)
+Exception Subtype: KERN_INVALID_ADDRESS at 0x0000000000000008
+Exception Codes:   0x0000000000000001, 0x0000000000000008
+
+Termination Reason:  Namespace SIGNAL, Code 11, Segmentation fault: 11
+Terminating Process: exc handler [91231]
+
+
+VM Region Info: 0x8 is not in any region.  Bytes before following region: 4328685560
+      REGION TYPE                    START - END         [ VSIZE] PRT/MAX SHRMOD  REGION DETAIL
+      UNUSED SPACE AT START
+--->  
+      __TEXT                      102028000-102118000    [  960K] r-x/r-x SM=COW  /tmp/*/Tungsten.app/Contents/MacOS/Tungsten
+
+Thread 0 Crashed::  Dispatch queue: com.apple.main-thread
+0   Chromium Embedded Framework   	       0x125d20b78 temporal_rs_ZonedDateTime_offset_nanoseconds + 121180
+1   Chromium Embedded Framework   	       0x125d8ee44 logging$internal$cxxbridge1$194$RustFmtArguments$operator$alignof + 31000
+2   Chromium Embedded Framework   	       0x125d8ed24 logging$internal$cxxbridge1$194$RustFmtArguments$operator$alignof + 30712
+3   Chromium Embedded Framework   	       0x125d0f978 temporal_rs_ZonedDateTime_offset_nanoseconds + 51036
+4   Chromium Embedded Framework   	       0x125c60cac cef_browser_host_create_browser + 584
+5   Tungsten                      	       0x1020c0104 CefBrowserHost::CreateBrowser(CefWindowInfo const&, scoped_refptr<CefClient>, CefStringBase<CefStringTraitsUTF16> const&, CefStructBase<CefBrowserSettingsTraits> const&, scoped_refptr<CefDictionaryValue>, scoped_refptr<CefRequestContext>) + 276
+6   Tungsten                      	       0x10202d040 -[TungstenBrowserController createBrowserIfNeeded] + 1000 (TungstenCEFBridge.mm:946)
+7   Tungsten                      	       0x10202c6bc -[TungstenBrowserController layoutBrowserView] + 64 (TungstenCEFBridge.mm:878)
+8   Tungsten                      	       0x102029a4c -[TungstenBrowserContainerView windowFocusOrBackingDidChange:] + 44 (TungstenCEFBridge.mm:494)
+9   CoreFoundation                	       0x1915b1494 __CFNOTIFICATIONCENTER_IS_CALLING_OUT_TO_AN_OBSERVER__ + 148
+10  CoreFoundation                	       0x191615f54 ___CFXRegistrationPost_block_invoke + 92
+11  CoreFoundation                	       0x191615e98 _CFXRegistrationPost + 436
+12  CoreFoundation                	       0x19158ff94 _CFXNotificationPost + 740
+13  Foundation                    	       0x1937ba6d0 -[NSNotificationCenter postNotificationName:object:userInfo:] + 88
+14  AppKit                        	       0x1966b2a70 __67-[NSWindow _updateSettingsSendingScreenChangeNotificationToScreen:]_block_invoke + 480
+15  AppKit                        	       0x1959f5a10 NSPerformVisuallyAtomicChange + 108
+-------- RECURSION LEVEL 12
+16  AppKit                        	       0x1966b2884 -[NSWindow _updateSettingsSendingScreenChangeNotificationToScreen:] + 96
+17  AppKit                        	       0x1966b9418 -[NSWindow _screenChanged:] + 136
+18  AppKit                        	       0x1966b9c18 -[NSWindow _displayChangedSoAdjustWindows:] + 112
+19  AppKit                        	       0x195d39b70 0x1959b4000 + 3693424
+20  AppKit                        	       0x195e3b5b8 0x1959b4000 + 4748728
+21  AppKit                        	       0x195e3b5f8 0x1959b4000 + 4748792
+22  AppKit                        	       0x195f37e70 -[NSApplication enumerateWindowsWithOptions:usingBlock:] + 236
+23  AppKit                        	       0x195d390c0 0x1959b4000 + 3690688
+24  AppKit                        	       0x195d49e04 0x1959b4000 + 3759620
+25  AppKit                        	       0x195d49e2c 0x1959b4000 + 3759660
+26  AppKit                        	       0x195d38004 0x1959b4000 + 3686404
+27  AppKit                        	       0x195d38a14 0x1959b4000 + 3688980
+28  AppKit                        	       0x195d3b1a0 0x1959b4000 + 3699104
+29  AppKit                        	       0x195bb872c 0x1959b4000 + 2115372
+30  AppKit                        	       0x195d49e04 0x1959b4000 + 3759620
+31  AppKit                        	       0x195d49e2c 0x1959b4000 + 3759660
+32  AppKit                        	       0x195d3835c 0x1959b4000 + 3687260
+33  AppKit                        	       0x195d3868c 0x1959b4000 + 3688076
+34  AppKit                        	       0x195d3af18 0x1959b4000 + 3698456
+35  AppKit                        	       0x195dc84c4 0x1959b4000 + 4277444
+36  AppKit                        	       0x195c14418 0x1959b4000 + 2491416
+37  AppKit                        	       0x195c142d4 0x1959b4000 + 2491092
+38  AppKit                        	       0x195c15b08 0x1959b4000 + 2497288
+39  AppKit                        	       0x195e3daa4 0x1959b4000 + 4758180
+40  AppKit                        	       0x195b9b3e0 0x1959b4000 + 1995744
+41  AppKit                        	       0x195a65d9c _NSCGSDockMessageReceive + 948
+42  HIToolbox                     	       0x19e1db5d0 DockCallback(unsigned int, unsigned int, void*, void*) + 2016
+43  HIServices                    	       0x198bd01ac dockClientNotificationProc + 220
+44  SkyLight                      	       0x197d07870 (anonymous namespace)::notify_datagram_handler(unsigned int, CGSDatagramType, void*, unsigned long, void*) + 928
+45  SkyLight                      	       0x1981780bc CGSDatagramReadStream::dispatchMainQueueDatagrams() + 284
+46  SkyLight                      	       0x198177f80 invocation function for block in CGSDatagramReadStream::mainQueueWakeup() + 36
+47  CoreFoundation                	       0x1915ba614 __CFRUNLOOP_IS_CALLING_OUT_TO_A_BLOCK__ + 28
+48  CoreFoundation                	       0x1915ba554 __CFRunLoopDoBlocks + 396
+49  CoreFoundation                	       0x1915b9388 __CFRunLoopRun + 804
+50  CoreFoundation                	       0x191673f3c _CFRunLoopRunSpecificWithOptions + 532
+51  HIToolbox                     	       0x19e124790 RunCurrentEventLoopInMode + 316
+52  HIToolbox                     	       0x19e127ab8 ReceiveNextEventCommon + 488
+53  Chromium Embedded Framework   	       0x12c173494 rust_bmp$cxxbridge1$194$Reader$image_data_loaded + 3577840
+54  Chromium Embedded Framework   	       0x12c1538e4 rust_bmp$cxxbridge1$194$Reader$image_data_loaded + 3447872
+55  Chromium Embedded Framework   	       0x12c154348 rust_bmp$cxxbridge1$194$Reader$image_data_loaded + 3450532
+56  Chromium Embedded Framework   	       0x12c1542f0 rust_bmp$cxxbridge1$194$Reader$image_data_loaded + 3450444
+57  Chromium Embedded Framework   	       0x12c091704 rust_bmp$cxxbridge1$194$Reader$image_data_loaded + 2652768
+58  Chromium Embedded Framework   	       0x125e07e5c cxxbridge1$rust_vec$u8$set_len + 56088
+59  Chromium Embedded Framework   	       0x125dca584 cef_dump_without_crashing_unthrottled + 26976
+60  Chromium Embedded Framework   	       0x129a29520 rust_bmp$cxxbridge1$194$Reader$metadata_loaded + 4220752
+61  Chromium Embedded Framework   	       0x129a293ac rust_bmp$cxxbridge1$194$Reader$metadata_loaded + 4220380
+62  Chromium Embedded Framework   	       0x125d44130 temporal_rs_ZonedDateTime_offset_nanoseconds + 266004
+63  Chromium Embedded Framework   	       0x125d43f1c temporal_rs_ZonedDateTime_offset_nanoseconds + 265472
+64  Chromium Embedded Framework   	       0x125d2b91c temporal_rs_ZonedDateTime_offset_nanoseconds + 165632
+65  Chromium Embedded Framework   	       0x125d2b56c temporal_rs_ZonedDateTime_offset_nanoseconds + 164688
+66  Chromium Embedded Framework   	       0x125c45d30 cef_initialize + 376
+67  Tungsten                      	       0x1020ee77c CefInitialize(CefMainArgs const&, CefStructBase<CefSettingsTraits> const&, scoped_refptr<CefApp>, void*) + 248
+68  Tungsten                      	       0x10202a454 -[TungstenCEFApp initializeCEF] + 1360 (TungstenCEFBridge.mm:611)
+69  Tungsten                      	       0x10202cdac -[TungstenBrowserController createBrowserIfNeeded] + 340 (TungstenCEFBridge.mm:916)
+70  Tungsten                      	       0x10202c6bc -[TungstenBrowserController layoutBrowserView] + 64 (TungstenCEFBridge.mm:878)
+71  Tungsten                      	       0x102029d50 -[TungstenBrowserContainerView setFrameSize:] + 72 (TungstenCEFBridge.mm:530)
+72  AppKit                        	       0x196685948 -[NSView setFrame:] + 300
+73  SwiftUI                       	       0x1c6201f24 AppKitPlatformViewHost.updateHostedViewBounds() + 132
+74  SwiftUI                       	       0x1c6204188 @objc AppKitPlatformViewHost.layout() + 28
+75  AppKit                        	       0x195d49e04 0x1959b4000 + 3759620
+76  AppKit                        	       0x195d49e2c 0x1959b4000 + 3759660
+77  AppKit                        	       0x195d0d7c0 0x1959b4000 + 3512256
+78  AppKit                        	       0x195d0ddd8 0x1959b4000 + 3513816
+79  AppKit                        	       0x19669f000 ___NSViewLayout_block_invoke + 624
+80  AppKit                        	       0x1959f5a10 NSPerformVisuallyAtomicChange + 108
+-------- RECURSION LEVEL 11
+81  AppKit                        	       0x1959f7134 _NSViewLayout + 96
+82  AppKit                        	       0x19668ea70 __36-[NSView _layoutSubtreeWithOldSize:]_block_invoke + 372
+83  AppKit                        	       0x1959f5a10 NSPerformVisuallyAtomicChange + 108
+-------- RECURSION LEVEL 10
+--------
+-------- ELIDED 6 LEVELS OF RECURSION THROUGH 0x1959f5a10 NSPerformVisuallyAtomicChange + 108
+--------
+102 AppKit                        	       0x19668e8f0 -[NSView _layoutSubtreeWithOldSize:] + 100
+103 AppKit                        	       0x19668eba8 __36-[NSView _layoutSubtreeWithOldSize:]_block_invoke + 684
+104 AppKit                        	       0x1959f5a10 NSPerformVisuallyAtomicChange + 108
+-------- RECURSION LEVEL 3
+105 AppKit                        	       0x19668e8f0 -[NSView _layoutSubtreeWithOldSize:] + 100
+106 AppKit                        	       0x19668f774 __56-[NSView _layoutSubtreeIfNeededAndAllowTemporaryEngine:]_block_invoke + 908
+107 AppKit                        	       0x1959f5a10 NSPerformVisuallyAtomicChange + 108
+-------- RECURSION LEVEL 2
+108 AppKit                        	       0x19668f3dc -[NSView _layoutSubtreeIfNeededAndAllowTemporaryEngine:] + 100
+109 AppKit                        	       0x1959f5a10 NSPerformVisuallyAtomicChange + 108
+-------- RECURSION LEVEL 1
+110 AppKit                        	       0x1959f6d10 -[NSView layoutSubtreeIfNeeded] + 96
+111 AppKit                        	       0x1969f0a8c -[NSWindow(NSConstraintBasedLayoutInternal) _layoutViewTree] + 120
+112 AppKit                        	       0x1969f0ca4 -[NSWindow(NSConstraintBasedLayoutInternal) layoutIfNeeded] + 240
+113 AppKit                        	       0x195a4c348 -[NSWindow _setUpFirstResponderBeforeBecomingVisible] + 68
+114 AppKit                        	       0x1966c09b8 -[NSWindow _doWindowWillBeVisibleAsSheet:] + 108
+115 AppKit                        	       0x1966c1910 -[NSWindow _reallyDoOrderWindowAboveOrBelow:] + 1092
+116 AppKit                        	       0x1966c24cc -[NSWindow _reallyDoOrderWindow:] + 64
+117 AppKit                        	       0x1966c29b4 -[NSWindow _doOrderWindow:] + 300
+118 AppKit                        	       0x195a528a4 -[NSPersistentUIRestorer orderRestoredWindows] + 1664
+119 AppKit                        	       0x196a56b18 -[NSPersistentUIRestorer _finishedRestoringWindowsWithZOrder:options:completionHandler:] + 1128
+120 AppKit                        	       0x196a56490 __96-[NSPersistentUIRestorer restoreStateFromRecords:requireSecureCoding:options:completionHandler:]_block_invoke.193 + 244
+121 AppKit                        	       0x196a59dac __99-[NSApplication(NSPersistentUIRestorationSupport) _restoreWindowWithRestoration:completionHandler:]_block_invoke + 408
+122 SwiftUI                       	       0x1c610e67c specialized static AppWindowsController.restoreWindow(withIdentifier:state:completionHandler:) + 912
+123 SwiftUI                       	       0x1c60ed8a8 @objc static AppWindowsController.restoreWindow(withIdentifier:state:completionHandler:) + 84
+124 AppKit                        	       0x196a5a12c -[NSApplication(NSWindowRestoration) restoreWindowWithIdentifier:state:completionHandler:] + 464
+125 AppKit                        	       0x196a59664 -[NSApplication(NSPersistentUIRestorationSupport) _restoreWindowWithRestoration:completionHandler:] + 748
+126 AppKit                        	       0x196a56058 -[NSPersistentUIRestorer restoreStateFromRecords:requireSecureCoding:options:completionHandler:] + 1704
+127 AppKit                        	       0x196401358 -[NSPersistentUIManager restoreAllPersistentStateWithFullFidelity:completionHandler:] + 648
+128 AppKit                        	       0x195f3cee8 -[NSApplication _reopenWindowsAsNecessaryIncludingRestorableState:withFullFidelity:completionHandler:] + 460
+129 AppKit                        	       0x195f4c398 -[NSApplication(NSAppleEventHandling) _handleAEOpenEvent:] + 480
+130 AppKit                        	       0x195f4fba4 -[NSApplication(NSAppleEventHandling) _handleCoreEvent:withReplyEvent:] + 488
+131 Foundation                    	       0x193707a34 -[NSAppleEventManager dispatchRawAppleEvent:withRawReply:handlerRefCon:] + 316
+132 Foundation                    	       0x192dc6688 _NSAppleEventManagerGenericHandler + 80
+133 AE                            	       0x1998200f4 0x199815000 + 45300
+134 AE                            	       0x19981fa34 0x199815000 + 43572
+135 AE                            	       0x1998190e8 aeProcessAppleEvent + 484
+136 HIToolbox                     	       0x19e0797c8 AEProcessAppleEvent + 68
+137 AppKit                        	       0x1959d410c _DPSNextEvent + 1296
+138 AppKit                        	       0x19649af08 -[NSApplication(NSEventRouting) _nextEventMatchingEventMask:untilDate:inMode:dequeue:] + 688
+139 AppKit                        	       0x19649ac14 -[NSApplication(NSEventRouting) nextEventMatchingMask:untilDate:inMode:dequeue:] + 72
+140 AppKit                        	       0x1959cc780 -[NSApplication run] + 368
+141 AppKit                        	       0x1959b86dc NSApplicationMain + 880
+142 SwiftUI                       	       0x1c58413ec specialized runApp(_:) + 168
+143 SwiftUI                       	       0x1c5bfac88 runApp<A>(_:) + 112
+144 SwiftUI                       	       0x1c5ec5320 static App.main() + 224
+145 Tungsten                      	       0x10209aaf4 static TungstenApp.$main() + 52 [inlined]
+146 Tungsten                      	       0x10209aaf4 main + 64
+147 dyld                          	       0x191151d54 start + 7184
+
+Thread 1:
+
+Thread 2:
+
+Thread 3:
+
+Thread 4:
+
+Thread 5:: com.apple.NSEventThread
+0   libsystem_kernel.dylib        	       0x1914d8c34 mach_msg2_trap + 8
+1   libsystem_kernel.dylib        	       0x1914eb028 mach_msg2_internal + 76
+2   libsystem_kernel.dylib        	       0x1914e198c mach_msg_overwrite + 484
+3   libsystem_kernel.dylib        	       0x1914d8fb4 mach_msg + 24
+4   CoreFoundation                	       0x1915babb0 __CFRunLoopServiceMachPort + 160
+5   CoreFoundation                	       0x1915b9508 __CFRunLoopRun + 1188
+6   CoreFoundation                	       0x191673f3c _CFRunLoopRunSpecificWithOptions + 532
+7   AppKit                        	       0x195a63a34 _NSEventThread + 184
+8   libsystem_pthread.dylib       	       0x19151bc08 _pthread_start + 136
+9   libsystem_pthread.dylib       	       0x191516ba8 thread_start + 8
+
+Thread 6:: StackSamplingProfiler
+0   dyld                          	       0x191186e84 dyld4::APIs::dladdr(void const*, dl_info*) + 268
+1   Chromium Embedded Framework   	       0x12a537c80 ChromeWebAppShortcutCopierMain + 5557776
+2   Chromium Embedded Framework   	       0x12a49c1f4 ChromeWebAppShortcutCopierMain + 4920196
+3   Chromium Embedded Framework   	       0x12a54ce54 ChromeWebAppShortcutCopierMain + 5644260
+4   Chromium Embedded Framework   	       0x12a49f3c4 ChromeWebAppShortcutCopierMain + 4932948
+5   Chromium Embedded Framework   	       0x12a49ef9c ChromeWebAppShortcutCopierMain + 4931884
+6   Chromium Embedded Framework   	       0x12a4a0f24 ChromeWebAppShortcutCopierMain + 4939956
+7   Chromium Embedded Framework   	       0x12a4c3efc ChromeWebAppShortcutCopierMain + 5083276
+8   Chromium Embedded Framework   	       0x12a4e43d4 ChromeWebAppShortcutCopierMain + 5215588
+9   Chromium Embedded Framework   	       0x12a4775c8 ChromeWebAppShortcutCopierMain + 4769624
+10  Chromium Embedded Framework   	       0x12a4e4c54 ChromeWebAppShortcutCopierMain + 5217764
+11  Chromium Embedded Framework   	       0x12a4a6084 ChromeWebAppShortcutCopierMain + 4960788
+12  Chromium Embedded Framework   	       0x12a506e10 ChromeWebAppShortcutCopierMain + 5357472
+13  Chromium Embedded Framework   	       0x12a506f9c ChromeWebAppShortcutCopierMain + 5357868
+14  Chromium Embedded Framework   	       0x12a51cc48 ChromeWebAppShortcutCopierMain + 5447128
+15  libsystem_pthread.dylib       	       0x19151bc08 _pthread_start + 136
+16  libsystem_pthread.dylib       	       0x191516ba8 thread_start + 8
+
+
+Thread 0 crashed with ARM Thread State (64-bit):
+    x0: 0x0000012800090d00   x1: 0x00000128000426b0   x2: 0x000000016ddcdc38   x3: 0x000000016ddcdc48
+    x4: 0x0000000000000000   x5: 0x0000000000000000   x6: 0x0000000125c60a64   x7: 0x0000000000000c50
+    x8: 0x0000000000000000   x9: 0x00000000ffffffff  x10: 0x000000010202f1f4  x11: 0x0000000000a28290
+   x12: 0x0000000000a28290  x13: 0x0000000000000000  x14: 0x00000001fd8ed360  x15: 0x00000001fd8ed360
+   x16: 0x00000001915228a4  x17: 0x00000001feda2bf8  x18: 0x0000000000000000  x19: 0x00000128000426b0
+   x20: 0x000000016ddcda00  x21: 0x0000000000000000  x22: 0x000000016ddcdc48  x23: 0x0000000000000000
+   x24: 0x000000016ddcdc38  x25: 0x000000016ddcdd58  x26: 0x000000016ddcdd58  x27: 0x000000f2000000f0
+   x28: 0x000000016ddce248   fp: 0x000000016ddcd9a0   lr: 0x0000000125d8ee44
+    sp: 0x000000016ddcd990   pc: 0x0000000125d20b78 cpsr: 0x60000000
+   far: 0x0000000000000008  esr: 0x92000006 (Data Abort) byte read Translation fault
+
+Binary Images:
+       0x102028000 -        0x102117fff dev.tungsten.browser (1.0) <a741852f-303b-31c2-8a51-1bb2fc88c4c6> /private/tmp/*/Tungsten.app/Contents/MacOS/Tungsten
+       0x1024c4000 -        0x1024cffff libobjc-trampolines.dylib (*) <f26af954-d1f7-31aa-9981-1bad216149d9> /usr/lib/libobjc-trampolines.dylib
+       0x116264000 -        0x116a9bfff com.apple.AGXMetalG16G-B0 (345.20.4) <dc332c71-9d73-3321-bce0-19347abc333c> /System/Library/Extensions/AGXMetalG16G_B0.bundle/Contents/MacOS/AGXMetalG16G_B0
+       0x125978000 -        0x131427fff org.chromium.cef.framework (147.0.7727.118) <4c4c4404-5555-3144-a1e6-e3cb93c4fb00> /private/tmp/*/Tungsten.app/Contents/Frameworks/Chromium Embedded Framework.framework/Versions/A/Chromium Embedded Framework
+       0x19155b000 -        0x191aa42bf com.apple.CoreFoundation (6.9) <646518bb-a6e8-3da7-ab32-9d97bcbdc25d> /System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation
+       0x192dae000 -        0x193d51c1f com.apple.Foundation (6.9) <187e7913-b154-30a7-8070-852767aac3cf> /System/Library/Frameworks/Foundation.framework/Versions/C/Foundation
+       0x1959b4000 -        0x1970e06ff com.apple.AppKit (6.9) <bf94fd49-283d-3c62-8cf0-0a49c21b6129> /System/Library/Frameworks/AppKit.framework/Versions/C/AppKit
+       0x19e063000 -        0x19e36627f com.apple.HIToolbox (2.1.1) <3c068ca7-e6a9-3e91-953a-b527a1892d05> /System/Library/Frameworks/Carbon.framework/Versions/A/Frameworks/HIToolbox.framework/Versions/A/HIToolbox
+       0x198bca000 -        0x198c3617f com.apple.HIServices (1.22) <1ed5b3e7-1680-3603-a406-57e966ee5b74> /System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/HIServices.framework/Versions/A/HIServices
+       0x197cfd000 -        0x1982c3eff com.apple.SkyLight (1.600.0) <0fdb8257-4bad-3259-b1d8-0ef23ec53232> /System/Library/PrivateFrameworks/SkyLight.framework/Versions/A/SkyLight
+       0x1c5730000 -        0x1c6e76f7f com.apple.SwiftUI (7.3.2) <a01a90c1-cc14-30ae-8fb9-e5173c413f95> /System/Library/Frameworks/SwiftUI.framework/Versions/A/SwiftUI
+       0x199815000 -        0x1998895f7 com.apple.AE (944) <c2e75873-78f4-33be-b63b-d211345bac66> /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/AE.framework/Versions/A/AE
+       0x191149000 -        0x1911e8713 dyld (*) <044cd67e-3a0a-3ca4-8bb3-a9687d5328fe> /usr/lib/dyld
+               0x0 - 0xffffffffffffffff ??? (*) <00000000-0000-0000-0000-000000000000> ???
+       0x191522000 -        0x19152a4af libsystem_platform.dylib (*) <62c9cd37-272d-3d2d-9a1c-6f4ef24f7ec7> /usr/lib/system/libsystem_platform.dylib
+       0x1914d8000 -        0x19151449f libsystem_kernel.dylib (*) <78ec33a6-6330-3836-8900-eb90836936e8> /usr/lib/system/libsystem_kernel.dylib
+       0x191515000 -        0x191521acb libsystem_pthread.dylib (*) <0596a7b6-bce2-3f06-a2e8-3eaab5371ed8> /usr/lib/system/libsystem_pthread.dylib
+       0x1b4759000 -        0x1b49a2bdf com.apple.AVFCapture (1.0) <78eb1fa5-44a4-3136-ae5f-883bf141927f> /System/Library/PrivateFrameworks/AVFCapture.framework/Versions/A/AVFCapture
+       0x1b5136000 -        0x1b52ba4ff com.apple.RenderBox (7.2.3) <1edac375-aded-38a7-ae06-47bfdfa6ef1a> /System/Library/PrivateFrameworks/RenderBox.framework/Versions/A/RenderBox
+
+External Modification Summary:
+  Calls made by other processes targeting this process:
+    task_for_pid: 0
+    thread_create: 0
+    thread_set_state: 0
+  Calls made by this process:
+    task_for_pid: 0
+    thread_create: 0
+    thread_set_state: 0
+  Calls made by all processes on this machine:
+    task_for_pid: 17
+    thread_create: 0
+    thread_set_state: 352
+
+VM Region Summary:
+ReadOnly portion of Libraries: Total=2.0G resident=0K(0%) swapped_out_or_unallocated=2.0G(100%)
+Writable regions: Total=153.1M written=785K(1%) resident=785K(1%) swapped_out=0K(0%) unallocated=152.4M(99%)
+
+                                VIRTUAL   REGION 
+REGION TYPE                        SIZE    COUNT (non-coalesced) 
+===========                     =======  ======= 
+.note.gnu.proper                    320        1 
+Activity Tracing                   256K        1 
+AttributeGraph Data               1024K        1 
+ColorSync                           16K        1 
+CoreGraphics                        16K        1 
+Foundation                          16K        1 
+Kernel Alloc Once                   32K        1 
+MALLOC                           117.4M       24 
+MALLOC guard page                 3840K        4 
+Memory Tag 253                    48.0G       61 
+PROTECTED_MEMORY                    16K        1 
+STACK GUARD                       56.1M        7 
+Stack                             18.7M        7 
+VM_ALLOCATE                        160K       10 
+__AUTH                            5854K      642 
+__AUTH_CONST                      89.2M     1021 
+__CTF                               824        1 
+__DATA                            38.5M      975 
+__DATA_CONST                      43.9M     1031 
+__DATA_DIRTY                      8424K      874 
+__FONT_DATA                        2352        1 
+__INFO_FILTER                         8        1 
+__LINKEDIT                       592.2M        5 
+__OBJC_RO                         78.4M        1 
+__OBJC_RW                         2571K        1 
+__TEXT                             1.4G     1054 
+__TPRO_CONST                       128K        2 
+mapped file                      291.9M       40 
+page table in kernel               785K        1 
+shared memory                      864K       12 
+===========                     =======  ======= 
+TOTAL                             50.7G     5783 
+
+
+-----------
+Full Report
+-----------
+
+{"app_name":"Tungsten","timestamp":"2026-05-09 11:33:32.00 +0200","app_version":"1.0","slice_uuid":"a741852f-303b-31c2-8a51-1bb2fc88c4c6","build_version":"1","platform":1,"bundleID":"dev.tungsten.browser","share_with_app_devs":1,"is_first_party":0,"bug_type":"309","os_version":"macOS 26.3.1 (25D2128)","roots_installed":0,"name":"Tungsten","incident_id":"BF0BDDDB-7A8C-400A-B8A2-B8F3D1F68A84"}
+{
+  "uptime" : 3600000,
+  "procRole" : "Foreground",
+  "version" : 2,
+  "userID" : 501,
+  "deployVersion" : 210,
+  "modelCode" : "Mac16,12",
+  "coalitionID" : 425871,
+  "osVersion" : {
+    "train" : "macOS 26.3.1",
+    "build" : "25D2128",
+    "releaseType" : "User"
+  },
+  "captureTime" : "2026-05-09 11:33:29.7572 +0200",
+  "codeSigningMonitor" : 2,
+  "incident" : "BF0BDDDB-7A8C-400A-B8A2-B8F3D1F68A84",
+  "pid" : 91231,
+  "translated" : false,
+  "cpuType" : "ARM-64",
+  "procLaunch" : "2026-05-09 11:33:27.5613 +0200",
+  "procStartAbsTime" : 86810557627971,
+  "procExitAbsTime" : 86810610305519,
+  "procName" : "Tungsten",
+  "procPath" : "\/private\/tmp\/*\/Tungsten.app\/Contents\/MacOS\/Tungsten",
+  "bundleInfo" : {"CFBundleShortVersionString":"1.0","CFBundleVersion":"1","CFBundleIdentifier":"dev.tungsten.browser"},
+  "storeInfo" : {"deviceIdentifierForVendor":"065FD897-E98E-5C2F-8074-AE458481AD49","thirdParty":true},
+  "parentProc" : "launchd",
+  "parentPid" : 1,
+  "coalitionName" : "dev.tungsten.browser",
+  "crashReporterKey" : "REDACTED",
+  "appleIntelligenceStatus" : {"state":"restricted","reasons":["assetIsNotReady"]},
+  "developerMode" : 1,
+  "codeSigningID" : "dev.tungsten.browser",
+  "codeSigningTeamID" : "",
+  "codeSigningFlags" : 570495749,
+  "codeSigningValidationCategory" : 10,
+  "codeSigningTrustLevel" : 4294967295,
+  "codeSigningAuxiliaryInfo" : 0,
+  "instructionByteStream" : {"beforePC":"4QMTqm7uvpXgAxOq\/REDACTED","atPC":"EwVA+XMAALTgAxOq9MgBlOADE6r9e0Gp9E\/CqMADX9YIfED5AAlA+Q=="},
+  "bootSessionUUID" : "F7EF7D49-9149-4F61-ADDC-62C81DBBA98B",
+  "wakeTime" : 10856,
+  "sleepWakeUUID" : "44840412-1F8C-4FC8-BA25-F29E061E1A7B",
+  "sip" : "enabled",
+  "vmRegionInfo" : "0x8 is not in any region.  Bytes before following region: 4328685560\n      REGION TYPE                    START - END         [ VSIZE] PRT\/MAX SHRMOD  REGION DETAIL\n      UNUSED SPACE AT START\n--->  \n      __TEXT                      102028000-102118000    [  960K] r-x\/r-x SM=COW  \/tmp\/*\/Tungsten.app\/Contents\/MacOS\/Tungsten",
+  "exception" : {"codes":"0x0000000000000001, 0x0000000000000008","rawCodes":[1,8],"type":"EXC_BAD_ACCESS","signal":"SIGSEGV","subtype":"KERN_INVALID_ADDRESS at 0x0000000000000008"},
+  "termination" : {"flags":0,"code":11,"namespace":"SIGNAL","indicator":"Segmentation fault: 11","byProc":"exc handler","byPid":91231},
+  "vmregioninfo" : "0x8 is not in any region.  Bytes before following region: 4328685560\n      REGION TYPE                    START - END         [ VSIZE] PRT\/MAX SHRMOD  REGION DETAIL\n      UNUSED SPACE AT START\n--->  \n      __TEXT                      102028000-102118000    [  960K] r-x\/r-x SM=COW  \/tmp\/*\/Tungsten.app\/Contents\/MacOS\/Tungsten",
+  "extMods" : {"caller":{"thread_create":0,"thread_set_state":0,"task_for_pid":0},"system":{"thread_create":0,"thread_set_state":352,"task_for_pid":17},"targeted":{"thread_create":0,"thread_set_state":0,"task_for_pid":0},"warnings":0},
+  "faultingThread" : 0,
+  "threads" : [{"frames":[{"imageOffset":3836792,"symbol":"temporal_rs_ZonedDateTime_offset_nanoseconds","symbolLocation":121180,"imageIndex":3},{"imageOffset":4288068,"symbol":"logging$internal$cxxbridge1$194$RustFmtArguments$operator$alignof","symbolLocation":31000,"imageIndex":3},{"imageOffset":4287780,"symbol":"logging$internal$cxxbridge1$194$RustFmtArguments$operator$alignof","symbolLocation":30712,"imageIndex":3},{"imageOffset":3766648,"symbol":"temporal_rs_ZonedDateTime_offset_nanoseconds","symbolLocation":51036,"imageIndex":3},{"imageOffset":3050668,"symbol":"cef_browser_host_create_browser","symbolLocation":584,"imageIndex":3},{"imageOffset":622852,"symbol":"CefBrowserHost::CreateBrowser(CefWindowInfo const&, scoped_refptr<CefClient>, CefStringBase<CefStringTraitsUTF16> const&, CefStructBase<CefBrowserSettingsTraits> const&, scoped_refptr<CefDictionaryValue>, scoped_refptr<CefRequestContext>)","symbolLocation":276,"imageIndex":0},{"imageOffset":20544,"sourceLine":946,"sourceFile":"TungstenCEFBridge.mm","symbol":"-[TungstenBrowserController createBrowserIfNeeded]","imageIndex":0,"symbolLocation":1000},{"imageOffset":18108,"sourceLine":878,"sourceFile":"TungstenCEFBridge.mm","symbol":"-[TungstenBrowserController layoutBrowserView]","imageIndex":0,"symbolLocation":64},{"imageOffset":6732,"sourceLine":494,"sourceFile":"TungstenCEFBridge.mm","symbol":"-[TungstenBrowserContainerView windowFocusOrBackingDidChange:]","imageIndex":0,"symbolLocation":44},{"imageOffset":353428,"symbol":"__CFNOTIFICATIONCENTER_IS_CALLING_OUT_TO_AN_OBSERVER__","symbolLocation":148,"imageIndex":4},{"imageOffset":765780,"symbol":"___CFXRegistrationPost_block_invoke","symbolLocation":92,"imageIndex":4},{"imageOffset":765592,"symbol":"_CFXRegistrationPost","symbolLocation":436,"imageIndex":4},{"imageOffset":216980,"symbol":"_CFXNotificationPost","symbolLocation":740,"imageIndex":4},{"imageOffset":10536656,"symbol":"-[NSNotificationCenter postNotificationName:object:userInfo:]","symbolLocation":88,"imageIndex":5},{"imageOffset":13625968,"symbol":"__67-[NSWindow _updateSettingsSendingScreenChangeNotificationToScreen:]_block_invoke","symbolLocation":480,"imageIndex":6},{"imageOffset":268816,"symbol":"NSPerformVisuallyAtomicChange","symbolLocation":108,"imageIndex":6},{"imageOffset":13625476,"symbol":"-[NSWindow _updateSettingsSendingScreenChangeNotificationToScreen:]","symbolLocation":96,"imageIndex":6},{"imageOffset":13653016,"symbol":"-[NSWindow _screenChanged:]","symbolLocation":136,"imageIndex":6},{"imageOffset":13655064,"symbol":"-[NSWindow _displayChangedSoAdjustWindows:]","symbolLocation":112,"imageIndex":6},{"imageOffset":3693424,"imageIndex":6},{"imageOffset":4748728,"imageIndex":6},{"imageOffset":4748792,"imageIndex":6},{"imageOffset":5783152,"symbol":"-[NSApplication enumerateWindowsWithOptions:usingBlock:]","symbolLocation":236,"imageIndex":6},{"imageOffset":3690688,"imageIndex":6},{"imageOffset":3759620,"imageIndex":6},{"imageOffset":3759660,"imageIndex":6},{"imageOffset":3686404,"imageIndex":6},{"imageOffset":3688980,"imageIndex":6},{"imageOffset":3699104,"imageIndex":6},{"imageOffset":2115372,"imageIndex":6},{"imageOffset":3759620,"imageIndex":6},{"imageOffset":3759660,"imageIndex":6},{"imageOffset":3687260,"imageIndex":6},{"imageOffset":3688076,"imageIndex":6},{"imageOffset":3698456,"imageIndex":6},{"imageOffset":4277444,"imageIndex":6},{"imageOffset":2491416,"imageIndex":6},{"imageOffset":2491092,"imageIndex":6},{"imageOffset":2497288,"imageIndex":6},{"imageOffset":4758180,"imageIndex":6},{"imageOffset":1995744,"imageIndex":6},{"imageOffset":728476,"symbol":"_NSCGSDockMessageReceive","symbolLocation":948,"imageIndex":6},{"imageOffset":1541584,"symbol":"DockCallback(unsigned int, unsigned int, void*, void*)","symbolLocation":2016,"imageIndex":7},{"imageOffset":25004,"symbol":"dockClientNotificationProc","symbolLocation":220,"imageIndex":8},{"imageOffset":43120,"symbol":"(anonymous namespace)::notify_datagram_handler(unsigned int, CGSDatagramType, void*, unsigned long, void*)","symbolLocation":928,"imageIndex":9},{"imageOffset":4698300,"symbol":"CGSDatagramReadStream::dispatchMainQueueDatagrams()","symbolLocation":284,"imageIndex":9},{"imageOffset":4697984,"symbol":"invocation function for block in CGSDatagramReadStream::mainQueueWakeup()","symbolLocation":36,"imageIndex":9},{"imageOffset":390676,"symbol":"__CFRUNLOOP_IS_CALLING_OUT_TO_A_BLOCK__","symbolLocation":28,"imageIndex":4},{"imageOffset":390484,"symbol":"__CFRunLoopDoBlocks","symbolLocation":396,"imageIndex":4},{"imageOffset":385928,"symbol":"__CFRunLoopRun","symbolLocation":804,"imageIndex":4},{"imageOffset":1150780,"symbol":"_CFRunLoopRunSpecificWithOptions","symbolLocation":532,"imageIndex":4},{"imageOffset":792464,"symbol":"RunCurrentEventLoopInMode","symbolLocation":316,"imageIndex":7},{"imageOffset":805560,"symbol":"ReceiveNextEventCommon","symbolLocation":488,"imageIndex":7},{"imageOffset":109032596,"symbol":"rust_bmp$cxxbridge1$194$Reader$image_data_loaded","symbolLocation":3577840,"imageIndex":3},{"imageOffset":108902628,"symbol":"rust_bmp$cxxbridge1$194$Reader$image_data_loaded","symbolLocation":3447872,"imageIndex":3},{"imageOffset":108905288,"symbol":"rust_bmp$cxxbridge1$194$Reader$image_data_loaded","symbolLocation":3450532,"imageIndex":3},{"imageOffset":108905200,"symbol":"rust_bmp$cxxbridge1$194$Reader$image_data_loaded","symbolLocation":3450444,"imageIndex":3},{"imageOffset":108107524,"symbol":"rust_bmp$cxxbridge1$194$Reader$image_data_loaded","symbolLocation":2652768,"imageIndex":3},{"imageOffset":4783708,"symbol":"cxxbridge1$rust_vec$u8$set_len","symbolLocation":56088,"imageIndex":3},{"imageOffset":4531588,"symbol":"cef_dump_without_crashing_unthrottled","symbolLocation":26976,"imageIndex":3},{"imageOffset":67835168,"symbol":"rust_bmp$cxxbridge1$194$Reader$metadata_loaded","symbolLocation":4220752,"imageIndex":3},{"imageOffset":67834796,"symbol":"rust_bmp$cxxbridge1$194$Reader$metadata_loaded","symbolLocation":4220380,"imageIndex":3},{"imageOffset":3981616,"symbol":"temporal_rs_ZonedDateTime_offset_nanoseconds","symbolLocation":266004,"imageIndex":3},{"imageOffset":3981084,"symbol":"temporal_rs_ZonedDateTime_offset_nanoseconds","symbolLocation":265472,"imageIndex":3},{"imageOffset":3881244,"symbol":"temporal_rs_ZonedDateTime_offset_nanoseconds","symbolLocation":165632,"imageIndex":3},{"imageOffset":3880300,"symbol":"temporal_rs_ZonedDateTime_offset_nanoseconds","symbolLocation":164688,"imageIndex":3},{"imageOffset":2940208,"symbol":"cef_initialize","symbolLocation":376,"imageIndex":3},{"imageOffset":812924,"symbol":"CefInitialize(CefMainArgs const&, CefStructBase<CefSettingsTraits> const&, scoped_refptr<CefApp>, void*)","symbolLocation":248,"imageIndex":0},{"imageOffset":9300,"sourceLine":611,"sourceFile":"TungstenCEFBridge.mm","symbol":"-[TungstenCEFApp initializeCEF]","imageIndex":0,"symbolLocation":1360},{"imageOffset":19884,"sourceLine":916,"sourceFile":"TungstenCEFBridge.mm","symbol":"-[TungstenBrowserController createBrowserIfNeeded]","imageIndex":0,"symbolLocation":340},{"imageOffset":18108,"sourceLine":878,"sourceFile":"TungstenCEFBridge.mm","symbol":"-[TungstenBrowserController layoutBrowserView]","imageIndex":0,"symbolLocation":64},{"imageOffset":7504,"sourceLine":530,"sourceFile":"TungstenCEFBridge.mm","symbol":"-[TungstenBrowserContainerView setFrameSize:]","imageIndex":0,"symbolLocation":72},{"imageOffset":13441352,"symbol":"-[NSView setFrame:]","symbolLocation":300,"imageIndex":6},{"imageOffset":11345700,"symbol":"AppKitPlatformViewHost.updateHostedViewBounds()","symbolLocation":132,"imageIndex":10},{"imageOffset":11354504,"symbol":"@objc AppKitPlatformViewHost.layout()","symbolLocation":28,"imageIndex":10},{"imageOffset":3759620,"imageIndex":6},{"imageOffset":3759660,"imageIndex":6},{"imageOffset":3512256,"imageIndex":6},{"imageOffset":3513816,"imageIndex":6},{"imageOffset":13545472,"symbol":"___NSViewLayout_block_invoke","symbolLocation":624,"imageIndex":6},{"imageOffset":268816,"symbol":"NSPerformVisuallyAtomicChange","symbolLocation":108,"imageIndex":6},{"imageOffset":274740,"symbol":"_NSViewLayout","symbolLocation":96,"imageIndex":6},{"imageOffset":13478512,"symbol":"__36-[NSView _layoutSubtreeWithOldSize:]_block_invoke","symbolLocation":372,"imageIndex":6},{"imageOffset":268816,"symbol":"NSPerformVisuallyAtomicChange","symbolLocation":108,"imageIndex":6},{"imageOffset":13478128,"symbol":"-[NSView _layoutSubtreeWithOldSize:]","symbolLocation":100,"imageIndex":6},{"imageOffset":13478824,"symbol":"__36-[NSView _layoutSubtreeWithOldSize:]_block_invoke","symbolLocation":684,"imageIndex":6},{"imageOffset":268816,"symbol":"NSPerformVisuallyAtomicChange","symbolLocation":108,"imageIndex":6},{"imageOffset":13478128,"symbol":"-[NSView _layoutSubtreeWithOldSize:]","symbolLocation":100,"imageIndex":6},{"imageOffset":13481844,"symbol":"__56-[NSView _layoutSubtreeIfNeededAndAllowTemporaryEngine:]_block_invoke","symbolLocation":908,"imageIndex":6},{"imageOffset":268816,"symbol":"NSPerformVisuallyAtomicChange","symbolLocation":108,"imageIndex":6},{"imageOffset":13480924,"symbol":"-[NSView _layoutSubtreeIfNeededAndAllowTemporaryEngine:]","symbolLocation":100,"imageIndex":6},{"imageOffset":268816,"symbol":"NSPerformVisuallyAtomicChange","symbolLocation":108,"imageIndex":6},{"imageOffset":273680,"symbol":"-[NSView layoutSubtreeIfNeeded]","symbolLocation":96,"imageIndex":6},{"imageOffset":17025676,"symbol":"-[NSWindow(NSConstraintBasedLayoutInternal) _layoutViewTree]","symbolLocation":120,"imageIndex":6},{"imageOffset":17026212,"symbol":"-[NSWindow(NSConstraintBasedLayoutInternal) layoutIfNeeded]","symbolLocation":240,"imageIndex":6},{"imageOffset":623432,"symbol":"-[NSWindow _setUpFirstResponderBeforeBecomingVisible]","symbolLocation":68,"imageIndex":6},{"imageOffset":13683128,"symbol":"-[NSWindow _doWindowWillBeVisibleAsSheet:]","symbolLocation":108,"imageIndex":6},{"imageOffset":13687056,"symbol":"-[NSWindow _reallyDoOrderWindowAboveOrBelow:]","symbolLocation":1092,"imageIndex":6},{"imageOffset":13690060,"symbol":"-[NSWindow _reallyDoOrderWindow:]","symbolLocation":64,"imageIndex":6},{"imageOffset":13691316,"symbol":"-[NSWindow _doOrderWindow:]","symbolLocation":300,"imageIndex":6},{"imageOffset":649380,"symbol":"-[NSPersistentUIRestorer orderRestoredWindows]","symbolLocation":1664,"imageIndex":6},{"imageOffset":17443608,"symbol":"-[NSPersistentUIRestorer _finishedRestoringWindowsWithZOrder:options:completionHandler:]","symbolLocation":1128,"imageIndex":6},{"imageOffset":17441936,"symbol":"__96-[NSPersistentUIRestorer restoreStateFromRecords:requireSecureCoding:options:completionHandler:]_block_invoke.193","symbolLocation":244,"imageIndex":6},{"imageOffset":17456556,"symbol":"__99-[NSApplication(NSPersistentUIRestorationSupport) _restoreWindowWithRestoration:completionHandler:]_block_invoke","symbolLocation":408,"imageIndex":6},{"imageOffset":10348156,"symbol":"specialized static AppWindowsController.restoreWindow(withIdentifier:state:completionHandler:)","symbolLocation":912,"imageIndex":10},{"imageOffset":10213544,"symbol":"@objc static AppWindowsController.restoreWindow(withIdentifier:state:completionHandler:)","symbolLocation":84,"imageIndex":10},{"imageOffset":17457452,"symbol":"-[NSApplication(NSWindowRestoration) restoreWindowWithIdentifier:state:completionHandler:]","symbolLocation":464,"imageIndex":6},{"imageOffset":17454692,"symbol":"-[NSApplication(NSPersistentUIRestorationSupport) _restoreWindowWithRestoration:completionHandler:]","symbolLocation":748,"imageIndex":6},{"imageOffset":17440856,"symbol":"-[NSPersistentUIRestorer restoreStateFromRecords:requireSecureCoding:options:completionHandler:]","symbolLocation":1704,"imageIndex":6},{"imageOffset":10802008,"symbol":"-[NSPersistentUIManager restoreAllPersistentStateWithFullFidelity:completionHandler:]","symbolLocation":648,"imageIndex":6},{"imageOffset":5803752,"symbol":"-[NSApplication _reopenWindowsAsNecessaryIncludingRestorableState:withFullFidelity:completionHandler:]","symbolLocation":460,"imageIndex":6},{"imageOffset":5866392,"symbol":"-[NSApplication(NSAppleEventHandling) _handleAEOpenEvent:]","symbolLocation":480,"imageIndex":6},{"imageOffset":5880740,"symbol":"-[NSApplication(NSAppleEventHandling) _handleCoreEvent:withReplyEvent:]","symbolLocation":488,"imageIndex":6},{"imageOffset":9804340,"symbol":"-[NSAppleEventManager dispatchRawAppleEvent:withRawReply:handlerRefCon:]","symbolLocation":316,"imageIndex":5},{"imageOffset":99976,"symbol":"_NSAppleEventManagerGenericHandler","symbolLocation":80,"imageIndex":5},{"imageOffset":45300,"imageIndex":11},{"imageOffset":43572,"imageIndex":11},{"imageOffset":16616,"symbol":"aeProcessAppleEvent","symbolLocation":484,"imageIndex":11},{"imageOffset":92104,"symbol":"AEProcessAppleEvent","symbolLocation":68,"imageIndex":7},{"imageOffset":131340,"symbol":"_DPSNextEvent","symbolLocation":1296,"imageIndex":6},{"imageOffset":11431688,"symbol":"-[NSApplication(NSEventRouting) _nextEventMatchingEventMask:untilDate:inMode:dequeue:]","symbolLocation":688,"imageIndex":6},{"imageOffset":11430932,"symbol":"-[NSApplication(NSEventRouting) nextEventMatchingMask:untilDate:inMode:dequeue:]","symbolLocation":72,"imageIndex":6},{"imageOffset":100224,"symbol":"-[NSApplication run]","symbolLocation":368,"imageIndex":6},{"imageOffset":18140,"symbol":"NSApplicationMain","symbolLocation":880,"imageIndex":6},{"imageOffset":1119212,"symbol":"specialized runApp(_:)","symbolLocation":168,"imageIndex":10},{"imageOffset":5024904,"symbol":"runApp<A>(_:)","symbolLocation":112,"imageIndex":10},{"imageOffset":7951136,"symbol":"static App.main()","symbolLocation":224,"imageIndex":10},{"imageOffset":469748,"sourceFile":"TungstenApp.swift","symbol":"static TungstenApp.$main()","imageIndex":0,"symbolLocation":52,"inline":true},{"imageOffset":469748,"sourceFile":"TungstenApp.swift","symbol":"main","symbolLocation":64,"imageIndex":0},{"imageOffset":36180,"symbol":"start","symbolLocation":7184,"imageIndex":12}],"id":96821768,"recursionInfoArray":[{"hottestElided":84,"coldestElided":101,"depth":12,"keyFrame":{"imageOffset":268816,"symbol":"NSPerformVisuallyAtomicChange","symbolLocation":108,"imageIndex":6}}],"originalLength":148,"triggered":true,"threadState":{"x":[{"value":1271310912768},{"value":1271310591664},{"value":6138158136},{"value":6138158152},{"value":0},{"value":0},{"value":4928703076,"symbolLocation":0,"symbol":"cef_browser_host_create_browser"},{"value":3152},{"value":0},{"value":4294967295},{"sourceLine":465,"value":4328714740,"sourceFile":"TungstenCEFBridge.mm","symbol":"(anonymous namespace)::TungstenBrowserClient::Release() const","symbolLocation":0},{"value":10650256},{"value":10650256},{"value":0},{"value":8548963168,"symbolLocation":0,"symbol":"OBJC_CLASS_$__TtCs15__StringStorage"},{"value":8548963168,"symbolLocation":0,"symbol":"OBJC_CLASS_$__TtCs15__StringStorage"},{"value":6733047972,"symbolLocation":0,"symbol":"os_unfair_lock_unlock"},{"value":8570678264},{"value":0},{"value":1271310591664},{"value":6138157568},{"value":0},{"value":6138158152},{"value":0},{"value":6138158136},{"value":6138158424},{"value":6138158424},{"value":1039382085872},{"value":6138159688}],"flavor":"ARM_THREAD_STATE64","lr":{"value":4929941060},"cpsr":{"value":1610612736},"fp":{"value":6138157472},"sp":{"value":6138157456},"esr":{"value":2449473542,"description":"(Data Abort) byte read Translation fault"},"pc":{"value":4929489784,"matchesCrashFrame":1},"far":{"value":8}},"queue":"com.apple.main-thread"},{"id":96821857,"frames":[],"threadState":{"x":[{"value":6138753024},{"value":6403},{"value":6138216448},{"value":0},{"value":409604},{"value":18446744073709551615},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0}],"flavor":"ARM_THREAD_STATE64","lr":{"value":0},"cpsr":{"value":0},"fp":{"value":0},"sp":{"value":6138753024},"esr":{"value":1442840704,"description":"(Syscall)"},"pc":{"value":6732999572},"far":{"value":0}}},{"id":96821858,"frames":[],"threadState":{"x":[{"value":6139326464},{"value":5891},{"value":6138789888},{"value":0},{"value":409604},{"value":18446744073709551615},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0}],"flavor":"ARM_THREAD_STATE64","lr":{"value":0},"cpsr":{"value":0},"fp":{"value":0},"sp":{"value":6139326464},"esr":{"value":1442840704,"description":"(Syscall)"},"pc":{"value":6732999572},"far":{"value":0}}},{"id":96821869,"frames":[],"threadState":{"x":[{"value":6139899904},{"value":17667},{"value":6139363328},{"value":0},{"value":409604},{"value":18446744073709551615},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0}],"flavor":"ARM_THREAD_STATE64","lr":{"value":0},"cpsr":{"value":0},"fp":{"value":0},"sp":{"value":6139899904},"esr":{"value":1442840704,"description":"(Syscall)"},"pc":{"value":6732999572},"far":{"value":0}}},{"id":96821886,"frames":[],"threadState":{"x":[{"value":6140473344},{"value":22803},{"value":6139936768},{"value":0},{"value":409604},{"value":18446744073709551615},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0}],"flavor":"ARM_THREAD_STATE64","lr":{"value":0},"cpsr":{"value":0},"fp":{"value":0},"sp":{"value":6140473344},"esr":{"value":1442840704,"description":"(Syscall)"},"pc":{"value":6732999572},"far":{"value":0}}},{"id":96821893,"name":"com.apple.NSEventThread","threadState":{"x":[{"value":268451845},{"value":21592279046},{"value":8589934592},{"value":131954280235008},{"value":0},{"value":131954280235008},{"value":2},{"value":4294967295},{"value":0},{"value":17179869184},{"value":0},{"value":2},{"value":0},{"value":0},{"value":30723},{"value":0},{"value":18446744073709551569},{"value":8570672856},{"value":0},{"value":4294967295},{"value":2},{"value":131954280235008},{"value":0},{"value":131954280235008},{"value":6141042824},{"value":8589934592},{"value":21592279046},{"value":18446744073709550527},{"value":4412409862}],"flavor":"ARM_THREAD_STATE64","lr":{"value":6732820520},"cpsr":{"value":0},"fp":{"value":6141042672},"sp":{"value":6141042592},"esr":{"value":1442840704,"description":"(Syscall)"},"pc":{"value":6732745780},"far":{"value":0}},"frames":[{"imageOffset":3124,"symbol":"mach_msg2_trap","symbolLocation":8,"imageIndex":15},{"imageOffset":77864,"symbol":"mach_msg2_internal","symbolLocation":76,"imageIndex":15},{"imageOffset":39308,"symbol":"mach_msg_overwrite","symbolLocation":484,"imageIndex":15},{"imageOffset":4020,"symbol":"mach_msg","symbolLocation":24,"imageIndex":15},{"imageOffset":392112,"symbol":"__CFRunLoopServiceMachPort","symbolLocation":160,"imageIndex":4},{"imageOffset":386312,"symbol":"__CFRunLoopRun","symbolLocation":1188,"imageIndex":4},{"imageOffset":1150780,"symbol":"_CFRunLoopRunSpecificWithOptions","symbolLocation":532,"imageIndex":4},{"imageOffset":719412,"symbol":"_NSEventThread","symbolLocation":184,"imageIndex":6},{"imageOffset":27656,"symbol":"_pthread_start","symbolLocation":136,"imageIndex":16},{"imageOffset":7080,"symbol":"thread_start","symbolLocation":8,"imageIndex":16}]},{"id":96822004,"name":"StackSamplingProfiler","threadState":{"x":[{"value":1},{"value":8},{"value":6149464639},{"value":14},{"value":8},{"value":6149464559},{"value":5},{"value":5},{"value":9259446621},{"value":7607615488},{"value":285474816},{"value":6149464880},{"value":8266922816},{"value":1},{"value":7322982524,"symbolLocation":288,"symbol":"__57+[AVCaptureDALDevice setAllowsSuspendedPreferredCameras:]_block_invoke"},{"value":7333447556,"symbolLocation":160,"symbol":"RB::Path::Mapper::apply_callback(void*, RBPathElement, double const*, void const*)"},{"value":0},{"value":7701436843929723544},{"value":0},{"value":6149465488},{"value":7618961188,"symbolLocation":132,"symbol":"AppKitPlatformViewHost.updateHostedViewBounds()"},{"value":8545047200,"symbolLocation":4608,"symbol":"lsl::sPoolBytes"},{"value":1271314585616},{"value":0},{"value":1271310540088},{"value":6149465648},{"value":6149465640},{"value":6149465720},{"value":5123545536}],"flavor":"ARM_THREAD_STATE64","lr":{"value":6729264740},"cpsr":{"value":2147483648},"fp":{"value":6149465472},"sp":{"value":6149465136},"esr":{"value":2449473543,"description":"(Data Abort) byte read Translation fault"},"pc":{"value":6729264772},"far":{"value":9259446621}},"frames":[{"imageOffset":253572,"symbol":"dyld4::APIs::dladdr(void const*, dl_info*)","symbolLocation":268,"imageIndex":12},{"imageOffset":79428736,"symbol":"ChromeWebAppShortcutCopierMain","symbolLocation":5557776,"imageIndex":3},{"imageOffset":78791156,"symbol":"ChromeWebAppShortcutCopierMain","symbolLocation":4920196,"imageIndex":3},{"imageOffset":79515220,"symbol":"ChromeWebAppShortcutCopierMain","symbolLocation":5644260,"imageIndex":3},{"imageOffset":78803908,"symbol":"ChromeWebAppShortcutCopierMain","symbolLocation":4932948,"imageIndex":3},{"imageOffset":78802844,"symbol":"ChromeWebAppShortcutCopierMain","symbolLocation":4931884,"imageIndex":3},{"imageOffset":78810916,"symbol":"ChromeWebAppShortcutCopierMain","symbolLocation":4939956,"imageIndex":3},{"imageOffset":78954236,"symbol":"ChromeWebAppShortcutCopierMain","symbolLocation":5083276,"imageIndex":3},{"imageOffset":79086548,"symbol":"ChromeWebAppShortcutCopierMain","symbolLocation":5215588,"imageIndex":3},{"imageOffset":78640584,"symbol":"ChromeWebAppShortcutCopierMain","symbolLocation":4769624,"imageIndex":3},{"imageOffset":79088724,"symbol":"ChromeWebAppShortcutCopierMain","symbolLocation":5217764,"imageIndex":3},{"imageOffset":78831748,"symbol":"ChromeWebAppShortcutCopierMain","symbolLocation":4960788,"imageIndex":3},{"imageOffset":79228432,"symbol":"ChromeWebAppShortcutCopierMain","symbolLocation":5357472,"imageIndex":3},{"imageOffset":79228828,"symbol":"ChromeWebAppShortcutCopierMain","symbolLocation":5357868,"imageIndex":3},{"imageOffset":79318088,"symbol":"ChromeWebAppShortcutCopierMain","symbolLocation":5447128,"imageIndex":3},{"imageOffset":27656,"symbol":"_pthread_start","symbolLocation":136,"imageIndex":16},{"imageOffset":7080,"symbol":"thread_start","symbolLocation":8,"imageIndex":16}]}],
+  "usedImages" : [
+  {
+    "source" : "P",
+    "arch" : "arm64",
+    "base" : 4328685568,
+    "CFBundleShortVersionString" : "1.0",
+    "CFBundleIdentifier" : "dev.tungsten.browser",
+    "size" : 983040,
+    "uuid" : "a741852f-303b-31c2-8a51-1bb2fc88c4c6",
+    "path" : "\/private\/tmp\/*\/Tungsten.app\/Contents\/MacOS\/Tungsten",
+    "name" : "Tungsten",
+    "CFBundleVersion" : "1"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 4333518848,
+    "size" : 49152,
+    "uuid" : "f26af954-d1f7-31aa-9981-1bad216149d9",
+    "path" : "\/usr\/lib\/libobjc-trampolines.dylib",
+    "name" : "libobjc-trampolines.dylib"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 4666572800,
+    "CFBundleShortVersionString" : "345.20.4",
+    "CFBundleIdentifier" : "com.apple.AGXMetalG16G-B0",
+    "size" : 8617984,
+    "uuid" : "dc332c71-9d73-3321-bce0-19347abc333c",
+    "path" : "\/System\/Library\/Extensions\/AGXMetalG16G_B0.bundle\/Contents\/MacOS\/AGXMetalG16G_B0",
+    "name" : "AGXMetalG16G_B0",
+    "CFBundleVersion" : "345.20.4"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64",
+    "base" : 4925652992,
+    "CFBundleShortVersionString" : "147.0.7727.118",
+    "CFBundleIdentifier" : "org.chromium.cef.framework",
+    "size" : 195756032,
+    "uuid" : "4c4c4404-5555-3144-a1e6-e3cb93c4fb00",
+    "path" : "\/private\/tmp\/*\/Tungsten.app\/Contents\/Frameworks\/Chromium Embedded Framework.framework\/Versions\/A\/Chromium Embedded Framework",
+    "name" : "Chromium Embedded Framework",
+    "CFBundleVersion" : "147.0.7727.118"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 6733279232,
+    "CFBundleShortVersionString" : "6.9",
+    "CFBundleIdentifier" : "com.apple.CoreFoundation",
+    "size" : 5542592,
+    "uuid" : "646518bb-a6e8-3da7-ab32-9d97bcbdc25d",
+    "path" : "\/System\/Library\/Frameworks\/CoreFoundation.framework\/Versions\/A\/CoreFoundation",
+    "name" : "CoreFoundation",
+    "CFBundleVersion" : "4302"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 6758785024,
+    "CFBundleShortVersionString" : "6.9",
+    "CFBundleIdentifier" : "com.apple.Foundation",
+    "size" : 16399392,
+    "uuid" : "187e7913-b154-30a7-8070-852767aac3cf",
+    "path" : "\/System\/Library\/Frameworks\/Foundation.framework\/Versions\/C\/Foundation",
+    "name" : "Foundation",
+    "CFBundleVersion" : "4302"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 6804946944,
+    "CFBundleShortVersionString" : "6.9",
+    "CFBundleIdentifier" : "com.apple.AppKit",
+    "size" : 24299264,
+    "uuid" : "bf94fd49-283d-3c62-8cf0-0a49c21b6129",
+    "path" : "\/System\/Library\/Frameworks\/AppKit.framework\/Versions\/C\/AppKit",
+    "name" : "AppKit",
+    "CFBundleVersion" : "2685.40.108"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 6946172928,
+    "CFBundleShortVersionString" : "2.1.1",
+    "CFBundleIdentifier" : "com.apple.HIToolbox",
+    "size" : 3158656,
+    "uuid" : "3c068ca7-e6a9-3e91-953a-b527a1892d05",
+    "path" : "\/System\/Library\/Frameworks\/Carbon.framework\/Versions\/A\/Frameworks\/HIToolbox.framework\/Versions\/A\/HIToolbox",
+    "name" : "HIToolbox"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 6857465856,
+    "CFBundleShortVersionString" : "1.22",
+    "CFBundleIdentifier" : "com.apple.HIServices",
+    "size" : 442752,
+    "uuid" : "1ed5b3e7-1680-3603-a406-57e966ee5b74",
+    "path" : "\/System\/Library\/Frameworks\/ApplicationServices.framework\/Versions\/A\/Frameworks\/HIServices.framework\/Versions\/A\/HIServices",
+    "name" : "HIServices"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 6841946112,
+    "CFBundleShortVersionString" : "1.600.0",
+    "CFBundleIdentifier" : "com.apple.SkyLight",
+    "size" : 6057728,
+    "uuid" : "0fdb8257-4bad-3259-b1d8-0ef23ec53232",
+    "path" : "\/System\/Library\/PrivateFrameworks\/SkyLight.framework\/Versions\/A\/SkyLight",
+    "name" : "SkyLight"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 7607615488,
+    "CFBundleShortVersionString" : "7.3.2",
+    "CFBundleIdentifier" : "com.apple.SwiftUI",
+    "size" : 24407936,
+    "uuid" : "a01a90c1-cc14-30ae-8fb9-e5173c413f95",
+    "path" : "\/System\/Library\/Frameworks\/SwiftUI.framework\/Versions\/A\/SwiftUI",
+    "name" : "SwiftUI",
+    "CFBundleVersion" : "7.3.2"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 6870355968,
+    "CFBundleShortVersionString" : "944",
+    "CFBundleIdentifier" : "com.apple.AE",
+    "size" : 476664,
+    "uuid" : "c2e75873-78f4-33be-b63b-d211345bac66",
+    "path" : "\/System\/Library\/Frameworks\/CoreServices.framework\/Versions\/A\/Frameworks\/AE.framework\/Versions\/A\/AE",
+    "name" : "AE",
+    "CFBundleVersion" : "944"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 6729011200,
+    "size" : 653076,
+    "uuid" : "044cd67e-3a0a-3ca4-8bb3-a9687d5328fe",
+    "path" : "\/usr\/lib\/dyld",
+    "name" : "dyld"
+  },
+  {
+    "size" : 0,
+    "source" : "A",
+    "base" : 0,
+    "uuid" : "00000000-0000-0000-0000-000000000000"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 6733045760,
+    "size" : 33968,
+    "uuid" : "62c9cd37-272d-3d2d-9a1c-6f4ef24f7ec7",
+    "path" : "\/usr\/lib\/system\/libsystem_platform.dylib",
+    "name" : "libsystem_platform.dylib"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 6732742656,
+    "size" : 246944,
+    "uuid" : "78ec33a6-6330-3836-8900-eb90836936e8",
+    "path" : "\/usr\/lib\/system\/libsystem_kernel.dylib",
+    "name" : "libsystem_kernel.dylib"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 6732992512,
+    "size" : 51916,
+    "uuid" : "0596a7b6-bce2-3f06-a2e8-3eaab5371ed8",
+    "path" : "\/usr\/lib\/system\/libsystem_pthread.dylib",
+    "name" : "libsystem_pthread.dylib"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 7322570752,
+    "CFBundleShortVersionString" : "1.0",
+    "CFBundleIdentifier" : "com.apple.AVFCapture",
+    "size" : 2399200,
+    "uuid" : "78eb1fa5-44a4-3136-ae5f-883bf141927f",
+    "path" : "\/System\/Library\/PrivateFrameworks\/AVFCapture.framework\/Versions\/A\/AVFCapture",
+    "name" : "AVFCapture",
+    "CFBundleVersion" : "665.81.8"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 7332913152,
+    "CFBundleShortVersionString" : "7.2.3",
+    "CFBundleIdentifier" : "com.apple.RenderBox",
+    "size" : 1590528,
+    "uuid" : "1edac375-aded-38a7-ae06-47bfdfa6ef1a",
+    "path" : "\/System\/Library\/PrivateFrameworks\/RenderBox.framework\/Versions\/A\/RenderBox",
+    "name" : "RenderBox",
+    "CFBundleVersion" : "7.2.3"
+  }
+],
+  "sharedCache" : {
+  "base" : 6727925760,
+  "size" : 5820792832,
+  "uuid" : "674db25a-34b2-3c56-8bd4-7d78005b2f2e"
+},
+  "vmSummary" : "ReadOnly portion of Libraries: Total=2.0G resident=0K(0%) swapped_out_or_unallocated=2.0G(100%)\nWritable regions: Total=153.1M written=785K(1%) resident=785K(1%) swapped_out=0K(0%) unallocated=152.4M(99%)\n\n                                VIRTUAL   REGION \nREGION TYPE                        SIZE    COUNT (non-coalesced) \n===========                     =======  ======= \n.note.gnu.proper                    320        1 \nActivity Tracing                   256K        1 \nAttributeGraph Data               1024K        1 \nColorSync                           16K        1 \nCoreGraphics                        16K        1 \nFoundation                          16K        1 \nKernel Alloc Once                   32K        1 \nMALLOC                           117.4M       24 \nMALLOC guard page                 3840K        4 \nMemory Tag 253                    48.0G       61 \nPROTECTED_MEMORY                    16K        1 \nSTACK GUARD                       56.1M        7 \nStack                             18.7M        7 \nVM_ALLOCATE                        160K       10 \n__AUTH                            5854K      642 \n__AUTH_CONST                      89.2M     1021 \n__CTF                               824        1 \n__DATA                            38.5M      975 \n__DATA_CONST                      43.9M     1031 \n__DATA_DIRTY                      8424K      874 \n__FONT_DATA                        2352        1 \n__INFO_FILTER                         8        1 \n__LINKEDIT                       592.2M        5 \n__OBJC_RO                         78.4M        1 \n__OBJC_RW                         2571K        1 \n__TEXT                             1.4G     1054 \n__TPRO_CONST                       128K        2 \nmapped file                      291.9M       40 \npage table in kernel               785K        1 \nshared memory                      864K       12 \n===========                     =======  ======= \nTOTAL                             50.7G     5783 \n",
+  "legacyInfo" : {
+  "threadTriggered" : {
+    "queue" : "com.apple.main-thread"
+  }
+},
+  "logWritingSignature" : "82cf7edccacfc685c89d2ee55da03bb92416ad07",
+  "bug_type" : "309",
+  "roots_installed" : 0,
+  "trmStatus" : 1,
+  "trialInfo" : {
+  "rollouts" : [
+    {
+      "rolloutId" : "661464ecda55e5192b100804",
+      "factorPackIds" : [
+
+      ],
+      "deploymentId" : 240000005
+    },
+    {
+      "rolloutId" : "648cada15dbc71671bb3aa1b",
+      "factorPackIds" : [
+        "65a81173096f6a1f1ba46525"
+      ],
+      "deploymentId" : 240000116
+    }
+  ],
+  "experiments" : [
+
+  ]
+}
+}
+
+Model: Mac16,12, BootROM 13822.81.10, proc 10:4:6:0 processors, 32 GB, SMC 
+Graphics: Apple M4, Apple M4, Built-In
+Display: Color LCD, 2560 x 1664 Retina, Main, MirrorOff, Online
+Memory Module: LPDDR5, Hynix
+AirPort: spairport_wireless_card_type_wifi (0x14E4, 0x4388), wl0: Dec  6 2025 00:30:14 version 23.41.8.0.41.51.201 FWID 01-990604ea
+IO80211_driverkit-1540.16 "IO80211_driverkit-1540.16" Jan 27 2026 21:02:00
+AirPort: 
+Bluetooth: Version (null), 0 services, 0 devices, 0 incoming serial ports
+Network Service: Wi-Fi, AirPort, en0
+Thunderbolt Bus: MacBook Air, Apple Inc.
+Thunderbolt Bus: MacBook Air, Apple Inc.
