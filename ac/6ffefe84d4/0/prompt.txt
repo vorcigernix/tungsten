@@ -1,0 +1,1 @@
+App works fine but the design is ugly. Would you follow Apple HID  https://developer.apple.com/design/human-interface-guidelines/designing-for-macos and Liquid Glass https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass guidelines to make it feel native (it is)
