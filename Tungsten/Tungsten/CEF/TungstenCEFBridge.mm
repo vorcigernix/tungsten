@@ -513,8 +513,13 @@ public:
 
     void OnTitleChange(CefRefPtr<CefBrowser> browser, const CefString &title) override {
         NSString *titleString = ToNSString(title);
+        // Capture the controller strongly *before* dispatching. Reading the
+        // controller_ ivar inside the block captures `this`, which can be freed
+        // before the block runs on the main thread (e.g. the tab closes as a
+        // title arrives) — a use-after-free that crashes in ___forwarding___.
+        // Every sibling callback below already captures the controller locally.
+        TungstenBrowserController *controller = controller_;
         dispatch_async(dispatch_get_main_queue(), ^{
-            TungstenBrowserController *controller = controller_;
             [controller.delegate browserController:controller didUpdateTitle:titleString];
         });
     }
@@ -621,8 +626,8 @@ public:
                 [urls addObject:converted];
             }
         }
+        TungstenBrowserController *controller = controller_;
         dispatch_async(dispatch_get_main_queue(), ^{
-            TungstenBrowserController *controller = controller_;
             [controller.delegate browserController:controller didUpdateFaviconURLs:urls];
         });
     }
@@ -637,16 +642,16 @@ public:
         static const std::string kRendererPerfMarker = "TUNGSTEN_PERF_MARK:";
         if (msg.compare(0, kPageTextMarker.size(), kPageTextMarker) == 0) {
             NSString *payloadString = [NSString stringWithUTF8String:msg.substr(kPageTextMarker.size()).c_str()];
+            TungstenBrowserController *controller = controller_;
             dispatch_async(dispatch_get_main_queue(), ^{
-                TungstenBrowserController *controller = controller_;
                 [controller completePageContentRequestWithPayload:payloadString];
             });
             return true;  // suppress from DevTools console
         }
         if (msg.compare(0, kRendererPerfMarker.size(), kRendererPerfMarker) == 0) {
             std::string payload = msg.substr(kRendererPerfMarker.size());
+            TungstenBrowserController *controller = controller_;
             dispatch_async(dispatch_get_main_queue(), ^{
-                TungstenBrowserController *controller = controller_;
                 LogRendererPerformanceMarker(controller, browser, payload);
             });
             return true;
