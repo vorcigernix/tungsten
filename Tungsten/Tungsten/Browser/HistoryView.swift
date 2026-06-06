@@ -3,6 +3,7 @@ import SwiftUI
 struct HistoryView: View {
     @Bindable var historyStore: HistoryStore
     let openEntry: (HistoryEntry) -> Void
+    let close: () -> Void
 
     @State private var searchText = ""
     @State private var isClearConfirmationPresented = false
@@ -46,6 +47,13 @@ struct HistoryView: View {
                         isClearConfirmationPresented = true
                     }
                     .disabled(historyStore.entries.isEmpty)
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Close") {
+                        close()
+                    }
+                    .keyboardShortcut(.escape, modifiers: [])
                 }
             }
             .confirmationDialog(
@@ -114,5 +122,5 @@ private struct HistoryEntryRow: View {
         return store
     }()
 
-    HistoryView(historyStore: historyStore) { _ in }
+    HistoryView(historyStore: historyStore, openEntry: { _ in }, close: {})
 }

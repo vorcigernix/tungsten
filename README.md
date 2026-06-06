@@ -12,6 +12,18 @@ CEF binaries are intentionally not committed to the repository.
 ./scripts/setup-cef.sh --arch arm64
 ```
 
+## Arti Setup
+
+Tor tabs need Arti, the Rust Tor implementation, available either in the app bundle or as a configured external SOCKS proxy.
+
+To embed Arti in local/debug/release builds:
+
+```sh
+./scripts/setup-arti.sh
+```
+
+This installs the `arti` crate into `Vendor/Arti/bin/arti`. The Xcode copy phase embeds it at `Tungsten.app/Contents/Resources/Arti/arti`.
+
 Then build the macOS app:
 
 ```sh

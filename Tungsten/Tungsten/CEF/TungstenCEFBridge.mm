@@ -1011,6 +1011,9 @@ private:
     NSString *_initialURL;
     NSString *_pendingURL;
     NSString *_performanceID;
+    NSString *_privacyMode;
+    NSString *_torProxyHost;
+    int32_t _torProxyPort;
     BOOL _isIncognito;
     BOOL _didCreateBrowser;
     BOOL _isClosingBrowser;
@@ -1032,6 +1035,16 @@ private:
 }
 
 - (instancetype)initWithInitialURL:(NSString *)initialURL incognito:(BOOL)incognito {
+    return [self initWithInitialURL:initialURL
+                        privacyMode:(incognito ? @"incognito" : @"normal")
+                       torProxyHost:@"127.0.0.1"
+                       torProxyPort:9150];
+}
+
+- (instancetype)initWithInitialURL:(NSString *)initialURL
+                       privacyMode:(NSString *)privacyMode
+                      torProxyHost:(NSString *)torProxyHost
+                      torProxyPort:(int32_t)torProxyPort {
     self = [super init];
     if (self == nil) {
         return nil;
@@ -1040,12 +1053,16 @@ private:
     _initialURL = [initialURL copy];
     _pendingURL = [initialURL copy];
     _performanceID = ShortPerformanceID();
-    _isIncognito = incognito;
+    _privacyMode = privacyMode.length > 0 ? [privacyMode copy] : @"normal";
+    _isIncognito = ![_privacyMode isEqualToString:@"normal"];
+    _torProxyHost = torProxyHost.length > 0 ? [torProxyHost copy] : @"127.0.0.1";
+    _torProxyPort = torProxyPort > 0 ? torProxyPort : 9150;
     _pageContentCompletions = [NSMutableDictionary dictionary];
 
     NSMutableDictionary<NSString *, id> *metadata = PerformanceURLMetadata(_initialURL);
     metadata[@"controller"] = _performanceID;
-    metadata[@"is_incognito"] = @(incognito);
+    metadata[@"is_incognito"] = @(_isIncognito);
+    metadata[@"privacy_mode"] = _privacyMode;
     TungstenPerformanceLogEvent(@"cef.controller.init", metadata);
 
     TungstenBrowserContainerView *containerView = [[TungstenBrowserContainerView alloc] initWithFrame:NSZeroRect];
@@ -1055,6 +1072,54 @@ private:
     _client = new TungstenBrowserClient(self);
 
     return self;
+}
+
+- (BOOL)isTorPrivacyMode {
+    return [_privacyMode isEqualToString:@"tor"];
+}
+
+- (void)setRequestContextPreference:(const std::string &)name
+                              value:(CefRefPtr<CefValue>)value
+                        description:(NSString *)description {
+    if (!_requestContext || !value) {
+        return;
+    }
+
+    CefString error;
+    if (!_requestContext->SetPreference(name, value, error)) {
+        [self logPerformanceEvent:@"cef.requestContext.preference.failed" metadata:@{
+            @"preference": description ?: @"unknown",
+            @"error": ToNSString(error) ?: @"unknown"
+        }];
+    }
+}
+
+- (void)configureTorRequestContextPreferences {
+    if (!_requestContext) {
+        return;
+    }
+
+    NSString *proxyServer = [NSString stringWithFormat:@"socks5://%@:%d", _torProxyHost, _torProxyPort];
+    CefRefPtr<CefDictionaryValue> proxyDictionary = CefDictionaryValue::Create();
+    proxyDictionary->SetString("mode", "fixed_servers");
+    proxyDictionary->SetString("server", ToString(proxyServer));
+    proxyDictionary->SetString("bypass_list", "<-loopback>");
+
+    CefRefPtr<CefValue> proxyValue = CefValue::Create();
+    proxyValue->SetDictionary(proxyDictionary);
+    [self setRequestContextPreference:"proxy" value:proxyValue description:@"proxy"];
+
+    CefRefPtr<CefValue> webRTCPolicy = CefValue::Create();
+    webRTCPolicy->SetString("disable_non_proxied_udp");
+    [self setRequestContextPreference:"webrtc.ip_handling_policy"
+                                value:webRTCPolicy
+                          description:@"webrtc.ip_handling_policy"];
+
+    CefRefPtr<CefValue> webRTCMultipleRoutes = CefValue::Create();
+    webRTCMultipleRoutes->SetBool(false);
+    [self setRequestContextPreference:"webrtc.multiple_routes_enabled"
+                                value:webRTCMultipleRoutes
+                          description:@"webrtc.multiple_routes_enabled"];
 }
 
 - (void)logPerformanceEvent:(NSString *)event metadata:(NSDictionary<NSString *, id> *)metadata {
@@ -1373,6 +1438,7 @@ private:
     CFTimeInterval createStart = TungstenPerformanceLogNow();
     NSMutableDictionary<NSString *, id> *metadata = PerformanceURLMetadata(_pendingURL ?: _initialURL);
     metadata[@"cef_initialized_before"] = @([[TungstenCEFApp shared] isInitialized]);
+    metadata[@"privacy_mode"] = _privacyMode ?: @"normal";
     metadata[@"view_height"] = @(self.view.bounds.size.height);
     metadata[@"view_width"] = @(self.view.bounds.size.width);
     [self logPerformanceEvent:@"cef.browser.create.start" metadata:metadata];
@@ -1407,6 +1473,9 @@ private:
         if (!_requestContext) {
             CefRequestContextSettings contextSettings;
             _requestContext = CefRequestContext::CreateContext(contextSettings, nullptr);
+            if ([self isTorPrivacyMode]) {
+                [self configureTorRequestContextPreferences];
+            }
         }
         requestContext = _requestContext;
     }

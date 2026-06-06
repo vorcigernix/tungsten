@@ -30,7 +30,11 @@ typedef void (^TungstenPageContentCompletion)(NSString *_Nullable selectedText,
 @interface TungstenBrowserController : NSObject
 
 - (instancetype)initWithInitialURL:(NSString *)initialURL;
-- (instancetype)initWithInitialURL:(NSString *)initialURL incognito:(BOOL)incognito NS_DESIGNATED_INITIALIZER;
+- (instancetype)initWithInitialURL:(NSString *)initialURL incognito:(BOOL)incognito;
+- (instancetype)initWithInitialURL:(NSString *)initialURL
+                       privacyMode:(NSString *)privacyMode
+                      torProxyHost:(NSString *)torProxyHost
+                      torProxyPort:(int32_t)torProxyPort NS_DESIGNATED_INITIALIZER;
 - (instancetype)init NS_UNAVAILABLE;
 
 @property (nonatomic, weak, nullable) id<TungstenBrowserControllerDelegate> delegate;

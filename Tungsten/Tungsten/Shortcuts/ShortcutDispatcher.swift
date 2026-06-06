@@ -12,6 +12,10 @@ enum ShortcutDispatcher {
         switch action.id {
         case .newTab:
             browserModel.createTab()
+        case .newIncognitoTab:
+            browserModel.createIncognitoTab()
+        case .newTorTab:
+            browserModel.createTorTab()
         case .newWindow:
             context.openNormalWindow()
         case .newIncognitoWindow:

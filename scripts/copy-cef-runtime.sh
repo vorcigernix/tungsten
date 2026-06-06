@@ -2,7 +2,11 @@
 set -euo pipefail
 
 CEF_CURRENT="${SRCROOT}/../Vendor/CEF/current"
+ARTI_VENDOR_BIN="${SRCROOT}/../Vendor/Arti/bin/arti"
 FRAMEWORKS_DIR="${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}"
+RESOURCES_DIR="${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}"
+ARTI_RESOURCE_BIN="${RESOURCES_DIR}/Arti/arti"
+APP_INFO_PLIST="${TARGET_BUILD_DIR}/${INFOPLIST_PATH:-${WRAPPER_NAME}/Contents/Info.plist}"
 
 if [[ ! -d "${CEF_CURRENT}" ]]; then
   echo "Missing CEF runtime at ${CEF_CURRENT}." >&2
@@ -55,6 +59,28 @@ for helper_name in "${HELPER_NAMES[@]}"; do
   ditto "${CEF_CURRENT}/build/${helper_name}.app" "${FRAMEWORKS_DIR}/${helper_name}.app"
 done
 
+rm -rf "${RESOURCES_DIR}/Arti"
+if [[ -x "${ARTI_VENDOR_BIN}" ]]; then
+  mkdir -p "${RESOURCES_DIR}/Arti"
+  ditto "${ARTI_VENDOR_BIN}" "${ARTI_RESOURCE_BIN}"
+  chmod 755 "${ARTI_RESOURCE_BIN}"
+else
+  echo "warning: Arti binary not found at ${ARTI_VENDOR_BIN}; Tor tabs will require an external Arti path or SOCKS proxy." >&2
+fi
+
+if [[ -f "${RESOURCES_DIR}/AppIcon.icns" && -f "${APP_INFO_PLIST}" ]]; then
+  ICON_BUILD_NUMBER="${CURRENT_PROJECT_VERSION:-local}"
+  ICON_RESOURCE_BASENAME="TungstenPrivacyShield-${ICON_BUILD_NUMBER}"
+  ICON_RESOURCE_BIN="${RESOURCES_DIR}/${ICON_RESOURCE_BASENAME}.icns"
+
+  rm -f "${RESOURCES_DIR}"/TungstenPrivacyShield-*.icns
+  ditto "${RESOURCES_DIR}/AppIcon.icns" "${ICON_RESOURCE_BIN}"
+  /usr/bin/plutil -replace CFBundleIconFile -string "${ICON_RESOURCE_BASENAME}" "${APP_INFO_PLIST}"
+  /usr/bin/plutil -remove CFBundleIconName "${APP_INFO_PLIST}" 2>/dev/null || true
+else
+  echo "warning: AppIcon.icns or Info.plist was not available for versioned production icon metadata." >&2
+fi
+
 cat > "${CEF_FRAMEWORK_VERSION_DST}/Resources/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -83,4 +109,7 @@ if [[ "${CODE_SIGNING_ALLOWED:-YES}" != "NO" && -n "${EXPANDED_CODE_SIGN_IDENTIT
   for helper_name in "${HELPER_NAMES[@]}"; do
     /usr/bin/codesign --force --deep --sign "${EXPANDED_CODE_SIGN_IDENTITY}" --timestamp=none "${FRAMEWORKS_DIR}/${helper_name}.app"
   done
+  if [[ -x "${ARTI_RESOURCE_BIN}" ]]; then
+    /usr/bin/codesign --force --sign "${EXPANDED_CODE_SIGN_IDENTITY}" --timestamp=none "${ARTI_RESOURCE_BIN}"
+  fi
 fi

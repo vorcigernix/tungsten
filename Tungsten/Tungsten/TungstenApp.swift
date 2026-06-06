@@ -20,6 +20,9 @@ struct TungstenApp: App {
         }
         .defaultSize(width: 1440, height: 900)
         .windowStyle(.hiddenTitleBar)
+        .commands {
+            TungstenFileCommands()
+        }
 
         WindowGroup(BrowserWindowKind.incognito.title, id: BrowserWindowKind.incognito.sceneID) {
             BrowserWindowRoot(kind: .incognito)
@@ -35,29 +38,62 @@ struct TungstenApp: App {
     }
 }
 
+private struct TungstenFileCommands: Commands {
+    @Environment(\.openWindow) private var openWindow
+    @FocusedValue(\.browserCommandContext) private var commandContext
+
+    var body: some Commands {
+        CommandGroup(replacing: .newItem) {
+            Button("New Tab") {
+                commandContext?.browserModel.createTab()
+            }
+            .keyboardShortcut("t", modifiers: [.command])
+            .disabled(commandContext == nil)
+
+            Button("New Incognito Tab") {
+                commandContext?.browserModel.createIncognitoTab()
+            }
+            .keyboardShortcut("n", modifiers: [.command, .option])
+            .disabled(commandContext == nil)
+
+            Button("New Tor Tab") {
+                commandContext?.browserModel.createTorTab()
+            }
+            .keyboardShortcut("t", modifiers: [.command, .option])
+            .disabled(commandContext == nil)
+
+            Divider()
+
+            Button("New Window") {
+                openWindow(id: BrowserWindowKind.normal.sceneID)
+            }
+            .keyboardShortcut("n", modifiers: [.command])
+
+            Button("New Private Window") {
+                openWindow(id: BrowserWindowKind.incognito.sceneID)
+            }
+            .keyboardShortcut("n", modifiers: [.command, .shift])
+        }
+    }
+}
+
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         installUncaughtExceptionLogger()
         DispatchQueue.main.async {
             TungstenCEFApp.shared().prewarmCEF()
         }
-
-        guard
-            let iconURL = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
-            let icon = NSImage(contentsOf: iconURL)
-        else {
-            return
-        }
-
-        NSApp.applicationIconImage = icon
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        TorNetworkService.shared.stop()
         TungstenCEFApp.shared().beginTermination()
         return .terminateNow
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        TorNetworkService.shared.stop()
         TungstenCEFApp.shared().beginTermination()
         TungstenCEFApp.shared().shutdownCEF()
     }

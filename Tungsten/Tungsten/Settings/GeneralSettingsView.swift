@@ -42,6 +42,22 @@ struct GeneralSettingsView: View {
             }
 
             Section {
+                Toggle("Start Arti for Tor tabs", isOn: $appPreferences.torLaunchesArti)
+
+                TextField("Arti executable", text: $appPreferences.torArtiExecutablePath)
+                    .textFieldStyle(.roundedBorder)
+
+                TextField("SOCKS port", value: $appPreferences.torSocksPort, format: .number)
+                    .textFieldStyle(.roundedBorder)
+
+                Text("Tor tabs use a separate Chromium context routed through SOCKS5 on 127.0.0.1. Install Arti or point Tungsten at an existing compatible proxy.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            } header: {
+                Text("Tor")
+            }
+
+            Section {
                 Picker("Tab layout", selection: $appPreferences.tabLayout) {
                     ForEach(BrowserTabLayout.allCases) { layout in
                         Text(layout.displayName).tag(layout)
