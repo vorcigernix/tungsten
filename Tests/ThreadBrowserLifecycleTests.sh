@@ -99,7 +99,8 @@ require_pattern "$start_page_file" "struct StartPageView" "native start page"
 require_pattern "$preferences_file" "enum BrowserTabLayout" "BrowserTabLayout preference model"
 require_pattern "$preferences_file" "self\\.tabLayout = \\.separate" "separate tab layout default"
 require_pattern "$settings_file" "Picker\\(\"Tab layout\"" "tab layout settings picker"
-require_pattern "$input_file" "return \\.page\\(urlString: searchEngine\\.searchURL\\(for: trimmed\\)\\)" "natural language searches web instead of creating AI question turns"
+require_pattern "$input_file" "return \\.question\\(trimmed\\)" "natural language questions route through address bar answer provider"
+require_pattern "$model_file" "addressBarAIProvider\\.responseURL" "BrowserModel opens selected address bar answer provider"
 
 if rg -q "NavigationSplitView|BrowserSidebar|ThreadTimeline|ThreadHeader|ChatInput|PromptTextEditor|WindowResponseAura|GemmaLocalAIAvailabilityBar|Download Gemma|Downloads about 2\\.6 GB" "$split_view_file"; then
     echo "BrowserSplitView must not expose the old sidebar/AI shell." >&2

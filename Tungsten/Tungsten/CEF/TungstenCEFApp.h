@@ -14,6 +14,10 @@ NS_ASSUME_NONNULL_BEGIN
 /// without duplicating the version-tagged literal.
 FOUNDATION_EXPORT NSString *const TungstenLocalAIProviderDefaultsKey;
 
+/// Canonical NSUserDefaults key for the browser content-blocking setting.
+/// Shared by Swift settings and the CEF request interceptor.
+FOUNDATION_EXPORT NSString *const TungstenContentBlockingEnabledDefaultsKey;
+
 @interface TungstenCEFApp : NSObject
 
 + (instancetype)shared;

@@ -16,8 +16,29 @@ struct GeneralSettingsView: View {
                 Text("Used for address-bar searches and search keyword requests.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
+
+                Picker("Address-bar answers", selection: $appPreferences.addressBarAIProvider) {
+                    ForEach(AddressBarAIProvider.allCases) { provider in
+                        Text(provider.displayName).tag(provider)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                Text("Used when the address bar receives a natural-language question. Prefix with search to force a regular search.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
             } header: {
                 Text("Search")
+            }
+
+            Section {
+                Toggle("uBlock-style content blocking", isOn: $appPreferences.contentBlockingEnabled)
+
+                Text("Blocks common ad and tracker requests in Chromium. Off by default.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            } header: {
+                Text("Content Blocking")
             }
 
             Section {

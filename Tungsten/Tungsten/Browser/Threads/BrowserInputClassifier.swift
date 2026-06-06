@@ -20,7 +20,7 @@ enum BrowserInputClassifier {
             return .page(urlString: target)
         }
 
-        return .page(urlString: searchEngine.searchURL(for: trimmed))
+        return .question(trimmed)
     }
 
     static func fallbackSearchURL(for question: String, searchEngine: SearchEngine) -> String {

@@ -3,38 +3,26 @@ import SwiftUI
 
 struct BrowserWindowRoot: View {
     @Environment(\.openWindow) private var openWindow
+    @Environment(TungstenAppModel.self) private var appModel
 
     private let kind: BrowserWindowKind
-    private let shortcutManager: ShortcutManager
-    private let historyStore: HistoryStore
-    private let appPreferences: AppPreferences
-    private let windowSessionCoordinator: BrowserWindowSessionCoordinator
-    @State private var browserModel: BrowserModel?
-    @State private var tabStore: BrowserTabStore?
+    @State private var windowModel: BrowserWindowModel?
 
-    init(
-        kind: BrowserWindowKind,
-        shortcutManager: ShortcutManager,
-        historyStore: HistoryStore,
-        appPreferences: AppPreferences,
-        windowSessionCoordinator: BrowserWindowSessionCoordinator
-    ) {
+    init(kind: BrowserWindowKind) {
         self.kind = kind
-        self.shortcutManager = shortcutManager
-        self.historyStore = historyStore
-        self.appPreferences = appPreferences
-        self.windowSessionCoordinator = windowSessionCoordinator
     }
 
     var body: some View {
         Group {
-            if let browserModel {
+            if let windowModel {
+                let browserModel = windowModel.browserModel
+
                 BrowserSplitView()
                     .environment(browserModel)
-                    .environment(appPreferences)
+                    .environment(appModel.appPreferences)
                     .background(
                         ShortcutEventMonitor(
-                            shortcutManager: shortcutManager,
+                            shortcutManager: appModel.shortcutManager,
                             commandContext: BrowserCommandContext(
                                 browserModel: browserModel,
                                 openNormalWindow: { openWindow(id: BrowserWindowKind.normal.sceneID) },
@@ -45,7 +33,7 @@ struct BrowserWindowRoot: View {
                     .background(
                         WindowCloseObserver { finishClose in
                             browserModel.closeBrowsersForWindowClose {
-                                releaseTabStoreIfNeeded()
+                                windowModel.releaseTabStoreIfNeeded()
                                 finishClose()
                             }
                         }
@@ -63,34 +51,11 @@ struct BrowserWindowRoot: View {
     }
 
     private func initializeBrowserModelIfNeeded() {
-        guard browserModel == nil else {
+        guard windowModel == nil else {
             return
         }
 
-        let prewarmStart = BrowserPerformanceLog.now()
-        TungstenCEFApp.shared().prewarmCEF()
-        BrowserPerformanceLog.duration("browserWindow.prewarmCEF.end", from: prewarmStart, metadata: [
-            "kind": kind.sceneID
-        ])
-
-        let tabStore = windowSessionCoordinator.makeTabStore(kind: kind)
-        self.tabStore = tabStore
-
-        browserModel = BrowserModel(
-            kind: kind,
-            historyStore: historyStore,
-            appPreferences: appPreferences,
-            tabStore: tabStore
-        )
-    }
-
-    private func releaseTabStoreIfNeeded() {
-        guard let tabStore else {
-            return
-        }
-
-        windowSessionCoordinator.releaseTabStore(tabStore, kind: kind)
-        self.tabStore = nil
+        windowModel = appModel.makeBrowserWindowModel(kind: kind)
     }
 }
 

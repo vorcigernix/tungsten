@@ -9,8 +9,9 @@ struct ThreadModelTests {
         try testBareDomainInputClassifiesAsPage()
         try testLocalhostInputClassifiesAsPage()
         try testSearchKeywordClassifiesAsSearchPage()
-        try testNaturalLanguageInputClassifiesAsSearchPage()
+        try testNaturalLanguageInputClassifiesAsQuestion()
         try testSearchEngineDefaultsUseDuckDuckGo()
+        try testAddressBarAIProviderURLs()
         try testTabMetadataUpdates()
         try testBrowserTabCodableRoundTrip()
         try testPersistentStoreCapsTabs()
@@ -60,16 +61,21 @@ struct ThreadModelTests {
         ) == .page(urlString: "https://www.google.com/search?q=tungsten%20carbide"))
     }
 
-    static func testNaturalLanguageInputClassifiesAsSearchPage() throws {
+    static func testNaturalLanguageInputClassifiesAsQuestion() throws {
         try expect(BrowserInputClassifier.submission(
             for: "what is tungsten carbide",
             searchEngine: .duckDuckGo
-        ) == .page(urlString: "https://duckduckgo.com/?q=what%20is%20tungsten%20carbide"))
+        ) == .question("what is tungsten carbide"))
     }
 
     static func testSearchEngineDefaultsUseDuckDuckGo() throws {
         try expect(SearchEngine.duckDuckGo.homepageURL == "https://duckduckgo.com")
         try expect(SearchEngine.duckDuckGo.searchURL(for: "hello world") == "https://duckduckgo.com/?q=hello%20world")
+    }
+
+    static func testAddressBarAIProviderURLs() throws {
+        try expect(AddressBarAIProvider.duckDuckGoAI.responseURL(for: "what is tungsten carbide") == "https://duck.ai/chat?prompt=1&home=1&q=what%20is%20tungsten%20carbide")
+        try expect(AddressBarAIProvider.googleAI.responseURL(for: "what is tungsten carbide") == "https://www.google.com/search?udm=50&q=what%20is%20tungsten%20carbide")
     }
 
     static func testTabMetadataUpdates() throws {

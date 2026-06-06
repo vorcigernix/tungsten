@@ -21,7 +21,9 @@ Objective-C++ bridge between SwiftUI/AppKit and Chromium Embedded Framework.
 #include "include/cef_browser.h"
 #include "include/cef_client.h"
 #include "include/cef_command_line.h"
+#include "include/cef_request_handler.h"
 #include "include/cef_request_context.h"
+#include "include/cef_resource_request_handler.h"
 #include "include/wrapper/cef_helpers.h"
 #include "wrapper/cef_library_loader.h"
 
@@ -62,6 +64,7 @@ constexpr int64_t kCefNoScheduledWork = INT_MAX;
 constexpr CFTimeInterval kSlowCefMessagePumpWork = 0.008;
 
 extern "C" NSString *const TungstenLocalAIProviderDefaultsKey = @"Tungsten.LocalAIProvider.v1";
+extern "C" NSString *const TungstenContentBlockingEnabledDefaultsKey = @"Tungsten.ContentBlockingEnabled.v1";
 
 NSString *ShortPerformanceID(void) {
     return [NSUUID.UUID.UUIDString substringToIndex:8];
@@ -341,6 +344,100 @@ NSString *ToNSString(const CefString &value) {
     return [NSString stringWithUTF8String:value.ToString().c_str()];
 }
 
+BOOL TungstenContentBlockingEnabled(void) {
+    return [[NSUserDefaults standardUserDefaults] boolForKey:TungstenContentBlockingEnabledDefaultsKey];
+}
+
+BOOL TungstenHostMatchesSuffix(NSString *host, NSString *suffix) {
+    if (host.length == 0 || suffix.length == 0) {
+        return NO;
+    }
+    return [host isEqualToString:suffix] || [host hasSuffix:[@"." stringByAppendingString:suffix]];
+}
+
+BOOL TungstenShouldBlockResource(NSString *urlString) {
+    if (!TungstenContentBlockingEnabled() || urlString.length == 0) {
+        return NO;
+    }
+
+    NSURLComponents *components = [NSURLComponents componentsWithString:urlString];
+    NSString *scheme = components.scheme.lowercaseString ?: @"";
+    if (![scheme isEqualToString:@"http"] && ![scheme isEqualToString:@"https"]) {
+        return NO;
+    }
+
+    NSString *host = components.host.lowercaseString ?: @"";
+    static NSArray<NSString *> *blockedHostSuffixes;
+    static dispatch_once_t blockedHostSuffixesOnce;
+    dispatch_once(&blockedHostSuffixesOnce, ^{
+        blockedHostSuffixes = @[
+            @"doubleclick.net",
+            @"googlesyndication.com",
+            @"googleadservices.com",
+            @"googletagmanager.com",
+            @"googletagservices.com",
+            @"adservice.google.com",
+            @"scorecardresearch.com",
+            @"quantserve.com",
+            @"adsystem.com",
+            @"adnxs.com",
+            @"taboola.com",
+            @"outbrain.com",
+            @"criteo.com",
+            @"rubiconproject.com",
+            @"pubmatic.com",
+            @"openx.net",
+            @"moatads.com",
+            @"adsrvr.org",
+            @"yieldmo.com",
+            @"bidswitch.net",
+            @"connect.facebook.net",
+            @"facebook.net",
+            @"bat.bing.com",
+            @"hotjar.com",
+            @"hotjar.io",
+            @"segment.io",
+            @"segment.com",
+            @"mixpanel.com"
+        ];
+    });
+
+    for (NSString *suffix in blockedHostSuffixes) {
+        if (TungstenHostMatchesSuffix(host, suffix)) {
+            return YES;
+        }
+    }
+
+    NSString *lowerURL = urlString.lowercaseString ?: @"";
+    static NSArray<NSString *> *blockedURLNeedles;
+    static dispatch_once_t blockedURLNeedlesOnce;
+    dispatch_once(&blockedURLNeedlesOnce, ^{
+        blockedURLNeedles = @[
+            @"/pagead/",
+            @"/gampad/",
+            @"/adserver/",
+            @"/adsystem/",
+            @"/prebid",
+            @"/advertisement",
+            @"/track/imp",
+            @"/pixel?",
+            @"/beacon?",
+            @"?adurl=",
+            @"&adurl=",
+            @"utm_medium=paid",
+            @"utm_source=ad"
+        ];
+    });
+
+    for (NSString *needle in blockedURLNeedles) {
+        if ([lowerURL containsString:needle]) {
+            return YES;
+        }
+    }
+
+    return NO;
+}
+
 NSAppearance *NonVibrantBrowserAppearanceForWindow(NSWindow *window) {
     NSAppearance *source = window.effectiveAppearance ?: NSApp.effectiveAppearance;
     NSAppearanceName match = [source bestMatchFromAppearancesWithNames:@[
@@ -450,7 +547,9 @@ private:
 class TungstenBrowserClient final : public CefClient,
                                     public CefDisplayHandler,
                                     public CefLifeSpanHandler,
-                                    public CefLoadHandler {
+                                    public CefLoadHandler,
+                                    public CefRequestHandler,
+                                    public CefResourceRequestHandler {
 public:
     explicit TungstenBrowserClient(__weak TungstenBrowserController *controller)
         : controller_(controller) {}
@@ -467,8 +566,41 @@ public:
         return this;
     }
 
+    CefRefPtr<CefRequestHandler> GetRequestHandler() override {
+        return this;
+    }
+
     CefRefPtr<CefBrowser> browser() const {
         return browser_;
+    }
+
+    CefRefPtr<CefResourceRequestHandler> GetResourceRequestHandler(
+        CefRefPtr<CefBrowser> browser,
+        CefRefPtr<CefFrame> frame,
+        CefRefPtr<CefRequest> request,
+        bool is_navigation,
+        bool is_download,
+        const CefString &request_initiator,
+        bool &disable_default_handling) override {
+        if (!TungstenContentBlockingEnabled() || is_navigation || is_download) {
+            return nullptr;
+        }
+        return this;
+    }
+
+    ReturnValue OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser,
+                                     CefRefPtr<CefFrame> frame,
+                                     CefRefPtr<CefRequest> request,
+                                     CefRefPtr<CefCallback> callback) override {
+        if (!request || request->GetResourceType() == RT_MAIN_FRAME) {
+            return RV_CONTINUE;
+        }
+
+        NSString *urlString = ToNSString(request->GetURL());
+        if (TungstenShouldBlockResource(urlString)) {
+            return RV_CANCEL;
+        }
+        return RV_CONTINUE;
     }
 
     void OnAfterCreated(CefRefPtr<CefBrowser> browser) override {

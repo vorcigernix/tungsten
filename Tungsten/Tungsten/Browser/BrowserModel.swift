@@ -404,15 +404,16 @@ final class BrowserModel {
             BrowserPerformanceLog.event("address.submit.classified", metadata: metadata)
             navigateSelectedTab(to: urlString)
         case .question(let question):
-            let searchURL = appPreferences.searchEngine.searchURL(for: question)
+            let answerURL = appPreferences.addressBarAIProvider.responseURL(for: question)
             var metadata: [String: Any] = [
-                "kind": "search",
+                "kind": "question",
+                "answer_provider": appPreferences.addressBarAIProvider.rawValue,
                 "query_length": question.count,
                 "selected_tab": BrowserPerformanceLog.shortID(selectedTabID)
             ]
-            metadata.merge(BrowserPerformanceLog.urlMetadata(searchURL)) { _, new in new }
+            metadata.merge(BrowserPerformanceLog.urlMetadata(answerURL)) { _, new in new }
             BrowserPerformanceLog.event("address.submit.classified", metadata: metadata)
-            navigateSelectedTab(to: searchURL)
+            navigateSelectedTab(to: answerURL)
         }
     }
 

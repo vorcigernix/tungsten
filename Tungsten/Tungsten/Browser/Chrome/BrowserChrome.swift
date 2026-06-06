@@ -268,6 +268,7 @@ private struct AddressField: View {
     @Environment(BrowserModel.self) private var browserModel
     @FocusState.Binding var focused: Bool
     let onSubmit: () -> Void
+    @State private var didSelectTextForCurrentFocus = false
 
     var body: some View {
         @Bindable var browserModel = browserModel
@@ -285,6 +286,16 @@ private struct AddressField: View {
                 .foregroundStyle(.primary)
                 .focused($focused)
                 .onSubmit { onSubmit() }
+                .onChange(of: focused) { _, isFocused in
+                    if isFocused {
+                        selectTextForCurrentFocusIfNeeded()
+                    } else {
+                        didSelectTextForCurrentFocus = false
+                    }
+                }
+                .onTapGesture {
+                    selectTextForCurrentFocusIfNeeded()
+                }
 
             if pageSession != nil {
                 Button {
@@ -316,6 +327,33 @@ private struct AddressField: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .strokeBorder(Color.accentColor.opacity(focused ? 0.9 : 0), lineWidth: 2)
         }
+    }
+
+    private func selectTextForCurrentFocusIfNeeded() {
+        guard didSelectTextForCurrentFocus == false else {
+            return
+        }
+
+        didSelectTextForCurrentFocus = true
+        DispatchQueue.main.async {
+            AddressFieldTextSelector.selectCurrentFieldEditorContents()
+        }
+    }
+}
+
+private enum AddressFieldTextSelector {
+    @MainActor
+    static func selectCurrentFieldEditorContents() {
+        guard let window = NSApp.keyWindow else {
+            return
+        }
+
+        if let editor = window.firstResponder as? NSTextView {
+            editor.selectAll(nil)
+            return
+        }
+
+        window.fieldEditor(false, for: nil)?.selectAll(nil)
     }
 }
 

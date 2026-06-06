@@ -27,7 +27,9 @@ final class AppPreferences {
     private static let assistantProviderKey = "Tungsten.AssistantProvider.v1"
     private static let codexACPConfigurationKey = "Tungsten.ACP.CodexConfiguration.v1"
     private static let claudeACPConfigurationKey = "Tungsten.ACP.ClaudeConfiguration.v1"
+    private static let addressBarAIProviderKey = "Tungsten.AddressBarAIProvider.v1"
     private static let localAIProviderKey = TungstenLocalAIProviderDefaultsKey
+    private static let contentBlockingEnabledKey = TungstenContentBlockingEnabledDefaultsKey
 
     var searchEngine: SearchEngine {
         didSet {
@@ -47,6 +49,20 @@ final class AppPreferences {
         didSet {
             guard oldValue != transparencyEnabled else { return }
             userDefaults.set(transparencyEnabled, forKey: Self.transparencyEnabledKey)
+        }
+    }
+
+    var addressBarAIProvider: AddressBarAIProvider {
+        didSet {
+            guard oldValue != addressBarAIProvider else { return }
+            userDefaults.set(addressBarAIProvider.rawValue, forKey: Self.addressBarAIProviderKey)
+        }
+    }
+
+    var contentBlockingEnabled: Bool {
+        didSet {
+            guard oldValue != contentBlockingEnabled else { return }
+            userDefaults.set(contentBlockingEnabled, forKey: Self.contentBlockingEnabledKey)
         }
     }
 
@@ -83,6 +99,7 @@ final class AppPreferences {
 
     init(userDefaults: UserDefaults = .standard) {
         self.userDefaults = userDefaults
+        let legacySearchEngineRaw = userDefaults.string(forKey: Self.searchEngineKey)
 
         if let raw = userDefaults.string(forKey: Self.searchEngineKey),
            let stored = SearchEngine(rawValue: raw) {
@@ -108,6 +125,22 @@ final class AppPreferences {
             self.transparencyEnabled = true
         } else {
             self.transparencyEnabled = userDefaults.bool(forKey: Self.transparencyEnabledKey)
+        }
+
+        if let raw = userDefaults.string(forKey: Self.addressBarAIProviderKey),
+           let stored = AddressBarAIProvider(rawValue: raw) {
+            self.addressBarAIProvider = stored
+        } else if legacySearchEngineRaw == "googleAIMode" {
+            self.addressBarAIProvider = .googleAI
+            userDefaults.set(AddressBarAIProvider.googleAI.rawValue, forKey: Self.addressBarAIProviderKey)
+        } else {
+            self.addressBarAIProvider = .duckDuckGoAI
+        }
+
+        if userDefaults.object(forKey: Self.contentBlockingEnabledKey) == nil {
+            self.contentBlockingEnabled = false
+        } else {
+            self.contentBlockingEnabled = userDefaults.bool(forKey: Self.contentBlockingEnabledKey)
         }
 
         let resolvedLocalAIProvider: LocalAIProvider

@@ -1,17 +1,16 @@
 import SwiftUI
 
 struct SettingsRoot: View {
-    let shortcutManager: ShortcutManager
-    let appPreferences: AppPreferences
+    @Environment(TungstenAppModel.self) private var appModel
 
     var body: some View {
         TabView {
-            GeneralSettingsView(appPreferences: appPreferences)
+            GeneralSettingsView(appPreferences: appModel.appPreferences)
                 .tabItem {
                     Label("General", systemImage: "gear")
                 }
 
-            ShortcutSettingsView(shortcutManager: shortcutManager)
+            ShortcutSettingsView(shortcutManager: appModel.shortcutManager)
                 .tabItem {
                     Label("Shortcuts", systemImage: "command")
                 }

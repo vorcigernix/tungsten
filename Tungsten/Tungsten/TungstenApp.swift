@@ -11,41 +11,26 @@ import SwiftUI
 @main
 struct TungstenApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    @State private var shortcutManager = ShortcutManager()
-    @State private var historyStore = HistoryStore()
-    @State private var appPreferences = AppPreferences()
-    @State private var windowSessionCoordinator = BrowserWindowSessionCoordinator()
+    @State private var appModel = TungstenAppModel()
 
     var body: some Scene {
         WindowGroup(BrowserWindowKind.normal.title, id: BrowserWindowKind.normal.sceneID) {
-            BrowserWindowRoot(
-                kind: .normal,
-                shortcutManager: shortcutManager,
-                historyStore: historyStore,
-                appPreferences: appPreferences,
-                windowSessionCoordinator: windowSessionCoordinator
-            )
+            BrowserWindowRoot(kind: .normal)
+                .environment(appModel)
         }
         .defaultSize(width: 1440, height: 900)
         .windowStyle(.hiddenTitleBar)
 
         WindowGroup(BrowserWindowKind.incognito.title, id: BrowserWindowKind.incognito.sceneID) {
-            BrowserWindowRoot(
-                kind: .incognito,
-                shortcutManager: shortcutManager,
-                historyStore: historyStore,
-                appPreferences: appPreferences,
-                windowSessionCoordinator: windowSessionCoordinator
-            )
+            BrowserWindowRoot(kind: .incognito)
+                .environment(appModel)
         }
         .defaultSize(width: 1440, height: 900)
         .windowStyle(.hiddenTitleBar)
 
         Settings {
-            SettingsRoot(
-                shortcutManager: shortcutManager,
-                appPreferences: appPreferences
-            )
+            SettingsRoot()
+                .environment(appModel)
         }
     }
 }
