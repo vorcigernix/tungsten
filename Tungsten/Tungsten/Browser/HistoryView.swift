@@ -22,23 +22,13 @@ struct HistoryView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                HStack(spacing: 8) {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundStyle(.secondary)
-
-                    TextField("Search History", text: $searchText)
-                        .textFieldStyle(.plain)
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(.quaternary, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                .padding([.horizontal, .top], 16)
-                .padding(.bottom, 8)
-
+            Group {
                 if filteredEntries.isEmpty {
-                    ContentUnavailableView("No History", systemImage: "clock.arrow.circlepath")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    if searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        ContentUnavailableView("No History", systemImage: "clock.arrow.circlepath")
+                    } else {
+                        ContentUnavailableView.search(text: searchText)
+                    }
                 } else {
                     List(filteredEntries) { entry in
                         HistoryEntryRow(entry: entry, host: host(for: entry)) {
@@ -49,6 +39,7 @@ struct HistoryView: View {
                 }
             }
             .navigationTitle("History")
+            .searchable(text: $searchText, prompt: "Search History")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Clear History", systemImage: "trash") {

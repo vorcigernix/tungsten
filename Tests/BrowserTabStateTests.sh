@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 MODEL_FILE="$ROOT_DIR/Tungsten/Tungsten/Browser/BrowserModel.swift"
 TAB_FILE="$ROOT_DIR/Tungsten/Tungsten/Browser/Tabs/BrowserTab.swift"
 SPLIT_VIEW_FILE="$ROOT_DIR/Tungsten/Tungsten/Browser/BrowserSplitView.swift"
+CHROME_FILE="$ROOT_DIR/Tungsten/Tungsten/Browser/Chrome/BrowserChrome.swift"
 
 require_pattern() {
     local file="$1"
@@ -26,7 +27,7 @@ require_pattern "$MODEL_FILE" "func toggleTabPin\\(" "BrowserModel.toggleTabPin"
 require_pattern "$MODEL_FILE" "func clearUnpinnedTabs\\(" "BrowserModel.clearUnpinnedTabs"
 require_pattern "$MODEL_FILE" "func reopenLastClosedTab\\(" "BrowserModel.reopenLastClosedTab"
 require_pattern "$MODEL_FILE" "closedTabs\\.append" "closed tab snapshot recording"
-require_pattern "$SPLIT_VIEW_FILE" "Pin Tab|Unpin Tab" "pin/unpin tab context menu"
-require_pattern "$SPLIT_VIEW_FILE" "Close Other Tabs" "close other tabs context menu"
+require_pattern "$CHROME_FILE" "Pin Tab|Unpin Tab" "pin/unpin tab context menu"
+require_pattern "$CHROME_FILE" "Close Other Tabs" "close other tabs context menu"
 
 echo "BrowserTabStateTests passed"

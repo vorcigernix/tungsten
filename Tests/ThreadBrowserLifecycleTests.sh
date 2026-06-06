@@ -12,6 +12,9 @@ tab_store_file="Tungsten/Tungsten/Browser/Tabs/BrowserTabStore.swift"
 settings_file="Tungsten/Tungsten/Settings/GeneralSettingsView.swift"
 preferences_file="Tungsten/Tungsten/AppPreferences.swift"
 input_file="Tungsten/Tungsten/Browser/Threads/BrowserInputClassifier.swift"
+chrome_file="Tungsten/Tungsten/Browser/Chrome/BrowserChrome.swift"
+favicon_file="Tungsten/Tungsten/Browser/Chrome/FaviconIcon.swift"
+start_page_file="Tungsten/Tungsten/Browser/StartPage/StartPageView.swift"
 
 require_file() {
     local file="$1"
@@ -40,6 +43,8 @@ require_file "$split_view_file" "BrowserSplitView.swift"
 require_file "$detail_view_file" "BrowserDetailView.swift"
 require_file "$tab_file" "BrowserTab.swift"
 require_file "$tab_store_file" "BrowserTabStore.swift"
+require_file "$chrome_file" "BrowserChrome.swift"
+require_file "$start_page_file" "StartPageView.swift"
 
 require_pattern "$session_file" "final class BrowserPageSession" "BrowserPageSession class"
 require_pattern "$session_file" "let tabID: BrowserTab\\.ID" "BrowserPageSession tab identity"
@@ -68,29 +73,27 @@ require_pattern "$model_file" "navigateSelectedTab\\(to:" "BrowserModel navigate
 require_pattern "$model_file" "livePageHost\\.activate\\(" "BrowserModel activates selected tab through live page host"
 require_pattern "$model_file" "tabStore\\.save\\(tabs: tabs, selectedTabID: selectedTabID\\)" "BrowserModel persists tab snapshot"
 
-require_pattern "$split_view_file" "SafariLiquidChrome" "transparent Safari-style liquid chrome overlay"
-require_pattern "$split_view_file" "SafariChromeBacking" "continuous dark Safari chrome backing for loaded pages"
-require_pattern "$split_view_file" "chromeBaseColor" "shared loaded-page chrome base color"
-require_pattern "$split_view_file" "GlassEffectContainer" "native Liquid Glass container for custom chrome controls"
-require_pattern "$split_view_file" "\\.glassEffect\\(" "native Liquid Glass effect for custom chrome controls"
-require_pattern "$split_view_file" "\\.buttonStyle\\(\\.glass\\)" "native Liquid Glass button style for toolbar buttons"
+# Window configuration stays in the split view; the chrome itself is one
+# Liquid Glass bar in Browser/Chrome/BrowserChrome.swift.
 require_pattern "$split_view_file" "SafariWindowChromeConfigurator" "full-size transparent titlebar configurator"
 require_pattern "$split_view_file" "window\\.styleMask\\.insert\\(\\.fullSizeContentView\\)" "content extends under titlebar"
 require_pattern "$split_view_file" "window\\.titlebarAppearsTransparent = true" "transparent titlebar"
 require_pattern "$split_view_file" "window\\.isOpaque = false" "transparent window backing"
-require_pattern "$split_view_file" "GlassPill" "liquid glass control capsules"
-require_pattern "$split_view_file" "ToolbarActionPill" "Safari-style trailing action capsule"
-require_pattern "$split_view_file" "SeparateTabBar" "separate Safari-style tab bar"
-require_pattern "$split_view_file" "CompactTabStrip" "compact tab strip"
-require_pattern "$split_view_file" "AddressField" "Smart Search field"
-require_pattern "$split_view_file" "\\.textFieldStyle\\(\\.plain\\)" "custom glass Smart Search text field styling"
-require_pattern "$split_view_file" "SafariStartPageView" "Safari-style start page background"
-require_pattern "$split_view_file" "TabContextMenu" "tab context menu"
-require_pattern "$split_view_file" "Close Other Tabs" "close other tabs UI action"
-require_pattern "$split_view_file" "isPageLoading \\? \"xmark\" : \"arrow\\.clockwise\"" "stable reload/stop icon swap"
-require_pattern "$split_view_file" "\\.frame\\(width: 16, height: 16\\)" "fixed reload/stop symbol frame"
-require_pattern "$split_view_file" "FaviconIcon" "shared favicon rendering view"
-require_pattern "$split_view_file" "FaviconLoader\\.shared\\.image" "tab UI favicon loading"
+require_pattern "$app_file" "\\.windowStyle\\(\\.hiddenTitleBar\\)" "hidden title bar keeps chrome inline with the traffic lights"
+
+require_pattern "$chrome_file" "struct BrowserChrome" "Liquid Glass chrome bar"
+require_pattern "$chrome_file" "\\.glassEffect\\(" "native Liquid Glass effect for the chrome bar"
+require_pattern "$chrome_file" "SeparateTabBar" "separate Safari-style tab bar"
+require_pattern "$chrome_file" "CompactTabStrip" "compact tab strip"
+require_pattern "$chrome_file" "AddressBarField" "Smart Search field"
+require_pattern "$chrome_file" "\\.textFieldStyle\\(\\.plain\\)" "custom glass Smart Search text field styling"
+require_pattern "$chrome_file" "TabContextMenu" "tab context menu"
+require_pattern "$chrome_file" "Close Other Tabs" "close other tabs UI action"
+require_pattern "$chrome_file" "isPageLoading \\? \"xmark\" : \"arrow\\.clockwise\"" "stable reload/stop icon swap"
+require_pattern "$chrome_file" "\\.frame\\(width: 16, height: 16\\)" "fixed reload/stop symbol frame"
+require_pattern "$chrome_file" "FaviconIcon" "shared favicon rendering view"
+require_pattern "$favicon_file" "FaviconLoader\\.shared\\.image" "favicon loading"
+require_pattern "$start_page_file" "struct StartPageView" "native start page"
 
 require_pattern "$preferences_file" "enum BrowserTabLayout" "BrowserTabLayout preference model"
 require_pattern "$preferences_file" "self\\.tabLayout = \\.separate" "separate tab layout default"
@@ -102,10 +105,12 @@ if rg -q "NavigationSplitView|BrowserSidebar|ThreadTimeline|ThreadHeader|ChatInp
     exit 1
 fi
 
-if rg -q "BrowserToolbar|ToolbarItemGroup|ToolbarItem\\(placement:|SafariChromeBackground|ChromeIconButton|CompactBrowserChrome|SeparateBrowserChrome" "$split_view_file"; then
-    echo "BrowserSplitView must use the custom full-size glass chrome overlay instead of toolbar/fake-toolbar surfaces." >&2
-    exit 1
-fi
+for chrome_surface in "$split_view_file" "$chrome_file"; do
+    if rg -q "BrowserToolbar|ToolbarItemGroup|ToolbarItem\\(placement:|NSToolbar" "$chrome_surface"; then
+        echo "Browser chrome must use the custom full-size glass chrome overlay instead of toolbar surfaces." >&2
+        exit 1
+    fi
+done
 
 if rg -q "\\.fill\\(\\.regularMaterial\\)|\\.overlay\\(tint\\)" "$split_view_file"; then
     echo "BrowserSplitView must use native Liquid Glass APIs for chrome controls instead of manual material/tint overlays." >&2
