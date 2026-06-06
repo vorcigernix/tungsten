@@ -106,11 +106,17 @@ final class BrowserModel {
         }
     }
 
-    func createTab(urlString: String? = nil, title: String? = nil) {
-        let tab = BrowserTab(urlString: urlString, title: title)
+    func createTab(
+        urlString: String? = nil,
+        title: String? = nil,
+        privacyMode: BrowserTabPrivacyMode? = nil
+    ) {
+        let resolvedPrivacyMode = privacyMode ?? defaultPrivacyMode
+        let tab = BrowserTab(urlString: urlString, title: title, privacyMode: resolvedPrivacyMode)
         var metadata: [String: Any] = [
             "tab": BrowserPerformanceLog.shortID(tab.id),
-            "has_title": title?.isEmpty == false
+            "has_title": title?.isEmpty == false,
+            "privacy_mode": resolvedPrivacyMode.rawValue
         ]
         metadata.merge(BrowserPerformanceLog.urlMetadata(urlString)) { _, new in new }
         BrowserPerformanceLog.event("tab.create", metadata: metadata)
@@ -122,6 +128,14 @@ final class BrowserModel {
         if urlString == nil {
             addressFocusRequestID += 1
         }
+    }
+
+    func createIncognitoTab(urlString: String? = nil, title: String? = nil) {
+        createTab(urlString: urlString, title: title, privacyMode: .incognito)
+    }
+
+    func createTorTab(urlString: String? = nil, title: String? = nil) {
+        createTab(urlString: urlString, title: title, privacyMode: .tor)
     }
 
     func closeSelectedTab() {
@@ -137,7 +151,7 @@ final class BrowserModel {
             return
         }
 
-        if kind == .normal {
+        if shouldRememberClosedTab(tab) {
             closedTabs.append(tab)
         }
 
@@ -169,7 +183,7 @@ final class BrowserModel {
         }
 
         if kind == .normal {
-            closedTabs.append(contentsOf: removedTabs)
+            closedTabs.append(contentsOf: removedTabs.filter { shouldRememberClosedTab($0) })
         }
 
         tabs = [tab]
@@ -204,7 +218,7 @@ final class BrowserModel {
         }
 
         if kind == .normal {
-            closedTabs.append(contentsOf: removedTabs)
+            closedTabs.append(contentsOf: removedTabs.filter { shouldRememberClosedTab($0) })
         }
 
         if pinnedTabs.isEmpty {
@@ -457,6 +471,14 @@ final class BrowserModel {
         return tabs.firstIndex { $0.id == selectedTabID }
     }
 
+    private var defaultPrivacyMode: BrowserTabPrivacyMode {
+        kind.isIncognito ? .incognito : .normal
+    }
+
+    private var selectedTabPrivacyMode: BrowserTabPrivacyMode {
+        selectedTab.map(effectivePrivacyMode(for:)) ?? defaultPrivacyMode
+    }
+
     private func navigateSelectedTab(to urlString: String) {
         var metadata: [String: Any] = [
             "selected_tab": BrowserPerformanceLog.shortID(selectedTabID),
@@ -502,14 +524,16 @@ final class BrowserModel {
 
         var metadata: [String: Any] = [
             "tab": BrowserPerformanceLog.shortID(selectedTab.id),
-            "is_incognito": kind.isIncognito
+            "is_incognito": effectivePrivacyMode(for: selectedTab).isEphemeral,
+            "privacy_mode": effectivePrivacyMode(for: selectedTab).rawValue
         ]
         metadata.merge(BrowserPerformanceLog.urlMetadata(selectedTab.urlString)) { _, new in new }
         BrowserPerformanceLog.event("tab.activateSelected.start", metadata: metadata)
 
         livePageHost.activate(
             tab: selectedTab,
-            isIncognito: kind.isIncognito
+            privacyMode: effectivePrivacyMode(for: selectedTab),
+            torConfiguration: appPreferences.torConfiguration
         ) { [weak self] pageSession in
             self?.configurePageCallbacks(for: pageSession)
         }
@@ -577,6 +601,7 @@ final class BrowserModel {
     private func recordHistoryVisit(_ urlString: String, pageSession: BrowserPageSession) {
         guard
             kind == .normal,
+            selectedTabPrivacyMode == .normal,
             activePageSession === pageSession
         else {
             return
@@ -588,6 +613,7 @@ final class BrowserModel {
     private func recordHistoryTitle(_ title: String, pageSession: BrowserPageSession) {
         guard
             kind == .normal,
+            selectedTabPrivacyMode == .normal,
             activePageSession === pageSession
         else {
             return
@@ -611,6 +637,17 @@ final class BrowserModel {
 
         windowCloseCompletion = nil
         completion()
+    }
+
+    private func shouldRememberClosedTab(_ tab: BrowserTab) -> Bool {
+        kind == .normal && effectivePrivacyMode(for: tab) == .normal
+    }
+
+    private func effectivePrivacyMode(for tab: BrowserTab) -> BrowserTabPrivacyMode {
+        if kind.isIncognito, tab.privacyMode == .normal {
+            return .incognito
+        }
+        return tab.privacyMode
     }
 
     private func persistTabs() {

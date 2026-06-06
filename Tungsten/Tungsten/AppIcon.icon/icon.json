@@ -1,6 +1,6 @@
 {
   "fill" : {
-    "automatic-gradient" : "extended-srgb:0.00000,0.53333,1.00000,1.00000"
+    "automatic-gradient" : "extended-srgb:1.00000,1.00000,1.00000,1.00000"
   },
   "groups" : [
     {
@@ -9,8 +9,8 @@
         {
           "blend-mode" : "normal",
           "hidden" : false,
-          "image-name" : "atom-2-line-svgrepo-com.svg",
-          "name" : "atom-2-line-svgrepo-com"
+          "image-name" : "tungsten-privacy-shield.svg",
+          "name" : "tungsten-privacy-shield"
         }
       ],
       "lighting" : "individual",
@@ -20,8 +20,8 @@
         "opacity" : 0.5
       },
       "translucency" : {
-        "enabled" : true,
-        "value" : 0.5
+        "enabled" : false,
+        "value" : 0
       }
     }
   ],

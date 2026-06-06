@@ -7,6 +7,7 @@ struct ShortcutLogicTests {
         try testCatalogIncludesAvailableAndComingSoonActions()
         try testTabFirstActionLabels()
         try testCEFBackedActionsAreAvailable()
+        try testPrivateAndTorTabActionsAreAvailable()
         try testRemainingBrowserActionsAreAvailable()
         try testOverridesReplaceDefaultsAndResetRestoresDefaults()
         try testClearedBindingLeavesActionUnassigned()
@@ -63,6 +64,21 @@ struct ShortcutLogicTests {
         try expect(manager.dispatchableAction(for: ShortcutBinding(key: "f", modifiers: [.command]))?.id == .findInPage)
     }
 
+    static func testPrivateAndTorTabActionsAreAvailable() throws {
+        let manager = ShortcutManager(store: makeStore("private-tor-tabs"))
+
+        let expected: [(ShortcutActionID, String, ShortcutBinding)] = [
+            (.newIncognitoTab, "New Incognito Tab", ShortcutBinding(key: "n", modifiers: [.command, .option])),
+            (.newTorTab, "New Tor Tab", ShortcutBinding(key: "t", modifiers: [.command, .option]))
+        ]
+
+        for (actionID, title, binding) in expected {
+            try expect(ShortcutCatalog.action(id: actionID)?.title == title)
+            try expect(ShortcutCatalog.action(id: actionID)?.availability == .available)
+            try expect(manager.dispatchableAction(for: binding)?.id == actionID)
+        }
+    }
+
     static func testRemainingBrowserActionsAreAvailable() throws {
         let manager = ShortcutManager(store: makeStore("remaining-browser-actions"))
 
@@ -84,7 +100,7 @@ struct ShortcutLogicTests {
     static func testOverridesReplaceDefaultsAndResetRestoresDefaults() throws {
         let manager = ShortcutManager(store: makeStore("override"))
         let defaultBinding = ShortcutBinding(key: "t", modifiers: [.command])
-        let customBinding = ShortcutBinding(key: "n", modifiers: [.command, .option])
+        let customBinding = ShortcutBinding(key: "m", modifiers: [.command, .option])
 
         try expect(manager.activeBindings(for: .newTab) == [defaultBinding])
         try expect(manager.setCustomBinding(customBinding, for: .newTab) == .assigned)

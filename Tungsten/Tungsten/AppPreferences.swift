@@ -28,8 +28,16 @@ final class AppPreferences {
     private static let codexACPConfigurationKey = "Tungsten.ACP.CodexConfiguration.v1"
     private static let claudeACPConfigurationKey = "Tungsten.ACP.ClaudeConfiguration.v1"
     private static let addressBarAIProviderKey = "Tungsten.AddressBarAIProvider.v1"
+#if TESTING
+    private static let localAIProviderKey = "Tungsten.LocalAIProvider.v1"
+    private static let contentBlockingEnabledKey = "Tungsten.ContentBlockingEnabled.v1"
+#else
     private static let localAIProviderKey = TungstenLocalAIProviderDefaultsKey
     private static let contentBlockingEnabledKey = TungstenContentBlockingEnabledDefaultsKey
+#endif
+    private static let torLaunchesArtiKey = "Tungsten.Tor.LaunchesArti.v1"
+    private static let torArtiExecutablePathKey = "Tungsten.Tor.ArtiExecutablePath.v1"
+    private static let torSocksPortKey = "Tungsten.Tor.SocksPort.v1"
 
     var searchEngine: SearchEngine {
         didSet {
@@ -64,6 +72,40 @@ final class AppPreferences {
             guard oldValue != contentBlockingEnabled else { return }
             userDefaults.set(contentBlockingEnabled, forKey: Self.contentBlockingEnabledKey)
         }
+    }
+
+    var torLaunchesArti: Bool {
+        didSet {
+            guard oldValue != torLaunchesArti else { return }
+            userDefaults.set(torLaunchesArti, forKey: Self.torLaunchesArtiKey)
+        }
+    }
+
+    var torArtiExecutablePath: String {
+        didSet {
+            guard oldValue != torArtiExecutablePath else { return }
+            userDefaults.set(torArtiExecutablePath, forKey: Self.torArtiExecutablePathKey)
+        }
+    }
+
+    var torSocksPort: Int {
+        didSet {
+            let clampedPort = min(max(torSocksPort, 1), 65535)
+            if torSocksPort != clampedPort {
+                torSocksPort = clampedPort
+            }
+            guard oldValue != torSocksPort else { return }
+            userDefaults.set(torSocksPort, forKey: Self.torSocksPortKey)
+        }
+    }
+
+    var torConfiguration: TorProxyConfiguration {
+        TorProxyConfiguration(
+            launchesArti: torLaunchesArti,
+            artiExecutablePath: torArtiExecutablePath,
+            socksHost: TorProxyConfiguration.default.socksHost,
+            socksPort: torSocksPort
+        )
     }
 
     var localAIProvider: LocalAIProvider {
@@ -141,6 +183,26 @@ final class AppPreferences {
             self.contentBlockingEnabled = false
         } else {
             self.contentBlockingEnabled = userDefaults.bool(forKey: Self.contentBlockingEnabledKey)
+        }
+
+        if userDefaults.object(forKey: Self.torLaunchesArtiKey) == nil {
+            self.torLaunchesArti = TorProxyConfiguration.default.launchesArti
+        } else {
+            self.torLaunchesArti = userDefaults.bool(forKey: Self.torLaunchesArtiKey)
+        }
+
+        if let storedPath = userDefaults.string(forKey: Self.torArtiExecutablePathKey),
+           storedPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false {
+            self.torArtiExecutablePath = storedPath
+        } else {
+            self.torArtiExecutablePath = TorProxyConfiguration.default.artiExecutablePath
+        }
+
+        let storedTorPort = userDefaults.integer(forKey: Self.torSocksPortKey)
+        if userDefaults.object(forKey: Self.torSocksPortKey) == nil {
+            self.torSocksPort = TorProxyConfiguration.default.socksPort
+        } else {
+            self.torSocksPort = min(max(storedTorPort, 1), 65535)
         }
 
         let resolvedLocalAIProvider: LocalAIProvider

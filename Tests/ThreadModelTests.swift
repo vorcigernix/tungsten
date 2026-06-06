@@ -12,8 +12,11 @@ struct ThreadModelTests {
         try testNaturalLanguageInputClassifiesAsQuestion()
         try testSearchEngineDefaultsUseDuckDuckGo()
         try testAddressBarAIProviderURLs()
+        try testTorPreferencesDefaultToArtiLaunch()
         try testTabMetadataUpdates()
+        try testBrowserTabPrivacyModeDefaultsToNormal()
         try testBrowserTabCodableRoundTrip()
+        try testPersistentStoreDoesNotSavePrivateOrTorTabs()
         try testPersistentStoreCapsTabs()
         try testPersistentStorePreservesSelectedTabWhenCapping()
         try testPersistentStoreSanitizesOversizedTabsOnSave()
@@ -78,6 +81,16 @@ struct ThreadModelTests {
         try expect(AddressBarAIProvider.googleAI.responseURL(for: "what is tungsten carbide") == "https://www.google.com/search?udm=50&q=what%20is%20tungsten%20carbide")
     }
 
+    @MainActor
+    static func testTorPreferencesDefaultToArtiLaunch() throws {
+        let preferences = AppPreferences(userDefaults: makeIsolatedUserDefaults())
+
+        try expect(preferences.torConfiguration.launchesArti)
+        try expect(preferences.torConfiguration.artiExecutablePath == "arti")
+        try expect(preferences.torConfiguration.socksHost == "127.0.0.1")
+        try expect(preferences.torConfiguration.socksPort == 9150)
+    }
+
     static func testTabMetadataUpdates() throws {
         var tab = BrowserTab(createdAt: Date(timeIntervalSince1970: 10))
         let updateDate = Date(timeIntervalSince1970: 50)
@@ -96,6 +109,13 @@ struct ThreadModelTests {
         try expect(tab.updatedAt == updateDate)
     }
 
+    static func testBrowserTabPrivacyModeDefaultsToNormal() throws {
+        let tab = BrowserTab()
+
+        try expect(tab.privacyMode == .normal)
+        try expect(tab.isEphemeral == false)
+    }
+
     static func testBrowserTabCodableRoundTrip() throws {
         let tab = BrowserTab(
             id: UUID(uuidString: "22222222-2222-2222-2222-222222222222")!,
@@ -104,13 +124,15 @@ struct ThreadModelTests {
             urlString: "https://example.com/docs",
             title: "Docs",
             faviconURLString: "https://example.com/favicon.ico",
-            isPinned: true
+            isPinned: true,
+            privacyMode: .tor
         )
 
         let data = try JSONEncoder().encode(tab)
         let decoded = try JSONDecoder().decode(BrowserTab.self, from: data)
 
         try expect(decoded == tab)
+        try expect(decoded.privacyMode == .tor)
     }
 
     static func testPersistentStoreCapsTabs() throws {
@@ -146,6 +168,37 @@ struct ThreadModelTests {
         try expect(loaded.tabs.count == 60)
         try expect(loaded.tabs.contains { $0.id == selectedTabID })
         try expect(loaded.selectedTabID == selectedTabID)
+    }
+
+    static func testPersistentStoreDoesNotSavePrivateOrTorTabs() throws {
+        let userDefaults = makeIsolatedUserDefaults()
+        let store = BrowserTabStore(
+            userDefaults: userDefaults,
+            scope: .persistent(windowSessionID: "window-a")
+        )
+        let normalTab = BrowserTab(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+            urlString: "https://example.com",
+            title: "Normal"
+        )
+        let incognitoTab = BrowserTab(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!,
+            urlString: "https://private.example",
+            title: "Private",
+            privacyMode: .incognito
+        )
+        let torTab = BrowserTab(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000003")!,
+            urlString: "https://check.torproject.org",
+            title: "Tor",
+            privacyMode: .tor
+        )
+
+        store.save(tabs: [normalTab, incognitoTab, torTab], selectedTabID: torTab.id)
+
+        let loaded = store.load()
+        try expect(loaded.tabs == [normalTab])
+        try expect(loaded.selectedTabID == normalTab.id)
     }
 
     static func testPersistentStoreSanitizesOversizedTabsOnSave() throws {

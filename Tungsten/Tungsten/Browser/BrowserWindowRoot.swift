@@ -16,18 +16,20 @@ struct BrowserWindowRoot: View {
         Group {
             if let windowModel {
                 let browserModel = windowModel.browserModel
+                let commandContext = BrowserCommandContext(
+                    browserModel: browserModel,
+                    openNormalWindow: { openWindow(id: BrowserWindowKind.normal.sceneID) },
+                    openIncognitoWindow: { openWindow(id: BrowserWindowKind.incognito.sceneID) }
+                )
 
                 BrowserSplitView()
                     .environment(browserModel)
                     .environment(appModel.appPreferences)
+                    .focusedSceneValue(\.browserCommandContext, commandContext)
                     .background(
                         ShortcutEventMonitor(
                             shortcutManager: appModel.shortcutManager,
-                            commandContext: BrowserCommandContext(
-                                browserModel: browserModel,
-                                openNormalWindow: { openWindow(id: BrowserWindowKind.normal.sceneID) },
-                                openIncognitoWindow: { openWindow(id: BrowserWindowKind.incognito.sceneID) }
-                            )
+                            commandContext: commandContext
                         )
                     )
                     .background(

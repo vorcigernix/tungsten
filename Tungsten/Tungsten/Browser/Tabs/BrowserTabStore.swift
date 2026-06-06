@@ -69,7 +69,8 @@ final class BrowserTabStore {
             return
         }
 
-        let cappedTabs = Self.capped(tabs, preserving: selectedTabID)
+        let persistableTabs = tabs.filter { $0.isEphemeral == false }
+        let cappedTabs = Self.capped(persistableTabs, preserving: selectedTabID)
             .map(\.sanitizedForPersistence)
         let cappedSelectedTabID: BrowserTab.ID?
         if let selectedTabID, cappedTabs.contains(where: { $0.id == selectedTabID }) {
@@ -143,7 +144,8 @@ final class BrowserTabStore {
     }
 
     private static func sanitized(_ snapshot: BrowserTabSnapshot) -> BrowserTabSnapshot {
-        let tabs = capped(snapshot.tabs, preserving: snapshot.selectedTabID)
+        let persistableTabs = snapshot.tabs.filter { $0.isEphemeral == false }
+        let tabs = capped(persistableTabs, preserving: snapshot.selectedTabID)
             .map(\.sanitizedForPersistence)
         let selectedTabID: BrowserTab.ID?
         if let snapshotSelectedTabID = snapshot.selectedTabID,

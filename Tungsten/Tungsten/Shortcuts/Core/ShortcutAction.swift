@@ -15,6 +15,8 @@ enum ShortcutActionID: String, CaseIterable, Codable, Hashable {
     // Persisted shortcut overrides use these raw values. Keep them stable even
     // when the browser model changes.
     case newTab
+    case newIncognitoTab
+    case newTorTab
     case newWindow
     case newIncognitoWindow
     case closeCurrentTab
@@ -69,6 +71,8 @@ enum ShortcutCatalog {
 
     private static let everydayActions: [ShortcutAction] = [
         available(.newTab, "New Tab", .everyday, [.cmd("t")]),
+        available(.newIncognitoTab, "New Incognito Tab", .everyday, [.cmdOption("n")]),
+        available(.newTorTab, "New Tor Tab", .everyday, [.cmdOption("t")]),
         available(.newWindow, "New Window", .everyday, [.cmd("n")]),
         available(.newIncognitoWindow, "New Incognito Window", .everyday, [.cmdShift("n")]),
         available(.closeCurrentTab, "Close Current Tab", .everyday, [.cmd("w")]),

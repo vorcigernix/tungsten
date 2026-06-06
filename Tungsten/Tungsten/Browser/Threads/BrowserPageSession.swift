@@ -7,6 +7,7 @@ final class BrowserPageSession: Identifiable {
 
     let id = UUID()
     let tabID: BrowserTab.ID
+    let privacyMode: BrowserTabPrivacyMode
     let isIncognito: Bool
     var title: String
     var urlString: String
@@ -24,18 +25,45 @@ final class BrowserPageSession: Identifiable {
     @ObservationIgnored private var faviconFetchTask: Task<Void, Never>?
 
     @ObservationIgnored private let initialURL: String
+    @ObservationIgnored private let torConfiguration: TorProxyConfiguration
     @ObservationIgnored private lazy var observer = BrowserPageSessionObserver(pageSession: self)
     @ObservationIgnored lazy var browserController: TungstenBrowserController = {
         let start = BrowserPerformanceLog.now()
         var metadata: [String: Any] = [
             "tab": BrowserPerformanceLog.shortID(tabID),
             "session": BrowserPerformanceLog.shortID(id),
-            "is_incognito": isIncognito
+            "is_incognito": isIncognito,
+            "privacy_mode": privacyMode.rawValue
         ]
         metadata.merge(BrowserPerformanceLog.urlMetadata(initialURL)) { _, new in new }
         BrowserPerformanceLog.event("pageSession.controller.create.start", metadata: metadata)
 
-        let controller = TungstenBrowserController(initialURL: initialURL, incognito: isIncognito)
+        let controllerInitialURL: String
+        if privacyMode.usesTorProxy {
+            let startupResult = TorNetworkService.shared.ensureRunning(configuration: torConfiguration)
+            if let message = startupResult.message {
+                metadata["tor_startup"] = "unavailable"
+                metadata["tor_startup_message_length"] = message.count
+                title = "Tor Unavailable"
+                controllerInitialURL = Self.torStartupErrorURL(
+                    message: message,
+                    configuration: torConfiguration,
+                    requestedURL: initialURL
+                )
+            } else {
+                metadata["tor_startup"] = "running"
+                controllerInitialURL = initialURL
+            }
+        } else {
+            controllerInitialURL = initialURL
+        }
+
+        let controller = TungstenBrowserController(
+            initialURL: controllerInitialURL,
+            privacyMode: privacyMode.rawValue,
+            torProxyHost: torConfiguration.socksHost,
+            torProxyPort: Int32(torConfiguration.normalizedPort)
+        )
         controller.delegate = observer
         controller.browserDidCloseHandler = { [weak self] in
             Task { @MainActor [weak self] in
@@ -45,6 +73,71 @@ final class BrowserPageSession: Identifiable {
         BrowserPerformanceLog.duration("pageSession.controller.create.end", from: start, metadata: metadata)
         return controller
     }()
+
+    private static func torStartupErrorURL(
+        message: String,
+        configuration: TorProxyConfiguration,
+        requestedURL: String
+    ) -> String {
+        let escapedMessage = htmlEscaped(message)
+        let escapedProxy = htmlEscaped("\(configuration.socksHost):\(configuration.normalizedPort)")
+        let escapedRequestedURL = htmlEscaped(requestedURL)
+        let html = """
+        <!doctype html>
+        <html>
+        <head>
+        <meta charset="utf-8">
+        <title>Tor Unavailable</title>
+        <style>
+        :root { color-scheme: light dark; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            font: -apple-system-body;
+            background: Canvas;
+            color: CanvasText;
+        }
+        main {
+            width: min(640px, calc(100vw - 48px));
+        }
+        h1 {
+            font: -apple-system-title1;
+            margin: 0 0 14px;
+        }
+        p {
+            line-height: 1.45;
+            margin: 10px 0;
+        }
+        code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 0.92em;
+        }
+        </style>
+        </head>
+        <body>
+        <main>
+        <h1>Tor is not available</h1>
+        <p>\(escapedMessage)</p>
+        <p>Tungsten expected a local SOCKS proxy at <code>\(escapedProxy)</code> before opening <code>\(escapedRequestedURL)</code>.</p>
+        <p>Install Arti, or point Tungsten to an existing Tor-compatible SOCKS proxy in Settings.</p>
+        </main>
+        </body>
+        </html>
+        """
+        let encodedHTML = Data(html.utf8).base64EncodedString()
+        return "data:text/html;charset=utf-8;base64,\(encodedHTML)"
+    }
+
+    private static func htmlEscaped(_ value: String) -> String {
+        value
+            .replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+            .replacingOccurrences(of: "\"", with: "&quot;")
+            .replacingOccurrences(of: "'", with: "&#39;")
+    }
 
     var displayTitle: String {
         if title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false {
@@ -58,23 +151,38 @@ final class BrowserPageSession: Identifiable {
         return "New Page"
     }
 
-    init(tabID: BrowserTab.ID, initialURL: String, title: String = "New Page", isIncognito: Bool) {
+    init(
+        tabID: BrowserTab.ID,
+        initialURL: String,
+        title: String = "New Page",
+        privacyMode: BrowserTabPrivacyMode,
+        torConfiguration: TorProxyConfiguration
+    ) {
         self.tabID = tabID
         self.initialURL = initialURL
-        self.isIncognito = isIncognito
+        self.privacyMode = privacyMode
+        self.isIncognito = privacyMode.isEphemeral
+        self.torConfiguration = torConfiguration
         self.urlString = initialURL
         self.title = title
         var metadata: [String: Any] = [
             "tab": BrowserPerformanceLog.shortID(tabID),
             "session": BrowserPerformanceLog.shortID(id),
-            "is_incognito": isIncognito
+            "is_incognito": privacyMode.isEphemeral,
+            "privacy_mode": privacyMode.rawValue
         ]
         metadata.merge(BrowserPerformanceLog.urlMetadata(initialURL)) { _, new in new }
         BrowserPerformanceLog.event("pageSession.init", metadata: metadata)
     }
 
     convenience init(initialURL: String, isIncognito: Bool) {
-        self.init(tabID: BrowserTab.ID(), initialURL: initialURL, title: "New Page", isIncognito: isIncognito)
+        self.init(
+            tabID: BrowserTab.ID(),
+            initialURL: initialURL,
+            title: "New Page",
+            privacyMode: isIncognito ? .incognito : .normal,
+            torConfiguration: .default
+        )
     }
 
     func navigate(to urlString: String) {

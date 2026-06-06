@@ -5,7 +5,12 @@ final class LivePageSessionHost {
     private(set) var activePageSession: BrowserPageSession?
     @ObservationIgnored private var closingPageSession: BrowserPageSession?
 
-    func activate(tab: BrowserTab, isIncognito: Bool, configure: (BrowserPageSession) -> Void) {
+    func activate(
+        tab: BrowserTab,
+        privacyMode: BrowserTabPrivacyMode,
+        torConfiguration: TorProxyConfiguration,
+        configure: (BrowserPageSession) -> Void
+    ) {
         guard let urlString = tab.urlString else {
             BrowserPerformanceLog.event("livePage.activate.blankTab", metadata: [
                 "tab": BrowserPerformanceLog.shortID(tab.id)
@@ -32,14 +37,16 @@ final class LivePageSessionHost {
             tabID: tab.id,
             initialURL: urlString,
             title: pageTitle.isEmpty ? "New Page" : pageTitle,
-            isIncognito: isIncognito
+            privacyMode: privacyMode,
+            torConfiguration: torConfiguration
         )
         configure(session)
         activePageSession = session
         BrowserPerformanceLog.event("livePage.activate.createdSession", metadata: [
             "tab": BrowserPerformanceLog.shortID(tab.id),
             "session": BrowserPerformanceLog.shortID(session.id),
-            "is_incognito": isIncognito
+            "is_incognito": privacyMode.isEphemeral,
+            "privacy_mode": privacyMode.rawValue
         ])
     }
 

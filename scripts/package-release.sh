@@ -2,18 +2,30 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-VERSION="${TUNGSTEN_VERSION:-${1:-0.1}}"
+VERSION="${TUNGSTEN_VERSION:-${1:-0.11}}"
+BUILD_NUMBER="${TUNGSTEN_BUILD_NUMBER:-$(date -u +%Y%m%d%H%M%S)}"
 DERIVED_DATA="${TUNGSTEN_DERIVED_DATA:-/tmp/TungstenDerivedData}"
 APP_PATH="${DERIVED_DATA}/Build/Products/Release/Tungsten.app"
+APP_ARTI_BIN="${APP_PATH}/Contents/Resources/Arti/arti"
 DIST_DIR="${ROOT_DIR}/dist"
 VOLNAME="Tungsten ${VERSION}"
 DMG_PATH="${DIST_DIR}/Tungsten-${VERSION}.dmg"
 
 cd "$ROOT_DIR"
 
-if [[ ! -d "$APP_PATH" ]]; then
-  echo "Release build not found at $APP_PATH; running build-release.sh..."
+echo "Building release app for package..."
+TUNGSTEN_VERSION="$VERSION" TUNGSTEN_BUILD_NUMBER="$BUILD_NUMBER" \
   "${ROOT_DIR}/scripts/build-release.sh" -quiet
+
+if [[ ! -x "$APP_ARTI_BIN" ]]; then
+  echo "Release build is missing bundled Arti at $APP_ARTI_BIN; rebuilding..."
+  TUNGSTEN_VERSION="$VERSION" TUNGSTEN_BUILD_NUMBER="$BUILD_NUMBER" \
+    "${ROOT_DIR}/scripts/build-release.sh" -quiet
+fi
+
+if [[ ! -x "$APP_ARTI_BIN" ]]; then
+  echo "Cannot package Tungsten without bundled Arti at $APP_ARTI_BIN." >&2
+  exit 1
 fi
 
 mkdir -p "$DIST_DIR"

@@ -22,7 +22,7 @@ struct BrowserSplitView: View {
                 BrowserDetailView(pageSession: pageSession, topInset: chromeHeight)
             } else {
                 StartPageView(
-                    isPrivate: browserModel.kind.isIncognito,
+                    isPrivate: browserModel.selectedTab?.isEphemeral ?? browserModel.kind.isIncognito,
                     historyStore: browserModel.historyStore,
                     topInset: chromeHeight,
                     onOpen: { browserModel.openURLString($0) }
@@ -59,9 +59,15 @@ struct BrowserSplitView: View {
         .background(SafariWindowChromeConfigurator(transparencyEnabled: appPreferences.transparencyEnabled))
         .toolbar(removing: .title)
         .sheet(isPresented: $browserModel.isHistoryVisible) {
-            HistoryView(historyStore: browserModel.historyStore) { entry in
-                browserModel.openHistoryEntry(entry)
-            }
+            HistoryView(
+                historyStore: browserModel.historyStore,
+                openEntry: { entry in
+                    browserModel.openHistoryEntry(entry)
+                },
+                close: {
+                    browserModel.closeHistory()
+                }
+            )
             .frame(minWidth: 640, minHeight: 520)
         }
     }
