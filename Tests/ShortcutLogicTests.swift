@@ -5,7 +5,7 @@ import Foundation
 struct ShortcutLogicTests {
     static func main() throws {
         try testCatalogIncludesAvailableAndComingSoonActions()
-        try testThreadFirstActionLabels()
+        try testTabFirstActionLabels()
         try testCEFBackedActionsAreAvailable()
         try testRemainingBrowserActionsAreAvailable()
         try testOverridesReplaceDefaultsAndResetRestoresDefaults()
@@ -26,26 +26,26 @@ struct ShortcutLogicTests {
         try expect(actions.contains { $0.title.contains("Split View") } == false)
     }
 
-    static func testThreadFirstActionLabels() throws {
+    static func testTabFirstActionLabels() throws {
         let expectedLabels: [(ShortcutActionID, String)] = [
-            (.newTab, "New Thread"),
-            (.closeCurrentTab, "Close Current Thread"),
-            (.reopenLastClosedTab, "Re-open Last Closed Thread"),
-            (.pinOrUnpinCurrentTab, "Pin or Unpin Current Thread"),
-            (.focusAddressInput, "Ask or Open URL"),
-            (.clearUnpinnedTabs, "Clear Unpinned Threads"),
-            (.selectTab1, "Go to Thread 1"),
-            (.selectTab2, "Go to Thread 2"),
-            (.selectTab3, "Go to Thread 3"),
-            (.selectTab4, "Go to Thread 4"),
-            (.selectTab5, "Go to Thread 5"),
-            (.selectTab6, "Go to Thread 6"),
-            (.selectTab7, "Go to Thread 7"),
-            (.selectTab8, "Go to Thread 8"),
-            (.selectTab9, "Go to Thread 9"),
-            (.selectRecentTab, "Toggle Recent Threads"),
-            (.selectPreviousTab, "Previous Thread"),
-            (.selectNextTab, "Next Thread")
+            (.newTab, "New Tab"),
+            (.closeCurrentTab, "Close Current Tab"),
+            (.reopenLastClosedTab, "Re-open Last Closed Tab"),
+            (.pinOrUnpinCurrentTab, "Pin or Unpin Current Tab"),
+            (.focusAddressInput, "Search or Open URL"),
+            (.clearUnpinnedTabs, "Clear Unpinned Tabs"),
+            (.selectTab1, "Go to Tab 1"),
+            (.selectTab2, "Go to Tab 2"),
+            (.selectTab3, "Go to Tab 3"),
+            (.selectTab4, "Go to Tab 4"),
+            (.selectTab5, "Go to Tab 5"),
+            (.selectTab6, "Go to Tab 6"),
+            (.selectTab7, "Go to Tab 7"),
+            (.selectTab8, "Go to Tab 8"),
+            (.selectTab9, "Go to Tab 9"),
+            (.selectRecentTab, "Toggle Recent Tabs"),
+            (.selectPreviousTab, "Previous Tab"),
+            (.selectNextTab, "Next Tab")
         ]
 
         for (actionID, title) in expectedLabels {

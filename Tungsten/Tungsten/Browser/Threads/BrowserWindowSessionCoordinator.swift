@@ -9,31 +9,31 @@ final class BrowserWindowSessionCoordinator {
         self.userDefaults = userDefaults
     }
 
-    func makeThreadStore(kind: BrowserWindowKind) -> BrowserThreadStore {
+    func makeTabStore(kind: BrowserWindowKind) -> BrowserTabStore {
         guard kind.isIncognito == false else {
-            return BrowserThreadStore(userDefaults: userDefaults, scope: .memoryOnly)
+            return BrowserTabStore(userDefaults: userDefaults, scope: .memoryOnly)
         }
 
         let windowSessionID: String
         if activeNormalWindowSessionIDs.isEmpty {
-            windowSessionID = BrowserThreadStore.mostRecentWindowSessionID(userDefaults: userDefaults)
-                ?? BrowserThreadStore.makeWindowSessionID()
+            windowSessionID = BrowserTabStore.mostRecentWindowSessionID(userDefaults: userDefaults)
+                ?? BrowserTabStore.makeWindowSessionID()
         } else {
-            windowSessionID = BrowserThreadStore.makeWindowSessionID()
+            windowSessionID = BrowserTabStore.makeWindowSessionID()
         }
 
         activeNormalWindowSessionIDs.insert(windowSessionID)
-        BrowserThreadStore.markWindowSessionActive(windowSessionID, userDefaults: userDefaults)
+        BrowserTabStore.markWindowSessionActive(windowSessionID, userDefaults: userDefaults)
 
-        return BrowserThreadStore(
+        return BrowserTabStore(
             userDefaults: userDefaults,
             scope: .persistent(windowSessionID: windowSessionID)
         )
     }
 
-    func releaseThreadStore(_ threadStore: BrowserThreadStore, kind: BrowserWindowKind) {
+    func releaseTabStore(_ tabStore: BrowserTabStore, kind: BrowserWindowKind) {
         guard kind.isIncognito == false,
-              let windowSessionID = threadStore.persistentWindowSessionID else {
+              let windowSessionID = tabStore.persistentWindowSessionID else {
             return
         }
 

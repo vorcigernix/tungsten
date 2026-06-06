@@ -7,6 +7,7 @@ Objective-C++ bridge between SwiftUI/AppKit and Chromium Embedded Framework.
 
 #import "TungstenCEFApp.h"
 #import "TungstenBrowserController.h"
+#import "../Performance/TungstenPerformanceLog.h"
 
 #import <AppKit/AppKit.h>
 
@@ -28,6 +29,7 @@ Objective-C++ bridge between SwiftUI/AppKit and Chromium Embedded Framework.
 - (void)cefBrowserDidClose;
 - (void)closeBrowserWithForce:(BOOL)forceClose;
 - (void)completePageContentRequestWithPayload:(NSString *)payloadString;
+- (void)logPerformanceEvent:(NSString *)event metadata:(NSDictionary<NSString *, id> *)metadata;
 @end
 
 namespace {
@@ -38,9 +40,10 @@ namespace {
 // frame submission, input dispatch, JS callbacks — through CefDoMessageLoopWork().
 // We feed it from two places:
 //
-//   1. A CFRunLoopObserver fires right before the main run loop sleeps. This
-//      drains any work Chromium has queued without polling and stays roughly
-//      aligned with how AppKit pumps its own events.
+//   1. A CFRunLoopObserver fires before AppKit handles run-loop sources and
+//      again before the main run loop sleeps. The BeforeSources tick matters
+//      during live scrolling, when AppKit can keep the run loop busy with
+//      event tracking and CEF's before-idle work otherwise arrives late.
 //   2. A one-shot dispatch timer wakes us up at the exact delay CEF asks for in
 //      OnScheduleMessagePumpWork(delay_ms). We honor the delay verbatim — no
 //      artificial cap — so frame pacing tracks Chromium's own scheduler.
@@ -56,19 +59,141 @@ dispatch_source_t g_messagePumpTimer = nullptr;
 CFRunLoopObserverRef g_beforeWaitingObserver = nullptr;
 
 constexpr int64_t kCefNoScheduledWork = INT_MAX;
+constexpr CFTimeInterval kSlowCefMessagePumpWork = 0.008;
 
 extern "C" NSString *const TungstenLocalAIProviderDefaultsKey = @"Tungsten.LocalAIProvider.v1";
 
-namespace {
+NSString *ShortPerformanceID(void) {
+    return [NSUUID.UUID.UUIDString substringToIndex:8];
+}
 
-NSString *const kLocalAIProviderGoogle = @"google";
+NSMutableDictionary<NSString *, id> *PerformanceURLMetadata(NSString *urlString) {
+    NSMutableDictionary<NSString *, id> *metadata = [NSMutableDictionary dictionary];
+    metadata[@"has_url"] = @(urlString.length > 0);
+    metadata[@"url_length"] = @(urlString.length);
 
-const std::vector<std::string> kLocalAIChromiumFeatures = {
-    "AIPromptAPI",
-    "AIPromptAPIMultimodalInput",
-    "OnDeviceModelPerformanceParams",
-    "OptimizationGuideOnDeviceModel"
-};
+    NSURLComponents *components = [NSURLComponents componentsWithString:urlString ?: @""];
+    metadata[@"scheme"] = components.scheme ?: @"nil";
+    metadata[@"host"] = components.host ?: @"nil";
+    return metadata;
+}
+
+std::string RendererPerformanceMarkerScript() {
+    return R"JS(
+(() => {
+  const marker = 'TUNGSTEN_PERF_MARK:';
+  const emitted = new Set();
+  const emit = (name, extra = {}) => {
+    if (emitted.has(name)) {
+      return;
+    }
+    emitted.add(name);
+    const navigation = performance.getEntriesByType('navigation')[0];
+    const payload = {
+      name,
+      href: location.href,
+      readyState: document.readyState,
+      since_navigation_start_ms: Math.round(performance.now() * 100) / 100,
+      ...extra
+    };
+    if (navigation) {
+      payload.dom_content_loaded_event_end_ms =
+        Math.round(navigation.domContentLoadedEventEnd * 100) / 100;
+      payload.load_event_end_ms = Math.round(navigation.loadEventEnd * 100) / 100;
+      payload.response_end_ms = Math.round(navigation.responseEnd * 100) / 100;
+    }
+    console.log(marker + JSON.stringify(payload));
+  };
+
+  const emitDOMContentLoaded = () => emit('DOMContentLoaded');
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', emitDOMContentLoaded, { once: true });
+  } else {
+    emitDOMContentLoaded();
+  }
+
+  window.addEventListener('load', () => emit('windowLoad'), { once: true });
+
+  const emitPaint = entry => {
+    if (entry && (entry.name === 'first-paint' || entry.name === 'first-contentful-paint')) {
+      emit(entry.name, {
+        paint_start_ms: Math.round(entry.startTime * 100) / 100
+      });
+    }
+  };
+
+  for (const entry of performance.getEntriesByType('paint')) {
+    emitPaint(entry);
+  }
+
+  try {
+    const observer = new PerformanceObserver(list => {
+      for (const entry of list.getEntries()) {
+        emitPaint(entry);
+      }
+    });
+    observer.observe({ type: 'paint', buffered: true });
+  } catch (_) {
+    // Older renderers can lack buffered paint observation; existing entries
+    // above still cover the common case.
+  }
+})()
+)JS";
+}
+
+void LogRendererPerformanceMarker(TungstenBrowserController *controller,
+                                  CefRefPtr<CefBrowser> browser,
+                                  const std::string &payload) {
+    NSString *payloadString = [NSString stringWithUTF8String:payload.c_str()];
+    if (payloadString.length == 0) {
+        [controller logPerformanceEvent:@"cef.renderer.mark" metadata:@{
+            @"browser_id": @(browser->GetIdentifier()),
+            @"parse_error": @"empty_payload"
+        }];
+        return;
+    }
+
+    NSData *data = [payloadString dataUsingEncoding:NSUTF8StringEncoding];
+    NSDictionary *payloadDictionary = nil;
+    if (data != nil) {
+        id parsedPayload = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+        if ([parsedPayload isKindOfClass:NSDictionary.class]) {
+            payloadDictionary = parsedPayload;
+        }
+    }
+
+    NSMutableDictionary<NSString *, id> *metadata = [NSMutableDictionary dictionary];
+    metadata[@"browser_id"] = @(browser->GetIdentifier());
+    if (payloadDictionary == nil) {
+        metadata[@"parse_error"] = @"invalid_json";
+        metadata[@"payload_length"] = @(payloadString.length);
+        [controller logPerformanceEvent:@"cef.renderer.mark" metadata:metadata];
+        return;
+    }
+
+    NSString *href = [payloadDictionary[@"href"] isKindOfClass:NSString.class] ?
+        payloadDictionary[@"href"] : @"";
+    [metadata addEntriesFromDictionary:PerformanceURLMetadata(href)];
+    metadata[@"mark_name"] = [payloadDictionary[@"name"] isKindOfClass:NSString.class] ?
+        payloadDictionary[@"name"] : @"unknown";
+    metadata[@"ready_state"] = [payloadDictionary[@"readyState"] isKindOfClass:NSString.class] ?
+        payloadDictionary[@"readyState"] : @"unknown";
+
+    for (NSString *key in @[
+        @"since_navigation_start_ms",
+        @"dom_content_loaded_event_end_ms",
+        @"load_event_end_ms",
+        @"response_end_ms",
+        @"paint_start_ms"
+    ]) {
+        id value = payloadDictionary[key];
+        if ([value isKindOfClass:NSNumber.class]) {
+            metadata[key] = value;
+        }
+    }
+
+    [controller logPerformanceEvent:@"cef.renderer.mark" metadata:metadata];
+}
 
 std::string JoinFeatureList(const std::vector<std::string> &features) {
     std::string joined;
@@ -80,13 +205,6 @@ std::string JoinFeatureList(const std::vector<std::string> &features) {
     }
     return joined;
 }
-
-bool IsGoogleLocalAIEnabled() {
-    NSString *storedProvider = [NSUserDefaults.standardUserDefaults stringForKey:TungstenLocalAIProviderDefaultsKey];
-    return [storedProvider isEqualToString:kLocalAIProviderGoogle];
-}
-
-}  // namespace
 
 void PerformCefMessageLoopWork(void) {
     if (![[TungstenCEFApp shared] isInitialized]) {
@@ -101,11 +219,16 @@ void PerformCefMessageLoopWork(void) {
     do {
         g_messagePumpReentry = false;
         g_messagePumpActive = true;
+        CFTimeInterval pumpStart = TungstenPerformanceLogNow();
         // Note: an Objective-C exception thrown deep inside CEF unwinds
         // through Chromium frames compiled with -fno-exceptions and aborts
         // before any local @catch can see it. We log via
         // NSSetUncaughtExceptionHandler in AppDelegate instead.
         CefDoMessageLoopWork();
+        CFTimeInterval pumpDuration = TungstenPerformanceLogNow() - pumpStart;
+        if (pumpDuration > kSlowCefMessagePumpWork) {
+            TungstenPerformanceLogDuration(@"cef.messagePump.workSlow", pumpStart, nil);
+        }
         g_messagePumpActive = false;
     } while (g_messagePumpReentry);
 }
@@ -169,9 +292,9 @@ void ScheduleCefMessageLoopWork(int64_t delayMs) {
     dispatch_resume(timer);
 }
 
-void CefRunLoopBeforeWaitingCallback(__unused CFRunLoopObserverRef observer,
-                                     __unused CFRunLoopActivity activity,
-                                     __unused void *info) {
+void CefRunLoopPumpCallback(__unused CFRunLoopObserverRef observer,
+                            __unused CFRunLoopActivity activity,
+                            __unused void *info) {
     PerformCefMessageLoopWork();
 }
 
@@ -179,11 +302,12 @@ void InstallCefRunLoopObserver(void) {
     if (g_beforeWaitingObserver != nullptr) {
         return;
     }
+    CFRunLoopActivity activities = kCFRunLoopBeforeSources | kCFRunLoopBeforeWaiting;
     g_beforeWaitingObserver = CFRunLoopObserverCreate(kCFAllocatorDefault,
-                                                      kCFRunLoopBeforeWaiting,
+                                                      activities,
                                                       true,
                                                       0,
-                                                      &CefRunLoopBeforeWaitingCallback,
+                                                      &CefRunLoopPumpCallback,
                                                       nullptr);
     CFRunLoopAddObserver(CFRunLoopGetMain(), g_beforeWaitingObserver, kCFRunLoopCommonModes);
 }
@@ -273,20 +397,6 @@ public:
             "ParallelDownloading"
         };
 
-        // Local AI: route Chromium's Gemini Nano prompt feature flags into
-        // either the enable or disable list based on the user's setting.
-        // Without an explicit decision the flags would float — this keeps the
-        // behavior tied to Settings instead of chrome://flags.
-        if (IsGoogleLocalAIEnabled()) {
-            enabledFeatures.insert(enabledFeatures.end(),
-                                   kLocalAIChromiumFeatures.begin(),
-                                   kLocalAIChromiumFeatures.end());
-        } else {
-            disabledFeatures.insert(disabledFeatures.end(),
-                                    kLocalAIChromiumFeatures.begin(),
-                                    kLocalAIChromiumFeatures.end());
-        }
-
         // Features we explicitly turn off. We don't ship UI for any of these,
         // so paying their startup, memory, and background-traffic cost is pure
         // waste: Translate spawns a renderer worker for every page, MediaRouter
@@ -364,8 +474,12 @@ public:
     void OnAfterCreated(CefRefPtr<CefBrowser> browser) override {
         CEF_REQUIRE_UI_THREAD();
         browser_ = browser;
+        TungstenBrowserController *controller = controller_;
+        [controller logPerformanceEvent:@"cef.browser.afterCreated" metadata:@{
+            @"browser_id": @(browser->GetIdentifier())
+        }];
         dispatch_async(dispatch_get_main_queue(), ^{
-            [controller_ layoutBrowserView];
+            [controller layoutBrowserView];
         });
     }
 
@@ -375,6 +489,9 @@ public:
             browser_ = nullptr;
         }
         TungstenBrowserController *controller = controller_;
+        [controller logPerformanceEvent:@"cef.browser.beforeClose" metadata:@{
+            @"browser_id": @(browser->GetIdentifier())
+        }];
         [controller cefBrowserDidClose];
     }
 
@@ -383,6 +500,10 @@ public:
 
         NSView *browserView = (__bridge NSView *)browser->GetHost()->GetWindowHandle();
         [browserView removeFromSuperview];
+        TungstenBrowserController *controller = controller_;
+        [controller logPerformanceEvent:@"cef.browser.doClose" metadata:@{
+            @"browser_id": @(browser->GetIdentifier())
+        }];
 
         // This browser is hosted as a child view inside SwiftUI. Returning
         // false would make CEF send a default close event to the top-level
@@ -406,8 +527,11 @@ public:
         }
 
         NSString *urlString = ToNSString(url);
+        TungstenBrowserController *controller = controller_;
+        NSMutableDictionary<NSString *, id> *metadata = PerformanceURLMetadata(urlString);
+        metadata[@"browser_id"] = @(browser->GetIdentifier());
+        [controller logPerformanceEvent:@"cef.addressChange" metadata:metadata];
         dispatch_async(dispatch_get_main_queue(), ^{
-            TungstenBrowserController *controller = controller_;
             [controller.delegate browserController:controller didUpdateURL:urlString];
         });
     }
@@ -416,13 +540,76 @@ public:
                               bool isLoading,
                               bool canGoBack,
                               bool canGoForward) override {
+        TungstenBrowserController *controller = controller_;
+        NSString *urlString = @"";
+        CefRefPtr<CefFrame> mainFrame = browser ? browser->GetMainFrame() : nullptr;
+        if (mainFrame) {
+            urlString = ToNSString(mainFrame->GetURL());
+        }
+        NSMutableDictionary<NSString *, id> *metadata = PerformanceURLMetadata(urlString);
+        metadata[@"browser_id"] = @(browser->GetIdentifier());
+        metadata[@"is_loading"] = @(isLoading);
+        metadata[@"can_go_back"] = @(canGoBack);
+        metadata[@"can_go_forward"] = @(canGoForward);
+        [controller logPerformanceEvent:@"cef.load.state" metadata:metadata];
+
         dispatch_async(dispatch_get_main_queue(), ^{
-            TungstenBrowserController *controller = controller_;
             [controller.delegate browserController:controller
                                  didUpdateLoading:isLoading
                                         canGoBack:canGoBack
                                      canGoForward:canGoForward];
         });
+    }
+
+    void OnLoadStart(CefRefPtr<CefBrowser> browser,
+                     CefRefPtr<CefFrame> frame,
+                     TransitionType transition_type) override {
+        if (!frame->IsMain()) {
+            return;
+        }
+
+        TungstenBrowserController *controller = controller_;
+        NSString *urlString = ToNSString(frame->GetURL());
+        NSMutableDictionary<NSString *, id> *metadata = PerformanceURLMetadata(urlString);
+        metadata[@"browser_id"] = @(browser->GetIdentifier());
+        metadata[@"transition_type"] = @((int)transition_type);
+        [controller logPerformanceEvent:@"cef.load.start" metadata:metadata];
+        frame->ExecuteJavaScript(RendererPerformanceMarkerScript(),
+                                 "tungsten://internal/performance-markers",
+                                 0);
+    }
+
+    void OnLoadEnd(CefRefPtr<CefBrowser> browser,
+                   CefRefPtr<CefFrame> frame,
+                   int httpStatusCode) override {
+        if (!frame->IsMain()) {
+            return;
+        }
+
+        TungstenBrowserController *controller = controller_;
+        NSString *urlString = ToNSString(frame->GetURL());
+        NSMutableDictionary<NSString *, id> *metadata = PerformanceURLMetadata(urlString);
+        metadata[@"browser_id"] = @(browser->GetIdentifier());
+        metadata[@"http_status"] = @(httpStatusCode);
+        [controller logPerformanceEvent:@"cef.load.end" metadata:metadata];
+    }
+
+    void OnLoadError(CefRefPtr<CefBrowser> browser,
+                     CefRefPtr<CefFrame> frame,
+                     ErrorCode errorCode,
+                     const CefString &errorText,
+                     const CefString &failedUrl) override {
+        if (!frame->IsMain()) {
+            return;
+        }
+
+        TungstenBrowserController *controller = controller_;
+        NSString *urlString = ToNSString(failedUrl);
+        NSMutableDictionary<NSString *, id> *metadata = PerformanceURLMetadata(urlString);
+        metadata[@"browser_id"] = @(browser->GetIdentifier());
+        metadata[@"error_code"] = @((int)errorCode);
+        metadata[@"error_text_length"] = @(ToNSString(errorText).length);
+        [controller logPerformanceEvent:@"cef.load.error" metadata:metadata];
     }
 
     void OnFaviconURLChange(CefRefPtr<CefBrowser> browser,
@@ -447,15 +634,24 @@ public:
                           int line) override {
         const std::string msg = message.ToString();
         static const std::string kPageTextMarker = "TUNGSTEN_PAGE_TEXT:";
-        if (msg.compare(0, kPageTextMarker.size(), kPageTextMarker) != 0) {
-            return false;
+        static const std::string kRendererPerfMarker = "TUNGSTEN_PERF_MARK:";
+        if (msg.compare(0, kPageTextMarker.size(), kPageTextMarker) == 0) {
+            NSString *payloadString = [NSString stringWithUTF8String:msg.substr(kPageTextMarker.size()).c_str()];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                TungstenBrowserController *controller = controller_;
+                [controller completePageContentRequestWithPayload:payloadString];
+            });
+            return true;  // suppress from DevTools console
         }
-        NSString *payloadString = [NSString stringWithUTF8String:msg.substr(kPageTextMarker.size()).c_str()];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            TungstenBrowserController *controller = controller_;
-            [controller completePageContentRequestWithPayload:payloadString];
-        });
-        return true;  // suppress from DevTools console
+        if (msg.compare(0, kRendererPerfMarker.size(), kRendererPerfMarker) == 0) {
+            std::string payload = msg.substr(kRendererPerfMarker.size());
+            dispatch_async(dispatch_get_main_queue(), ^{
+                TungstenBrowserController *controller = controller_;
+                LogRendererPerformanceMarker(controller, browser, payload);
+            });
+            return true;
+        }
+        return false;
     }
 
 private:
@@ -560,21 +756,51 @@ private:
     return _terminating;
 }
 
+- (void)prewarmCEF {
+    if (_initialized || _terminating) {
+        TungstenPerformanceLogEvent(@"cef.prewarm.skipped", @{
+            @"initialized": @(_initialized),
+            @"terminating": @(_terminating)
+        });
+        return;
+    }
+
+    CFTimeInterval prewarmStart = TungstenPerformanceLogNow();
+    TungstenPerformanceLogEvent(@"cef.prewarm.start", nil);
+    [self initializeCEF];
+    TungstenPerformanceLogDuration(_initialized ? @"cef.prewarm.end" : @"cef.prewarm.failed",
+                                   prewarmStart,
+                                   @{@"initialized": @(_initialized)});
+}
+
 - (void)beginTermination {
     _terminating = YES;
 }
 
 - (void)initializeCEF {
     if (_initialized || _terminating) {
+        TungstenPerformanceLogEvent(@"cef.initialize.skipped", @{
+            @"initialized": @(_initialized),
+            @"terminating": @(_terminating)
+        });
         return;
     }
 
+    CFTimeInterval initializeStart = TungstenPerformanceLogNow();
+    TungstenPerformanceLogEvent(@"cef.initialize.start", nil);
+
+    CFTimeInterval libraryLoadStart = TungstenPerformanceLogNow();
     _libraryLoader = std::make_unique<CefScopedLibraryLoader>();
     if (!_libraryLoader->LoadInMain()) {
         NSLog(@"Unable to load Chromium Embedded Framework.");
+        TungstenPerformanceLogDuration(@"cef.libraryLoad.failed", libraryLoadStart, nil);
+        TungstenPerformanceLogDuration(@"cef.initialize.failed", initializeStart, @{
+            @"reason": @"library_load"
+        });
         _libraryLoader.reset();
         return;
     }
+    TungstenPerformanceLogDuration(@"cef.libraryLoad.end", libraryLoadStart, nil);
 
     NSArray<NSString *> *arguments = NSProcessInfo.processInfo.arguments;
     std::vector<std::string> argumentStorage;
@@ -608,16 +834,23 @@ private:
         @"Contents/Frameworks/Tungsten Helper.app/Contents/MacOS/Tungsten Helper"];
     CefString(&settings.browser_subprocess_path).FromString(ToString(helperPath));
 
+    CFTimeInterval cefInitializeStart = TungstenPerformanceLogNow();
     if (!CefInitialize(mainArgs, settings, _cefApp.get(), nullptr)) {
         NSLog(@"Unable to initialize Chromium Embedded Framework.");
+        TungstenPerformanceLogDuration(@"cef.cefInitialize.failed", cefInitializeStart, nil);
+        TungstenPerformanceLogDuration(@"cef.initialize.failed", initializeStart, @{
+            @"reason": @"cef_initialize"
+        });
         _cefApp = nullptr;
         _libraryLoader.reset();
         return;
     }
+    TungstenPerformanceLogDuration(@"cef.cefInitialize.end", cefInitializeStart, nil);
 
     _initialized = YES;
     InstallCefRunLoopObserver();
     ScheduleCefMessageLoopWork(0);
+    TungstenPerformanceLogDuration(@"cef.initialize.end", initializeStart, nil);
 }
 
 - (void)shutdownCEF {
@@ -640,9 +873,14 @@ private:
 @implementation TungstenBrowserController {
     NSString *_initialURL;
     NSString *_pendingURL;
+    NSString *_performanceID;
     BOOL _isIncognito;
     BOOL _didCreateBrowser;
     BOOL _isClosingBrowser;
+    BOOL _didLogCreateWaitForWindow;
+    BOOL _didLogCreateWaitForBounds;
+    BOOL _didLogLayoutWaitingForBrowser;
+    NSUInteger _layoutPassCount;
     CGFloat _cornerRadius;
     CefRefPtr<TungstenBrowserClient> _client;
     CefRefPtr<CefRequestContext> _requestContext;
@@ -664,8 +902,14 @@ private:
 
     _initialURL = [initialURL copy];
     _pendingURL = [initialURL copy];
+    _performanceID = ShortPerformanceID();
     _isIncognito = incognito;
     _pageContentCompletions = [NSMutableDictionary dictionary];
+
+    NSMutableDictionary<NSString *, id> *metadata = PerformanceURLMetadata(_initialURL);
+    metadata[@"controller"] = _performanceID;
+    metadata[@"is_incognito"] = @(incognito);
+    TungstenPerformanceLogEvent(@"cef.controller.init", metadata);
 
     TungstenBrowserContainerView *containerView = [[TungstenBrowserContainerView alloc] initWithFrame:NSZeroRect];
     containerView.controller = self;
@@ -674,6 +918,13 @@ private:
     _client = new TungstenBrowserClient(self);
 
     return self;
+}
+
+- (void)logPerformanceEvent:(NSString *)event metadata:(NSDictionary<NSString *, id> *)metadata {
+    NSMutableDictionary<NSString *, id> *combined =
+        metadata ? [metadata mutableCopy] : [NSMutableDictionary dictionary];
+    combined[@"controller"] = _performanceID ?: @"nil";
+    TungstenPerformanceLogEvent(event, combined);
 }
 
 - (CGFloat)cornerRadius {
@@ -707,26 +958,40 @@ private:
 
 - (void)navigateToURLString:(NSString *)urlString {
     if (_isClosingBrowser) {
+        [self logPerformanceEvent:@"cef.navigate.ignored" metadata:@{
+            @"reason": @"closing"
+        }];
         return;
     }
 
     _pendingURL = [urlString copy];
 
     CefRefPtr<CefBrowser> browser = _client ? _client->browser() : nullptr;
+    NSMutableDictionary<NSString *, id> *metadata = PerformanceURLMetadata(urlString);
+    metadata[@"has_browser"] = @(browser != nullptr);
+    [self logPerformanceEvent:@"cef.navigate.request" metadata:metadata];
+
     if (browser) {
         std::string targetURL = ToString(urlString);
         CefRefPtr<CefFrame> mainFrame = browser->GetMainFrame();
         if (!mainFrame) {
+            [self logPerformanceEvent:@"cef.navigate.ignored" metadata:@{
+                @"reason": @"missing_main_frame"
+            }];
             return;
         }
 
         if (mainFrame->GetURL().ToString() == targetURL) {
+            [self logPerformanceEvent:@"cef.navigate.ignored" metadata:@{
+                @"reason": @"same_url"
+            }];
             return;
         }
 
         browser->StopLoad();
         mainFrame->LoadURL(targetURL);
     } else {
+        [self logPerformanceEvent:@"cef.navigate.createBrowser" metadata:metadata];
         [self createBrowserIfNeeded];
     }
 }
@@ -875,14 +1140,24 @@ private:
         return;
     }
 
+    CFTimeInterval layoutStart = TungstenPerformanceLogNow();
+    _layoutPassCount += 1;
     [self createBrowserIfNeeded];
 
     CefRefPtr<CefBrowser> browser = _client ? _client->browser() : nullptr;
     if (!browser) {
+        if (!_didLogLayoutWaitingForBrowser) {
+            _didLogLayoutWaitingForBrowser = YES;
+            [self logPerformanceEvent:@"cef.browserView.waitingForBrowser" metadata:@{
+                @"layout_pass": @(_layoutPassCount)
+            }];
+        }
         return;
     }
+    _didLogLayoutWaitingForBrowser = NO;
 
     NSView *browserView = (__bridge NSView *)browser->GetHost()->GetWindowHandle();
+    BOOL didAttachBrowserView = browserView.superview != self.view;
     if (browserView.superview != self.view) {
         [browserView removeFromSuperview];
         [self.view addSubview:browserView];
@@ -893,28 +1168,84 @@ private:
     // subtree inherits the vibrant window appearance, AppKit recomposites web
     // content when the window becomes inactive and the page looks faded. Use a
     // plain Aqua/DarkAqua appearance and opaque layers for the Chromium island.
+    CFTimeInterval compositingStart = TungstenPerformanceLogNow();
     ApplyCEFSubviewCompositing(
         browserView,
         NonVibrantBrowserAppearanceForWindow(self.view.window)
     );
+    CFTimeInterval compositingDuration = TungstenPerformanceLogNow() - compositingStart;
 
     browserView.frame = self.view.bounds;
     browserView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+
+    CFTimeInterval layoutDuration = TungstenPerformanceLogNow() - layoutStart;
+    if (didAttachBrowserView || layoutDuration > 0.010) {
+        [self logPerformanceEvent:@"cef.browserView.layout" metadata:@{
+            @"attached": @(didAttachBrowserView),
+            @"browser_id": @(browser->GetIdentifier()),
+            @"compositing_ms": @(compositingDuration * 1000),
+            @"duration_ms": @(layoutDuration * 1000),
+            @"layout_pass": @(_layoutPassCount)
+        }];
+    }
 }
 
 - (void)createBrowserIfNeeded {
-    if (_isClosingBrowser || _didCreateBrowser || self.view.window == nil ||
-        [[TungstenCEFApp shared] isTerminating]) {
+    if (_isClosingBrowser) {
+        [self logPerformanceEvent:@"cef.browser.create.skipped" metadata:@{
+            @"reason": @"closing"
+        }];
+        return;
+    }
+
+    if (_didCreateBrowser) {
+        return;
+    }
+
+    if (self.view.window == nil) {
+        if (!_didLogCreateWaitForWindow) {
+            _didLogCreateWaitForWindow = YES;
+            [self logPerformanceEvent:@"cef.browser.create.wait" metadata:@{
+                @"reason": @"no_window"
+            }];
+        }
+        return;
+    }
+
+    if ([[TungstenCEFApp shared] isTerminating]) {
+        [self logPerformanceEvent:@"cef.browser.create.skipped" metadata:@{
+            @"reason": @"cef_terminating"
+        }];
         return;
     }
 
     if (self.view.bounds.size.width < 1 || self.view.bounds.size.height < 1) {
+        if (!_didLogCreateWaitForBounds) {
+            _didLogCreateWaitForBounds = YES;
+            [self logPerformanceEvent:@"cef.browser.create.wait" metadata:@{
+                @"reason": @"empty_bounds",
+                @"view_height": @(self.view.bounds.size.height),
+                @"view_width": @(self.view.bounds.size.width)
+            }];
+        }
         return;
     }
+    _didLogCreateWaitForWindow = NO;
+    _didLogCreateWaitForBounds = NO;
+
+    CFTimeInterval createStart = TungstenPerformanceLogNow();
+    NSMutableDictionary<NSString *, id> *metadata = PerformanceURLMetadata(_pendingURL ?: _initialURL);
+    metadata[@"cef_initialized_before"] = @([[TungstenCEFApp shared] isInitialized]);
+    metadata[@"view_height"] = @(self.view.bounds.size.height);
+    metadata[@"view_width"] = @(self.view.bounds.size.width);
+    [self logPerformanceEvent:@"cef.browser.create.start" metadata:metadata];
 
     if (![[TungstenCEFApp shared] isInitialized]) {
         [[TungstenCEFApp shared] initializeCEF];
         if (![[TungstenCEFApp shared] isInitialized]) {
+            [self logPerformanceEvent:@"cef.browser.create.failed" metadata:@{
+                @"reason": @"cef_initialize_failed"
+            }];
             return;
         }
     }
@@ -946,7 +1277,11 @@ private:
     if (!CefBrowserHost::CreateBrowser(windowInfo, _client.get(), url, browserSettings, nullptr, requestContext)) {
         NSLog(@"Unable to create CEF browser for URL %@", _pendingURL ?: _initialURL);
         _didCreateBrowser = NO;
+        TungstenPerformanceLogDuration(@"cef.browser.create.requestFailed", createStart, metadata);
+        return;
     }
+
+    TungstenPerformanceLogDuration(@"cef.browser.create.requested", createStart, metadata);
 }
 
 - (void)closeBrowser {
@@ -966,6 +1301,10 @@ private:
     self.delegate = nil;
 
     CefRefPtr<CefBrowser> browser = _client ? _client->browser() : nullptr;
+    [self logPerformanceEvent:@"cef.browser.close.request" metadata:@{
+        @"force": @(forceClose),
+        @"has_browser": @(browser != nullptr)
+    }];
     if (!browser) {
         _didCreateBrowser = NO;
         void (^handler)(void) = _browserDidCloseHandler;
@@ -985,6 +1324,7 @@ private:
 
 - (void)cefBrowserDidClose {
     _didCreateBrowser = NO;
+    [self logPerformanceEvent:@"cef.browser.didClose" metadata:nil];
 
     void (^handler)(void) = _browserDidCloseHandler;
     _browserDidCloseHandler = nil;

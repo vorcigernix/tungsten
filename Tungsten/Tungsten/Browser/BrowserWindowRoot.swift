@@ -10,7 +10,7 @@ struct BrowserWindowRoot: View {
     private let appPreferences: AppPreferences
     private let windowSessionCoordinator: BrowserWindowSessionCoordinator
     @State private var browserModel: BrowserModel?
-    @State private var threadStore: BrowserThreadStore?
+    @State private var tabStore: BrowserTabStore?
 
     init(
         kind: BrowserWindowKind,
@@ -45,7 +45,7 @@ struct BrowserWindowRoot: View {
                     .background(
                         WindowCloseObserver { finishClose in
                             browserModel.closeBrowsersForWindowClose {
-                                releaseThreadStoreIfNeeded()
+                                releaseTabStoreIfNeeded()
                                 finishClose()
                             }
                         }
@@ -67,24 +67,30 @@ struct BrowserWindowRoot: View {
             return
         }
 
-        let threadStore = windowSessionCoordinator.makeThreadStore(kind: kind)
-        self.threadStore = threadStore
+        let prewarmStart = BrowserPerformanceLog.now()
+        TungstenCEFApp.shared().prewarmCEF()
+        BrowserPerformanceLog.duration("browserWindow.prewarmCEF.end", from: prewarmStart, metadata: [
+            "kind": kind.sceneID
+        ])
+
+        let tabStore = windowSessionCoordinator.makeTabStore(kind: kind)
+        self.tabStore = tabStore
 
         browserModel = BrowserModel(
             kind: kind,
             historyStore: historyStore,
             appPreferences: appPreferences,
-            threadStore: threadStore
+            tabStore: tabStore
         )
     }
 
-    private func releaseThreadStoreIfNeeded() {
-        guard let threadStore else {
+    private func releaseTabStoreIfNeeded() {
+        guard let tabStore else {
             return
         }
 
-        windowSessionCoordinator.releaseThreadStore(threadStore, kind: kind)
-        self.threadStore = nil
+        windowSessionCoordinator.releaseTabStore(tabStore, kind: kind)
+        self.tabStore = nil
     }
 }
 

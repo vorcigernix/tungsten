@@ -27,6 +27,7 @@ struct TungstenApp: App {
             )
         }
         .defaultSize(width: 1440, height: 900)
+        .windowStyle(.hiddenTitleBar)
 
         WindowGroup(BrowserWindowKind.incognito.title, id: BrowserWindowKind.incognito.sceneID) {
             BrowserWindowRoot(
@@ -38,6 +39,7 @@ struct TungstenApp: App {
             )
         }
         .defaultSize(width: 1440, height: 900)
+        .windowStyle(.hiddenTitleBar)
 
         Settings {
             SettingsRoot(
@@ -51,6 +53,9 @@ struct TungstenApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         installUncaughtExceptionLogger()
+        DispatchQueue.main.async {
+            TungstenCEFApp.shared().prewarmCEF()
+        }
 
         guard
             let iconURL = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),

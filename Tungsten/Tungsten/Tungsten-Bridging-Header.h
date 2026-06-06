@@ -7,3 +7,4 @@ Swift bridge imports for the native CEF wrapper.
 
 #import "CEF/TungstenCEFApp.h"
 #import "CEF/TungstenBrowserController.h"
+#import "Performance/TungstenPerformanceLog.h"

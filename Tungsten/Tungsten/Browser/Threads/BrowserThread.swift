@@ -54,6 +54,12 @@ struct BrowserThread: Identifiable, Codable, Equatable {
         return turns.last { $0.kind == .page }
     }
 
+    var sanitizedForPersistence: BrowserThread {
+        var thread = self
+        thread.turns = turns.map(\.sanitizedForPersistence)
+        return thread
+    }
+
     @discardableResult
     mutating func appendQuestion(
         _ text: String,
@@ -135,6 +141,19 @@ struct BrowserThread: Identifiable, Codable, Equatable {
             turns[index].faviconURLString = faviconURLString
         }
 
+        self.updatedAt = updatedAt
+    }
+
+    mutating func updateTurnText(
+        turnID: UUID,
+        text: String,
+        updatedAt: Date = Date()
+    ) {
+        guard let index = turns.firstIndex(where: { $0.id == turnID }) else {
+            return
+        }
+
+        turns[index].text = text
         self.updatedAt = updatedAt
     }
 

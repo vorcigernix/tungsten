@@ -8,7 +8,7 @@ Transforms omnibox input into browser navigation targets.
 import Foundation
 
 enum AddressResolver {
-    static func navigationTarget(for input: String, searchEngine: SearchEngine = .googleAIMode) -> String? {
+    static func navigationTarget(for input: String, searchEngine: SearchEngine = .duckDuckGo) -> String? {
         if let target = directNavigationTarget(for: input) {
             return target
         }

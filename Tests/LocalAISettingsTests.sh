@@ -4,6 +4,8 @@ set -euo pipefail
 preferences_file="Tungsten/Tungsten/AppPreferences.swift"
 provider_file="Tungsten/Tungsten/Browser/AI/LocalAIProvider.swift"
 settings_file="Tungsten/Tungsten/Settings/GeneralSettingsView.swift"
+split_view_file="Tungsten/Tungsten/Browser/BrowserSplitView.swift"
+gemma_file="Tungsten/Tungsten/Browser/AI/GemmaLocalAI.swift"
 bridge_file="Tungsten/Tungsten/CEF/TungstenCEFBridge.mm"
 cef_app_header="Tungsten/Tungsten/CEF/TungstenCEFApp.h"
 
@@ -18,30 +20,44 @@ require_pattern() {
     fi
 }
 
-require_pattern "$provider_file" "enum LocalAIProvider" "LocalAIProvider model"
-require_pattern "$provider_file" "case google" "Google Gemini Nano page AI option"
-require_pattern "$provider_file" "case apple" "Apple Local AI option"
-require_pattern "$provider_file" "case disabled" "Disabled Local AI option"
-require_pattern "$preferences_file" "TungstenLocalAIProviderDefaultsKey" "Local AI persistence key (shared via bridging header)"
-require_pattern "$preferences_file" "self\\.localAIProvider = \\.apple" "Apple Local AI default"
-require_pattern "$settings_file" "Picker\\(\"AI behavior\"" "AI behavior settings picker"
-require_pattern "$settings_file" "Google Gemini Nano enables Chromium page AI flags" "Google Gemini Nano page AI explanation"
+require_pattern "$provider_file" "enum LocalAIProvider" "dormant LocalAIProvider model"
+require_pattern "$provider_file" "enum SidebarAssistantProvider" "dormant sidebar assistant provider model"
+require_pattern "$preferences_file" "TungstenLocalAIProviderDefaultsKey" "Local AI persistence key remains migratable"
+require_pattern "$preferences_file" "assistantProvider" "assistant provider preference remains for dormant source compatibility"
+require_pattern "$preferences_file" "self\\.assistantProvider = \\.disabled" "assistant provider disabled default"
+require_pattern "$settings_file" "Picker\\(\"Tab layout\"" "visible tab layout settings picker"
+require_pattern "$settings_file" "Picker\\(\"Search engine\"" "visible search engine settings picker"
+require_pattern "$gemma_file" "liblitert-lm\\.dylib" "Gemma LiteRT local runtime source remains available but dormant"
 
 require_pattern "$cef_app_header" "FOUNDATION_EXPORT NSString \\*const TungstenLocalAIProviderDefaultsKey" "Local AI defaults key declaration"
 require_pattern "$bridge_file" "TungstenLocalAIProviderDefaultsKey = @\"Tungsten.LocalAIProvider.v1\"" "Local AI defaults key definition"
 
-require_pattern "$bridge_file" "AIPromptAPI" "Gemini Nano prompt feature"
-require_pattern "$bridge_file" "AIPromptAPIMultimodalInput" "Gemini Nano multimodal feature"
-require_pattern "$bridge_file" "OptimizationGuideOnDeviceModel" "Optimization Guide local model feature"
-require_pattern "$bridge_file" "OnDeviceModelPerformanceParams" "Optimization Guide on-device model flag parameters"
-require_pattern "$bridge_file" "TungstenLocalAIProviderDefaultsKey" "CEF Local AI preference lookup"
+if rg -q "Picker\\(\"Assistant\"|Gemma LiteRT Local|Codex via ACP|Claude via ACP|Command|Arguments|download about 2\\.6 GB|app-managed model files|LiteRT runtime" "$settings_file"; then
+    echo "General settings must not expose AI providers or local model download prompts by default." >&2
+    exit 1
+fi
+
+if rg -q "GemmaLocalAIAvailabilityBar|Download Gemma|Downloads about 2\\.6 GB|WindowResponseAura|ChatInput" "$split_view_file"; then
+    echo "Browser chrome must not surface local AI setup or sidebar assistant UI by default." >&2
+    exit 1
+fi
+
+if rg -q "AIPromptAPI|AIPromptAPIMultimodalInput|OptimizationGuideOnDeviceModel|OnDeviceModelPerformanceParams|LanguageModel\\.availability|LanguageModel\\.create" "$bridge_file"; then
+    echo "CEF bridge must not depend on CEF Prompt API or Gemini Nano feature flags." >&2
+    exit 1
+fi
+
+if rg -q "llama\\.cpp|llama-cli|GGUF" "$settings_file"; then
+    echo "Default settings must not mention the removed llama.cpp/GGUF path." >&2
+    exit 1
+fi
 
 if ! awk '
     /windowInfo\.runtime_style = CEF_RUNTIME_STYLE_ALLOY/ { found_alloy = 1 }
     /windowInfo\.runtime_style = CEF_RUNTIME_STYLE_CHROME/ { found_chrome = 1 }
     END { exit !(found_alloy && !found_chrome) }
 ' "$bridge_file"; then
-    echo "CEF browser windows with parent NSViews must stay Alloy style; Chromium local AI is controlled by Tungsten settings instead of chrome://flags." >&2
+    echo "CEF browser windows with parent NSViews must stay Alloy style." >&2
     exit 1
 fi
 

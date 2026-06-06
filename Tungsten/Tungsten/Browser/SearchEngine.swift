@@ -1,25 +1,25 @@
 import Foundation
 
 enum SearchEngine: String, CaseIterable, Codable, Identifiable {
-    case googleAIMode
-    case perplexity
-    case duckAI
+    case duckDuckGo
+    case google
+    case bing
 
     var id: String { rawValue }
 
     var displayName: String {
         switch self {
-        case .googleAIMode: return "Google AI Mode"
-        case .perplexity:   return "Perplexity"
-        case .duckAI:       return "Duck.ai"
+        case .duckDuckGo: return "DuckDuckGo"
+        case .google:     return "Google"
+        case .bing:       return "Bing"
         }
     }
 
     var homepageURL: String {
         switch self {
-        case .googleAIMode: return "https://www.google.com/?udm=50"
-        case .perplexity:   return "https://www.perplexity.ai"
-        case .duckAI:       return "https://duck.ai"
+        case .duckDuckGo: return "https://duckduckgo.com"
+        case .google:     return "https://www.google.com"
+        case .bing:       return "https://www.bing.com"
         }
     }
 
@@ -28,12 +28,12 @@ enum SearchEngine: String, CaseIterable, Codable, Identifiable {
         let encoded = query.addingPercentEncoding(withAllowedCharacters: allowed) ?? query
 
         switch self {
-        case .googleAIMode:
-            return "https://www.google.com/search?q=\(encoded)&udm=50"
-        case .perplexity:
-            return "https://www.perplexity.ai/search?q=\(encoded)"
-        case .duckAI:
-            return "https://duck.ai/?q=\(encoded)"
+        case .duckDuckGo:
+            return "https://duckduckgo.com/?q=\(encoded)"
+        case .google:
+            return "https://www.google.com/search?q=\(encoded)"
+        case .bing:
+            return "https://www.bing.com/search?q=\(encoded)"
         }
     }
 }

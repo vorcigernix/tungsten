@@ -13,7 +13,7 @@ struct ShortcutSettingsView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Shortcuts")
                     .font(.title2.weight(.semibold))
-                Text("Remap supported Arc-style shortcuts. Coming soon actions are listed for visibility only.")
+                Text("Remap supported browser shortcuts.")
                     .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 24)

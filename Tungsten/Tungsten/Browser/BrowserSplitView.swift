@@ -2,9 +2,7 @@
 See the LICENSE.txt file for this sample's licensing information.
 
 Abstract:
-The browser shell. Standard macOS NavigationSplitView with a leading
-sidebar that holds the tab list and the chat-style input, and a detail
-column that hosts the active browser surface.
+Safari-style browser shell: one Liquid Glass chrome bar over the page.
 */
 
 import AppKit
@@ -13,30 +11,28 @@ import SwiftUI
 struct BrowserSplitView: View {
     @Environment(BrowserModel.self) private var browserModel
     @Environment(AppPreferences.self) private var appPreferences
-    // The transparent window + window-level visual-effect material force the
-    // whole window into alpha-blended compositing before CEF can present its
-    // first frame, which made cold launch feel laggy. Hold those off for a
-    // short beat so the opaque content paints first, then enable the frosting.
-    @State private var compositingEnabled = false
 
     var body: some View {
         @Bindable var browserModel = browserModel
-        let pageSession = browserModel.activePageSession
-        let sidebarVisibility = Binding<NavigationSplitViewVisibility> {
-            browserModel.isSidebarVisible ? .all : .detailOnly
-        } set: { visibility in
-            browserModel.isSidebarVisible = visibility != .detailOnly
-        }
+        let chromeHeight = ChromeMetrics.totalHeight(for: appPreferences.tabLayout)
 
-        NavigationSplitView(columnVisibility: sidebarVisibility) {
-            BrowserSidebar()
-                .navigationSplitViewColumnWidth(min: 320, ideal: 400, max: 560)
-        } detail: {
-            if let pageSession {
-                ZStack(alignment: .topTrailing) {
-                    BrowserDetailView(pageSession: pageSession)
+        ZStack(alignment: .top) {
+            if let pageSession = browserModel.activePageSession {
+                BrowserDetailView(pageSession: pageSession, topInset: chromeHeight)
+            } else {
+                StartPageView(
+                    isPrivate: browserModel.kind.isIncognito,
+                    historyStore: browserModel.historyStore,
+                    topInset: chromeHeight,
+                    onOpen: { browserModel.openURLString($0) }
+                )
+            }
 
-                    if browserModel.isFindBarVisible {
+            if browserModel.isFindBarVisible {
+                VStack {
+                    HStack {
+                        Spacer()
+
                         FindBar(
                             text: $browserModel.findText,
                             focusRequestID: browserModel.findFocusRequestID,
@@ -45,31 +41,22 @@ struct BrowserSplitView: View {
                             onNext: { browserModel.findNextInPage() },
                             onClose: { browserModel.closeFindInPage() }
                         )
-                        .padding(.top, 14)
-                        .padding(.trailing, 18)
-                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .padding(.trailing, 16)
                     }
+                    .padding(.top, chromeHeight + 8)
+
+                    Spacer()
                 }
-                .animation(.smooth(duration: 0.16), value: browserModel.isFindBarVisible)
-            } else {
-                ContentUnavailableView("No Page", systemImage: "text.bubble")
+                .transition(.move(edge: .top).combined(with: .opacity))
             }
+
+            BrowserChrome(tabLayout: appPreferences.tabLayout)
         }
-        // Frosty glass fills the window-level gutters around the rounded
-        // sidebar panel and around the inset page. NSVisualEffectView
-        // (which Material uses under the hood) needs framebuffer content
-        // behind the window to blur, so WindowTransparencyEnabler keeps the
-        // host NSWindow non-opaque — otherwise the material would just blur
-        // the window's own backing color and look flat.
-        //
-        // When the user disables transparency we paint a solid warm color
-        // behind everything and skip the window-transparency dance entirely.
-        .containerBackground(windowContainerStyle, for: .window)
-        .background(WindowTransparencyEnabler(enabled: appPreferences.transparencyEnabled && compositingEnabled))
-        .task {
-            try? await Task.sleep(nanoseconds: 350_000_000)
-            compositingEnabled = true
-        }
+        .ignoresSafeArea(.container, edges: [.top, .bottom])
+        .animation(.smooth(duration: 0.16), value: browserModel.isFindBarVisible)
+        .containerBackground(.clear, for: .window)
+        .background(SafariWindowChromeConfigurator(transparencyEnabled: appPreferences.transparencyEnabled))
+        .toolbar(removing: .title)
         .sheet(isPresented: $browserModel.isHistoryVisible) {
             HistoryView(historyStore: browserModel.historyStore) { entry in
                 browserModel.openHistoryEntry(entry)
@@ -77,290 +64,265 @@ struct BrowserSplitView: View {
             .frame(minWidth: 640, minHeight: 520)
         }
     }
+}
 
-    private var windowContainerStyle: AnyShapeStyle {
-        guard appPreferences.transparencyEnabled else {
-            return AnyShapeStyle(Color(nsColor: AppPreferences.opaqueWindowBackgroundColor))
+// MARK: - Chrome
+
+/// One continuous Liquid Glass bar that hosts the toolbar (and, in the
+/// `.separate` layout, the tab strip). A single glass surface — controls live
+/// *on* it as plain views, so there is no glass-on-glass.
+private struct BrowserChrome: View {
+    let tabLayout: BrowserTabLayout
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ChromeBar(tabLayout: tabLayout)
+
+            if tabLayout == .separate {
+                SeparateTabBar()
+            }
         }
-
-        return compositingEnabled
-            ? AnyShapeStyle(.regularMaterial)
-            : AnyShapeStyle(.windowBackground)
+        .frame(height: ChromeMetrics.totalHeight(for: tabLayout), alignment: .top)
+        .glassEffect(.regular, in: Rectangle())
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(Color(nsColor: .separatorColor))
+                .frame(height: 1)
+        }
+        .ignoresSafeArea(edges: .top)
     }
 }
 
-/// Marks the host NSWindow as transparent so SwiftUI's `.containerBackground(.clear, …)`
-/// actually shows through to the desktop. The CEF NSView in the detail column
-/// stays opaque (it draws the page), so only areas SwiftUI leaves clear become
-/// transparent — i.e. the strip around the sidebar's rounded glass panel.
-private struct WindowTransparencyEnabler: NSViewRepresentable {
-    let enabled: Bool
+private struct ChromeBar: View {
+    let tabLayout: BrowserTabLayout
 
-    final class Coordinator {
-        weak var window: NSWindow?
-        var transparent = false
-        var animationsDisabled = false
-    }
+    var body: some View {
+        HStack(spacing: 8) {
+            Color.clear
+                .frame(width: ChromeMetrics.trafficLightGutter)
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator()
+            SidebarHistoryMenu()
+            NavigationControls()
+
+            Spacer(minLength: 16)
+
+            if tabLayout == .compact {
+                CompactTabStrip()
+                    .frame(minWidth: 360, idealWidth: 620, maxWidth: 820)
+            } else {
+                AddressBarField()
+                    .frame(minWidth: 320, idealWidth: 560, maxWidth: 720)
+            }
+
+            Spacer(minLength: 16)
+
+            ToolbarActions()
+            PrivateWindowIndicator()
+        }
+        .padding(.horizontal, 12)
+        .frame(height: ChromeMetrics.barHeight)
     }
+}
+
+private struct SafariWindowChromeConfigurator: NSViewRepresentable {
+    let transparencyEnabled: Bool
 
     func makeNSView(context: Context) -> NSView {
-        NSView()
+        let view = NSView()
+        DispatchQueue.main.async {
+            configure(window: view.window)
+        }
+        return view
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
-        let coordinator = context.coordinator
-        let shouldBeTransparent = enabled
         DispatchQueue.main.async {
-            guard let window = nsView.window else { return }
-            coordinator.window = window
-
-            // Disable AppKit's window transform animations (close / zoom /
-            // miniaturize / order). On macOS 26 + non-opaque windows + CEF,
-            // those animations have torn-down captured references and crash
-            // inside `-[_NSWindowTransformAnimation dealloc]` during
-            // `CA::Transaction::commit`. Skipping the animations sidesteps
-            // the entire class of bug; new browser windows just appear, which
-            // matches what most browsers do anyway.
-            if coordinator.animationsDisabled == false {
-                coordinator.animationsDisabled = true
-                window.animationBehavior = .none
-            }
-
-            guard coordinator.transparent != shouldBeTransparent else { return }
-            coordinator.transparent = shouldBeTransparent
-
-            if shouldBeTransparent {
-                window.isOpaque = false
-                window.backgroundColor = .clear
-            } else {
-                window.isOpaque = true
-                window.backgroundColor = .windowBackgroundColor
-            }
-            window.invalidateShadow()
+            configure(window: nsView.window)
         }
+    }
+
+    private func configure(window: NSWindow?) {
+        guard let window else {
+            return
+        }
+
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
+        window.titlebarSeparatorStyle = .none
+        window.styleMask.insert(.fullSizeContentView)
+        window.isMovableByWindowBackground = true
+
+        // Liquid Glass is meant to float over content and adapt. Honor the
+        // user's "Translucent window" preference, but always fall back to a
+        // solid adaptive backing when the system asks to reduce transparency.
+        let reduceTransparency = NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
+        let translucent = transparencyEnabled && reduceTransparency == false
+
+        window.isOpaque = false
+        window.backgroundColor = translucent ? .clear : AppPreferences.opaqueWindowBackgroundColor
     }
 }
 
-private struct BrowserSidebar: View {
-    @Environment(BrowserModel.self) private var browserModel
+// MARK: - Controls
+
+/// Plain icon button used throughout the chrome. Foreground tracks state with
+/// semantic colors; hover paints a subtle system fill (no nested glass).
+private struct ChromeIconButton: View {
+    let title: String
+    let systemImage: String
+    var isEnabled: Bool = true
+    let action: () -> Void
+
+    @State private var isHovering = false
 
     var body: some View {
-        @Bindable var browserModel = browserModel
-
-        VStack(spacing: 0) {
-            ThreadHeader(
-                threads: browserModel.threads,
-                selectedThreadID: $browserModel.selectedThreadID,
-                onNewThread: { browserModel.createThread() },
-                onCloseThread: { browserModel.closeSelectedThread() }
-            )
-
-            Divider()
-
-            ThreadTimeline(
-                thread: browserModel.selectedThread,
-                activePageTurnID: browserModel.selectedThread?.activePageTurnID,
-                isGeneratingResponse: browserModel.isSelectedThreadGeneratingResponse,
-                onActivatePage: { browserModel.activatePageTurnInSelectedThread($0) }
-            )
-
-            Divider()
-
-            ChatInput(
-                text: $browserModel.addressText,
-                focusRequestID: browserModel.addressFocusRequestID,
-                onSubmit: { browserModel.submitAddressBar() }
-            )
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: ChromeMetrics.iconSize, weight: .medium))
+                .frame(width: 30, height: ChromeMetrics.controlHeight)
+                .contentShape(RoundedRectangle(cornerRadius: ChromeMetrics.controlCornerRadius, style: .continuous))
         }
-        .overlay {
-            SidebarResponseAura(isActive: browserModel.isSelectedThreadGeneratingResponse)
+        .buttonStyle(.plain)
+        .foregroundStyle(foreground)
+        .background {
+            if isHovering && isEnabled {
+                RoundedRectangle(cornerRadius: ChromeMetrics.controlCornerRadius, style: .continuous)
+                    .fill(.quaternary)
+            }
         }
+        .disabled(isEnabled == false)
+        .onHover { isHovering = $0 }
+        .help(title)
+    }
+
+    private var foreground: AnyShapeStyle {
+        if isEnabled == false {
+            return AnyShapeStyle(.tertiary)
+        }
+        return AnyShapeStyle(isHovering ? .primary : .secondary)
     }
 }
 
-private struct SidebarResponseAura: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    let isActive: Bool
-
-    private static let rotationPeriodSeconds: Double = 6
-    private static let strokeColors: [Color] = [
-        .red, .orange, .yellow, .green, .cyan, .blue, .purple, .red
-    ]
-    private static let cornerRadius: CGFloat = 14
+private struct SidebarHistoryMenu: View {
+    @Environment(BrowserModel.self) private var browserModel
+    @State private var isHovering = false
 
     var body: some View {
-        Group {
-            if isActive {
-                auraGlow
-            } else {
-                Color.clear
+        Menu {
+            Button("Show History", systemImage: "clock.arrow.circlepath") {
+                browserModel.showHistory()
+            }
+            Button("Copy URL", systemImage: "doc.on.doc") {
+                browserModel.copyActivePageURL()
+            }
+        } label: {
+            Image(systemName: "sidebar.left")
+                .font(.system(size: ChromeMetrics.iconSize, weight: .medium))
+                .frame(width: 30, height: ChromeMetrics.controlHeight)
+                .contentShape(RoundedRectangle(cornerRadius: ChromeMetrics.controlCornerRadius, style: .continuous))
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .foregroundStyle(isHovering ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+        .background {
+            if isHovering {
+                RoundedRectangle(cornerRadius: ChromeMetrics.controlCornerRadius, style: .continuous)
+                    .fill(.quaternary)
             }
         }
-        .allowsHitTesting(false)
-        .animation(.smooth(duration: 0.3), value: isActive)
-    }
-
-    @ViewBuilder
-    private var auraGlow: some View {
-        if reduceMotion {
-            glowStack(angleDegrees: 0)
-        } else {
-            TimelineView(.animation) { context in
-                let elapsed = context.date.timeIntervalSinceReferenceDate
-                let phase = elapsed
-                    .truncatingRemainder(dividingBy: Self.rotationPeriodSeconds)
-                let angle = phase / Self.rotationPeriodSeconds * 360
-                glowStack(angleDegrees: angle)
-            }
-        }
-    }
-
-    private func glowStack(angleDegrees: Double) -> some View {
-        let gradient = AngularGradient(
-            colors: Self.strokeColors,
-            center: .center,
-            angle: .degrees(angleDegrees)
-        )
-
-        return ZStack {
-            RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
-                .stroke(gradient, lineWidth: 22)
-                .blur(radius: 18)
-                .opacity(0.55)
-
-            RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
-                .stroke(gradient, lineWidth: 8)
-                .blur(radius: 5)
-                .opacity(0.75)
-
-            RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
-                .strokeBorder(gradient, lineWidth: 1.25)
-                .opacity(0.65)
-        }
-        .compositingGroup()
+        .onHover { isHovering = $0 }
+        .help("Sidebar and History")
     }
 }
 
-private struct ThreadHeader: View {
+private struct NavigationControls: View {
     @Environment(BrowserModel.self) private var browserModel
-
-    let threads: [BrowserThread]
-    @Binding var selectedThreadID: BrowserThread.ID?
-    let onNewThread: () -> Void
-    let onCloseThread: () -> Void
-    @State private var isThreadHistoryPresented = false
-
-    private var selectedThread: BrowserThread? {
-        guard let selectedThreadID else {
-            return nil
-        }
-
-        return threads.first { $0.id == selectedThreadID }
-    }
 
     var body: some View {
         let pageSession = browserModel.activePageSession
-        let isPageLoading = pageSession?.isLoading == true
 
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Button {
-                    isThreadHistoryPresented.toggle()
-                } label: {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .imageScale(.medium)
-                }
-                .help("Thread History")
-                .popover(isPresented: $isThreadHistoryPresented, arrowEdge: .bottom) {
-                    ThreadHistoryPopover(
-                        threads: threads,
-                        selectedThreadID: selectedThreadID,
-                        onSelectThread: { threadID in
-                            selectedThreadID = threadID
-                            isThreadHistoryPresented = false
-                        },
-                        onNewThread: {
-                            onNewThread()
-                            isThreadHistoryPresented = false
-                        }
-                    )
-                }
-
-                Button {
-                    isThreadHistoryPresented = true
-                } label: {
-                    HStack(spacing: 8) {
-                        FaviconIcon(
-                            faviconURLString: selectedThread?.activePageTurn?.faviconURLString,
-                            fallbackSystemName: "text.bubble",
-                            size: 18
-                        )
-
-                        Text(selectedThread?.displayTitle ?? "New Thread")
-                            .font(.headline)
-                            .lineLimit(1)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-
-                        Image(systemName: "chevron.down")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .frame(maxWidth: .infinity)
-                .help("Open Thread History")
-
-                Menu {
-                    Button(selectedThread?.isPinned == true ? "Unpin Thread" : "Pin Thread", systemImage: selectedThread?.isPinned == true ? "pin.slash" : "pin") {
-                        if let selectedThread {
-                            browserModel.toggleThreadPin(selectedThread)
-                        }
-                    }
-                    .disabled(selectedThread == nil)
-
-                    Button("Clear Unpinned Threads", systemImage: "xmark.circle") {
-                        browserModel.clearUnpinnedThreads()
-                    }
-                    .disabled(threads.allSatisfy(\.isPinned))
-                } label: {
-                    Label("Thread Actions", systemImage: "line.3.horizontal")
-                        .labelStyle(.iconOnly)
-                }
-                .help("Thread Actions")
-
-                Button("New Thread", systemImage: "plus") {
-                    onNewThread()
-                }
-                .labelStyle(.iconOnly)
-                .help("New Thread")
-
-                Button("Close Thread", systemImage: "xmark") {
-                    onCloseThread()
-                }
-                .labelStyle(.iconOnly)
-                .disabled(threads.isEmpty)
-                .help("Close Thread")
+        HStack(spacing: 2) {
+            ChromeIconButton(
+                title: "Back",
+                systemImage: "chevron.backward",
+                isEnabled: pageSession?.canGoBack == true
+            ) {
+                pageSession?.goBack()
             }
 
-            HStack(spacing: 8) {
-                Button("Back", systemImage: "chevron.backward") {
-                    pageSession?.goBack()
-                }
-                .labelStyle(.iconOnly)
-                .disabled(pageSession?.canGoBack != true)
-                .help("Back")
+            ChromeIconButton(
+                title: "Forward",
+                systemImage: "chevron.forward",
+                isEnabled: pageSession?.canGoForward == true
+            ) {
+                pageSession?.goForward()
+            }
+        }
+    }
+}
 
-                Button("Forward", systemImage: "chevron.forward") {
-                    pageSession?.goForward()
-                }
-                .labelStyle(.iconOnly)
-                .disabled(pageSession?.canGoForward != true)
-                .help("Forward")
+private struct ToolbarActions: View {
+    @Environment(BrowserModel.self) private var browserModel
 
+    var body: some View {
+        HStack(spacing: 2) {
+            ChromeIconButton(title: "Share", systemImage: "square.and.arrow.up") {
+                browserModel.copyActivePageURL()
+            }
+
+            ChromeIconButton(title: "New Tab", systemImage: "plus") {
+                browserModel.createTab()
+            }
+
+            ChromeIconButton(title: "Show History", systemImage: "clock.arrow.circlepath") {
+                browserModel.showHistory()
+            }
+        }
+    }
+}
+
+private struct PrivateWindowIndicator: View {
+    @Environment(BrowserModel.self) private var browserModel
+
+    var body: some View {
+        if browserModel.kind.isIncognito {
+            Image(systemName: "hand.raised.fill")
+                .font(.system(size: ChromeMetrics.iconSize, weight: .medium))
+                .foregroundStyle(.secondary)
+                .padding(.leading, 2)
+                .help("Private Window")
+        }
+    }
+}
+
+// MARK: - Address field
+
+private struct AddressBarField: View {
+    @Environment(BrowserModel.self) private var browserModel
+    var compact = false
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        @Bindable var browserModel = browserModel
+        let pageSession = browserModel.activePageSession
+        let isPageLoading = pageSession?.isLoading == true
+
+        HStack(spacing: 7) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: ChromeMetrics.smallIconSize, weight: .medium))
+                .foregroundStyle(.secondary)
+
+            TextField("Search or enter website name", text: $browserModel.addressText)
+                .textFieldStyle(.plain)
+                .font(.system(size: compact ? ChromeMetrics.compactFontSize : ChromeMetrics.bodyFontSize))
+                .foregroundStyle(.primary)
+                .focused($isFocused)
+                .onSubmit {
+                    browserModel.submitAddressBar()
+                }
+
+            if pageSession != nil {
                 Button {
                     if isPageLoading {
                         pageSession?.stopLoading()
@@ -369,440 +331,226 @@ private struct ThreadHeader: View {
                     }
                 } label: {
                     Image(systemName: isPageLoading ? "xmark" : "arrow.clockwise")
-                        .imageScale(.medium)
+                        .font(.system(size: ChromeMetrics.smallIconSize, weight: .semibold))
                         .frame(width: 16, height: 16)
+                        .contentShape(Rectangle())
                 }
-                .frame(width: 28, height: 24)
-                .disabled(pageSession == nil)
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
                 .accessibilityLabel(isPageLoading ? "Stop" : "Reload")
                 .help(isPageLoading ? "Stop" : "Reload")
-
-                Spacer(minLength: 8)
-
-                if browserModel.kind.isIncognito {
-                    Label("Private", systemImage: "shield")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .labelStyle(.iconOnly)
-                        .help("Private Window")
-                }
             }
         }
-        .buttonStyle(.borderless)
-        .controlSize(.regular)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 10)
+        .frame(height: ChromeMetrics.controlHeight)
+        .background {
+            Capsule(style: .continuous)
+                .fill(.quaternary)
+        }
+        .overlay {
+            Capsule(style: .continuous)
+                .strokeBorder(Color.accentColor, lineWidth: isFocused ? 2 : 0)
+        }
+        .onChange(of: browserModel.addressFocusRequestID) { _, _ in
+            isFocused = true
+        }
     }
 }
 
-private struct ThreadHistoryPopover: View {
-    let threads: [BrowserThread]
-    let selectedThreadID: BrowserThread.ID?
-    let onSelectThread: (BrowserThread.ID) -> Void
-    let onNewThread: () -> Void
+// MARK: - Tabs
 
-    @State private var searchText = ""
-
-    private var filteredThreads: [BrowserThread] {
-        let trimmedSearch = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let sortedThreads = threads.sorted { lhs, rhs in
-            lhs.updatedAt > rhs.updatedAt
-        }
-
-        guard trimmedSearch.isEmpty == false else {
-            return sortedThreads
-        }
-
-        return sortedThreads.filter { thread in
-            thread.matchesHistorySearch(trimmedSearch)
-        }
-    }
-
-    private var pinnedThreads: [BrowserThread] {
-        filteredThreads.filter(\.isPinned)
-    }
-
-    private var recentThreads: [BrowserThread] {
-        filteredThreads.filter { $0.isPinned == false }
-    }
+private struct CompactTabStrip: View {
+    @Environment(BrowserModel.self) private var browserModel
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundStyle(.secondary)
+        @Bindable var browserModel = browserModel
 
-                TextField("Search threads", text: $searchText)
-                    .textFieldStyle(.plain)
-
-                Button("New Thread", systemImage: "plus") {
-                    onNewThread()
-                }
-                .labelStyle(.iconOnly)
-                .help("New Thread")
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .strokeBorder(Color.secondary.opacity(0.14), lineWidth: 1)
-            }
-
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 12) {
-                    if pinnedThreads.isEmpty == false {
-                        ThreadHistorySection(
-                            title: "Pinned",
-                            threads: pinnedThreads,
-                            selectedThreadID: selectedThreadID,
-                            onSelectThread: onSelectThread
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 4) {
+                ForEach(browserModel.tabs) { tab in
+                    if tab.id == browserModel.selectedTabID {
+                        AddressTab(tab: tab)
+                            .frame(minWidth: 320, idealWidth: 460, maxWidth: 560)
+                    } else {
+                        TabButton(
+                            tab: tab,
+                            isSelected: false,
+                            onSelect: { browserModel.selectedTabID = tab.id }
                         )
-                    }
-
-                    if recentThreads.isEmpty == false {
-                        ThreadHistorySection(
-                            title: "Recent",
-                            threads: recentThreads,
-                            selectedThreadID: selectedThreadID,
-                            onSelectThread: onSelectThread
-                        )
-                    }
-
-                    if filteredThreads.isEmpty {
-                        ContentUnavailableView("No Threads", systemImage: "magnifyingglass")
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 28)
+                        .frame(width: tab.isPinned ? 40 : 160)
                     }
                 }
-                .padding(.vertical, 2)
             }
+            .padding(.vertical, 2)
         }
-        .buttonStyle(.borderless)
-        .controlSize(.regular)
-        .padding(12)
-        .frame(width: 360, height: 430)
     }
 }
 
-private struct ThreadHistorySection: View {
-    let title: String
-    let threads: [BrowserThread]
-    let selectedThreadID: BrowserThread.ID?
-    let onSelectThread: (BrowserThread.ID) -> Void
+private struct SeparateTabBar: View {
+    var body: some View {
+        TabStrip()
+            .padding(.horizontal, 12)
+            .frame(height: ChromeMetrics.tabBarHeight)
+    }
+}
+
+private struct TabStrip: View {
+    @Environment(BrowserModel.self) private var browserModel
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(title)
-                .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundStyle(.secondary)
-                .textCase(.uppercase)
-                .padding(.horizontal, 4)
+        @Bindable var browserModel = browserModel
 
-            ForEach(threads) { thread in
-                ThreadHistoryRow(
-                    thread: thread,
-                    isSelected: thread.id == selectedThreadID,
-                    onSelect: { onSelectThread(thread.id) }
-                )
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(browserModel.tabs) { tab in
+                    TabButton(
+                        tab: tab,
+                        isSelected: tab.id == browserModel.selectedTabID,
+                        onSelect: { browserModel.selectedTabID = tab.id }
+                    )
+                    .frame(width: tab.isPinned ? 44 : 220)
+                }
             }
+        }
+        .frame(height: ChromeMetrics.tabBarHeight)
+    }
+}
+
+private struct AddressTab: View {
+    let tab: BrowserTab
+
+    var body: some View {
+        HStack(spacing: 7) {
+            TabFavicon(tab: tab)
+            AddressBarField(compact: true)
+            CloseTabButton(tab: tab, isSelected: true)
+        }
+        .padding(.horizontal, 4)
+        .frame(height: ChromeMetrics.tabHeight)
+        .contextMenu {
+            TabContextMenu(tab: tab)
         }
     }
 }
 
-private struct ThreadHistoryRow: View {
-    let thread: BrowserThread
+private struct TabButton: View {
+    let tab: BrowserTab
     let isSelected: Bool
     let onSelect: () -> Void
 
-    private var pageSubtitle: String {
-        if let activePageTurn = thread.activePageTurn,
-           let urlString = activePageTurn.urlString,
-           urlString.isEmpty == false {
-            return urlString
-        }
-
-        return thread.updatedAt.formatted(date: .abbreviated, time: .shortened)
-    }
+    @State private var isHovering = false
 
     var body: some View {
-        Button(action: onSelect) {
-            HStack(spacing: 9) {
-                FaviconIcon(
-                    faviconURLString: thread.activePageTurn?.faviconURLString,
-                    fallbackSystemName: thread.isPinned ? "pin.fill" : "text.bubble",
-                    size: 20
-                )
+        HStack(spacing: 0) {
+            Button(action: onSelect) {
+                HStack(spacing: 6) {
+                    TabFavicon(tab: tab)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(thread.displayTitle)
-                        .font(.callout)
-                        .foregroundStyle(.primary)
-                        .lineLimit(1)
-
-                    Text(pageSubtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 7)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                isSelected ? Color.accentColor.opacity(0.14) : Color.clear,
-                in: RoundedRectangle(cornerRadius: 8, style: .continuous)
-            )
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-private struct ThreadTimeline: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    let thread: BrowserThread?
-    let activePageTurnID: BrowserTurn.ID?
-    let isGeneratingResponse: Bool
-    let onActivatePage: (BrowserTurn.ID) -> Void
-
-    private var threadID: BrowserThread.ID? {
-        thread?.id
-    }
-
-    private var turns: [BrowserTurn] {
-        thread?.turns ?? []
-    }
-
-    private var scrollTarget: AnyHashable? {
-        turns.last.map { AnyHashable($0.id) }
-    }
-
-    var body: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 10) {
-                    ForEach(turns) { turn in
-                        ThreadTurnBubble(
-                            turn: turn,
-                            isActivePage: turn.kind == .page && turn.id == activePageTurnID,
-                            onActivatePage: onActivatePage
-                        )
-                        .id(turn.id)
+                    if tab.isPinned == false {
+                        Text(tab.displayTitle)
+                            .font(.system(size: ChromeMetrics.bodyFontSize, weight: isSelected ? .semibold : .regular))
+                            .foregroundStyle(isSelected ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+                            .lineLimit(1)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
-                .padding(12)
+                .padding(.leading, tab.isPinned ? 0 : 8)
+                .padding(.trailing, tab.isPinned ? 0 : 4)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: tab.isPinned ? .center : .leading)
+                .contentShape(Rectangle())
             }
-            .onChange(of: turns.count) { _, _ in
-                scrollToLatest(with: proxy)
-            }
-            .onChange(of: threadID) { _, _ in
-                scrollToLatest(with: proxy, animated: false)
-            }
-            .onChange(of: isGeneratingResponse) { _, _ in
-                scrollToLatest(with: proxy)
-            }
-            .onAppear {
-                scrollToLatest(with: proxy, animated: false)
+            .buttonStyle(.plain)
+
+            if tab.isPinned == false {
+                CloseTabButton(tab: tab, isSelected: isSelected)
+                    .padding(.trailing, 5)
             }
         }
+        .frame(height: ChromeMetrics.tabHeight)
+        .background {
+            tabBackground
+        }
+        .contextMenu {
+            TabContextMenu(tab: tab)
+        }
+        .onHover { isHovering = $0 }
     }
 
-    private func scrollToLatest(with proxy: ScrollViewProxy, animated: Bool = true) {
-        guard let scrollTarget else {
-            return
-        }
-
-        let action = {
-            proxy.scrollTo(scrollTarget, anchor: .bottom)
-        }
-
-        if animated && reduceMotion == false {
-            withAnimation(.smooth(duration: 0.24)) {
-                action()
-            }
-        } else {
-            action()
-        }
-    }
-}
-
-private struct ThreadTurnBubble: View {
-    let turn: BrowserTurn
-    let isActivePage: Bool
-    let onActivatePage: (BrowserTurn.ID) -> Void
-
-    var body: some View {
-        switch turn.kind {
-        case .page:
-            pageRow
-        case .userQuestion:
-            alignedTextBubble(
-                isUserQuestion: true,
-                fill: Color.accentColor.opacity(0.18),
-                highlightOpacity: 0.10,
-                shadowOpacity: 0.08,
-                shadowRadius: 3
-            )
-        case .assistantResponse, .system:
-            alignedTextBubble(
-                isUserQuestion: false,
-                fill: Color(nsColor: .controlBackgroundColor).opacity(0.95),
-                highlightOpacity: 0.06,
-                shadowOpacity: 0.10,
-                shadowRadius: 4
-            )
-        }
-    }
-
-    private var pageRow: some View {
-        Button {
-            onActivatePage(turn.id)
-        } label: {
-            HStack(spacing: 9) {
-                FaviconIcon(
-                    faviconURLString: turn.faviconURLString,
-                    fallbackSystemName: "globe",
-                    size: 18
-                )
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(turn.displayTitle)
-                        .font(.callout)
-                        .foregroundStyle(.primary)
-                        .lineLimit(1)
-
-                    Text(turn.urlString ?? turn.text)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .strokeBorder(
-                        isActivePage ? Color.accentColor.opacity(0.75) : Color.secondary.opacity(0.15),
-                        lineWidth: isActivePage ? 1.5 : 1
-                    )
-            }
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func alignedTextBubble(
-        isUserQuestion: Bool,
-        fill: Color,
-        highlightOpacity: Double,
-        shadowOpacity: Double,
-        shadowRadius: CGFloat
-    ) -> some View {
-        HStack {
-            if isUserQuestion {
-                Spacer(minLength: 36)
-            }
-
-            Text(turn.displayTitle)
-                .font(.system(size: 14))
-                .foregroundStyle(.primary)
-                .textSelection(.enabled)
-                .lineLimit(nil)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(fill)
-                        .shadow(
-                            color: .black.opacity(shadowOpacity),
-                            radius: shadowRadius,
-                            y: 1
-                        )
-                }
+    @ViewBuilder private var tabBackground: some View {
+        if isSelected {
+            Capsule(style: .continuous)
+                .fill(Color.accentColor.opacity(0.18))
                 .overlay {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color.white.opacity(highlightOpacity),
-                                    Color.clear
-                                ],
-                                startPoint: .top,
-                                endPoint: .center
-                            )
-                        )
-                        .allowsHitTesting(false)
+                    Capsule(style: .continuous)
+                        .strokeBorder(Color.accentColor.opacity(0.35), lineWidth: 1)
                 }
-                .frame(maxWidth: 320, alignment: isUserQuestion ? .trailing : .leading)
-
-            if isUserQuestion == false {
-                Spacer(minLength: 36)
-            }
+        } else if isHovering {
+            Capsule(style: .continuous)
+                .fill(.quaternary)
         }
-        .frame(maxWidth: .infinity, alignment: isUserQuestion ? .trailing : .leading)
     }
 }
 
-private struct FaviconIcon: View {
-    let faviconURLString: String?
-    let fallbackSystemName: String
-    let size: CGFloat
-
-    @State private var image: NSImage?
+private struct TabFavicon: View {
+    let tab: BrowserTab
 
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .fill(Color.secondary.opacity(0.1))
+        FaviconIcon(
+            faviconURLString: tab.faviconURLString,
+            fallbackSystemName: tab.urlString == nil ? "plus" : "globe",
+            size: 15
+        )
+    }
+}
 
-            if let image {
-                Image(nsImage: image)
-                    .resizable()
-                    .scaledToFit()
-                    .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
-            } else {
-                Image(systemName: fallbackSystemName)
-                    .font(.system(size: size * 0.62, weight: .medium))
-                    .foregroundStyle(.secondary)
+private struct CloseTabButton: View {
+    @Environment(BrowserModel.self) private var browserModel
+    let tab: BrowserTab
+    var isSelected: Bool = false
+
+    @State private var isHovering = false
+
+    var body: some View {
+        Button("Close Tab", systemImage: "xmark") {
+            browserModel.close(tab)
+        }
+        .labelStyle(.iconOnly)
+        .font(.system(size: 9, weight: .semibold))
+        .buttonStyle(.plain)
+        .foregroundStyle(isHovering ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+        .opacity(isSelected || isHovering ? 1 : 0.55)
+        .frame(width: 18, height: 18)
+        .background {
+            if isHovering {
+                Circle().fill(.quaternary)
             }
         }
-        .frame(width: size, height: size)
-        .task(id: faviconURLString) {
-            await loadImage()
-        }
-    }
-
-    private func loadImage() async {
-        guard let faviconURLString else {
-            image = nil
-            return
-        }
-
-        image = await FaviconLoader.shared.image(for: faviconURLString)
+        .help("Close Tab")
+        .onHover { isHovering = $0 }
     }
 }
 
-private extension BrowserThread {
-    func matchesHistorySearch(_ query: String) -> Bool {
-        let normalizedQuery = query.localizedLowercase
-        if displayTitle.localizedLowercase.contains(normalizedQuery) {
-            return true
+private struct TabContextMenu: View {
+    @Environment(BrowserModel.self) private var browserModel
+    let tab: BrowserTab
+
+    var body: some View {
+        Button(tab.isPinned ? "Unpin Tab" : "Pin Tab", systemImage: tab.isPinned ? "pin.slash" : "pin") {
+            browserModel.toggleTabPin(tab)
         }
 
-        return turns.contains { turn in
-            turn.displayTitle.localizedLowercase.contains(normalizedQuery) ||
-            turn.text.localizedLowercase.contains(normalizedQuery) ||
-            (turn.urlString?.localizedLowercase.contains(normalizedQuery) ?? false)
+        Button("Close Tab", systemImage: "xmark") {
+            browserModel.close(tab)
         }
+
+        Button("Close Other Tabs", systemImage: "rectangle.stack.badge.minus") {
+            browserModel.closeOtherTabs(keeping: tab)
+        }
+        .disabled(browserModel.tabs.count <= 1)
     }
 }
+
+// MARK: - Find bar
 
 private struct FindBar: View {
     @Binding var text: String
@@ -855,10 +603,10 @@ private struct FindBar: View {
         .controlSize(.small)
         .padding(.horizontal, 10)
         .padding(.vertical, 7)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .strokeBorder(Color.secondary.opacity(0.16), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 1)
         }
         .shadow(color: .black.opacity(0.16), radius: 14, y: 6)
         .onAppear {
@@ -873,203 +621,11 @@ private struct FindBar: View {
     }
 }
 
-private struct ChatInput: View {
-    @Binding var text: String
-    let focusRequestID: Int
-    let onSubmit: () -> Void
-
-    @State private var isFocused = false
-
-    private var canSubmit: Bool {
-        text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .bottom, spacing: 8) {
-                PromptTextEditor(
-                    text: $text,
-                    placeholder: "Ask anything or paste a URL",
-                    focusRequestID: focusRequestID,
-                    isFocused: $isFocused,
-                    onCommandReturn: submit
-                )
-                .frame(minHeight: 58, maxHeight: 96)
-                .frame(maxWidth: .infinity)
-
-                Button(action: submit) {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundStyle(canSubmit ? Color.accentColor : Color.secondary.opacity(0.4))
-                        .contentTransition(.symbolEffect(.replace))
-                }
-                .buttonStyle(.plain)
-                .disabled(canSubmit == false)
-                .keyboardShortcut(.return, modifiers: .command)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .background {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(.thinMaterial)
-            }
-            .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(
-                        isFocused ? Color.accentColor.opacity(0.55) : Color.secondary.opacity(0.18),
-                        lineWidth: isFocused ? 1.5 : 1
-                    )
-            }
-            .animation(.smooth(duration: 0.15), value: isFocused)
-        }
-        .padding(.horizontal, 12)
-        .padding(.top, 10)
-        .padding(.bottom, 12)
-    }
-
-    private func submit() {
-        guard canSubmit else { return }
-        onSubmit()
-    }
-}
-
-private struct PromptTextEditor: NSViewRepresentable {
-    @Binding var text: String
-    let placeholder: String
-    let focusRequestID: Int
-    @Binding var isFocused: Bool
-    let onCommandReturn: () -> Void
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(parent: self)
-    }
-
-    func makeNSView(context: Context) -> NSScrollView {
-        let scrollView = NSScrollView()
-        scrollView.drawsBackground = false
-        scrollView.borderType = .noBorder
-        scrollView.hasVerticalScroller = true
-        scrollView.autohidesScrollers = true
-
-        let textView = PlaceholderTextView()
-        textView.delegate = context.coordinator
-        textView.drawsBackground = false
-        textView.isRichText = false
-        textView.importsGraphics = false
-        textView.allowsUndo = true
-        textView.isAutomaticQuoteSubstitutionEnabled = false
-        textView.isAutomaticDashSubstitutionEnabled = false
-        textView.font = .preferredFont(forTextStyle: .body)
-        textView.textColor = .labelColor
-        textView.placeholder = placeholder
-        textView.onCommandReturn = onCommandReturn
-        textView.textContainerInset = NSSize(width: 0, height: 0)
-        textView.textContainer?.lineFragmentPadding = 0
-        textView.textContainer?.widthTracksTextView = true
-        textView.isVerticallyResizable = true
-        textView.isHorizontallyResizable = false
-        textView.autoresizingMask = [.width]
-        textView.minSize = NSSize(width: 0, height: 0)
-        textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
-        scrollView.documentView = textView
-        context.coordinator.textView = textView
-
-        return scrollView
-    }
-
-    func updateNSView(_ scrollView: NSScrollView, context: Context) {
-        context.coordinator.parent = self
-        guard let textView = scrollView.documentView as? PlaceholderTextView else {
-            return
-        }
-
-        if textView.string != text {
-            textView.string = text
-            textView.needsDisplay = true
-        }
-        textView.placeholder = placeholder
-        textView.onCommandReturn = onCommandReturn
-
-        if context.coordinator.appliedFocusRequestID != focusRequestID {
-            context.coordinator.appliedFocusRequestID = focusRequestID
-            DispatchQueue.main.async {
-                textView.window?.makeFirstResponder(textView)
-            }
-        }
-    }
-
-    final class Coordinator: NSObject, NSTextViewDelegate {
-        var parent: PromptTextEditor
-        weak var textView: PlaceholderTextView?
-        var appliedFocusRequestID: Int
-
-        init(parent: PromptTextEditor) {
-            self.parent = parent
-            self.appliedFocusRequestID = parent.focusRequestID
-        }
-
-        func textDidChange(_ notification: Notification) {
-            guard let textView = notification.object as? PlaceholderTextView else {
-                return
-            }
-
-            parent.text = textView.string
-            textView.needsDisplay = true
-        }
-
-        func textDidBeginEditing(_ notification: Notification) {
-            parent.isFocused = true
-            textView?.needsDisplay = true
-        }
-
-        func textDidEndEditing(_ notification: Notification) {
-            parent.isFocused = false
-            textView?.needsDisplay = true
-        }
-    }
-}
-
-private final class PlaceholderTextView: NSTextView {
-    var placeholder = "" {
-        didSet { needsDisplay = true }
-    }
-
-    var onCommandReturn: (() -> Void)?
-
-    override func keyDown(with event: NSEvent) {
-        let modifierFlags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        if modifierFlags.contains(.command),
-           event.charactersIgnoringModifiers == "\r" {
-            onCommandReturn?()
-            return
-        }
-
-        super.keyDown(with: event)
-    }
-
-    override func draw(_ dirtyRect: NSRect) {
-        super.draw(dirtyRect)
-
-        guard string.isEmpty else {
-            return
-        }
-
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: font ?? NSFont.preferredFont(forTextStyle: .body),
-            .foregroundColor: NSColor.placeholderTextColor
-        ]
-        let padding = textContainer?.lineFragmentPadding ?? 0
-        let origin = NSPoint(
-            x: textContainerOrigin.x + padding,
-            y: textContainerOrigin.y
-        )
-        placeholder.draw(at: origin, withAttributes: attributes)
-    }
-}
-
 #Preview {
     @Previewable @State var model = BrowserModel()
+    @Previewable @State var preferences = AppPreferences()
 
     BrowserSplitView()
         .environment(model)
+        .environment(preferences)
 }

@@ -47,7 +47,15 @@ final class BrowserThreadStore {
         }
 
         do {
-            return try JSONDecoder().decode(BrowserThreadSnapshot.self, from: data)
+            let snapshot = try JSONDecoder().decode(BrowserThreadSnapshot.self, from: data)
+            let sanitizedSnapshot = Self.sanitized(snapshot)
+            if sanitizedSnapshot != snapshot {
+                save(
+                    threads: sanitizedSnapshot.threads,
+                    selectedThreadID: sanitizedSnapshot.selectedThreadID
+                )
+            }
+            return sanitizedSnapshot
         } catch {
             userDefaults.removeObject(forKey: key)
             return BrowserThreadSnapshot()
@@ -60,6 +68,7 @@ final class BrowserThreadStore {
         }
 
         let cappedThreads = Self.capped(threads, preserving: selectedThreadID)
+            .map(\.sanitizedForPersistence)
         let cappedSelectedThreadID: BrowserThread.ID?
         if let selectedThreadID, cappedThreads.contains(where: { $0.id == selectedThreadID }) {
             cappedSelectedThreadID = selectedThreadID
@@ -129,6 +138,14 @@ final class BrowserThreadStore {
         cappedThreads.removeFirst()
         cappedThreads.insert(selectedThread, at: 0)
         return cappedThreads
+    }
+
+    private static func sanitized(_ snapshot: BrowserThreadSnapshot) -> BrowserThreadSnapshot {
+        BrowserThreadSnapshot(
+            threads: capped(snapshot.threads, preserving: snapshot.selectedThreadID)
+                .map(\.sanitizedForPersistence),
+            selectedThreadID: snapshot.selectedThreadID
+        )
     }
 
     private static func snapshotKey(for windowSessionID: String) -> String {

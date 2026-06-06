@@ -9,19 +9,17 @@ import SwiftUI
 
 struct BrowserDetailView: View {
     let pageSession: BrowserPageSession
+    /// Space reserved at the top for the floating glass chrome, so the web
+    /// page begins below the bar instead of being occluded by it.
+    var topInset: CGFloat = 0
 
     var body: some View {
         BrowserView(controller: pageSession.browserController)
-            .id(pageSession.pageTurnID)
+            .id(pageSession.tabID)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            // Match the small transparent gutter the sidebar's rounded glass
-            // panel has on all sides. The padding shows through to the
-            // (transparent) window background, giving the page a floating
-            // card look consistent with the sidebar.
-            .padding(6)
+            .padding(.top, topInset)
             .ignoresSafeArea(edges: [.top, .bottom])
             .toolbar(removing: .title)
-            .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
     }
 }
 
@@ -29,10 +27,7 @@ private struct BrowserView: NSViewRepresentable {
     let controller: TungstenBrowserController
 
     func makeNSView(context: Context) -> NSView {
-        // Round the CEF NSView's CALayer so the page itself is clipped to
-        // the rounded shape — SwiftUI's clipShape doesn't apply to AppKit
-        // subviews, so this has to be done at the layer level.
-        controller.cornerRadius = 12
+        controller.cornerRadius = 0
         return controller.view
     }
 

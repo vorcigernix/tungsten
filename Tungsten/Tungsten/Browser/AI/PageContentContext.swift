@@ -1,7 +1,7 @@
 import Foundation
 
-struct PageContentContext: Equatable {
-    static let maxContentCharacters = 30_000
+struct PageContentContext: Equatable, Sendable {
+    static let maxContentCharacters = 12_000
 
     let title: String
     let urlString: String
@@ -21,6 +21,55 @@ struct PageContentContext: Equatable {
 
     var usesSelectedText: Bool {
         selectedText != nil
+    }
+
+    func shouldAttach(to question: String) -> Bool {
+        if usesSelectedText {
+            return true
+        }
+
+        return Self.questionLikelyNeedsPageContext(question)
+    }
+
+    static func questionLikelyNeedsPageContext(_ question: String) -> Bool {
+        let normalizedQuestion = question
+            .lowercased()
+            .replacingOccurrences(of: #"[^a-z0-9]+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let paddedQuestion = " \(normalizedQuestion) "
+
+        let pageReferences = [
+            " this page ",
+            " current page ",
+            " page ",
+            " this site ",
+            " current site ",
+            " website ",
+            " article ",
+            " post ",
+            " document ",
+            " selection ",
+            " selected text ",
+            " here "
+        ]
+        if pageReferences.contains(where: { paddedQuestion.contains($0) }) {
+            return true
+        }
+
+        let pageTasks = [
+            "summarize",
+            "summary",
+            "tldr",
+            "tl dr",
+            "explain this",
+            "what does this say",
+            "what is this about",
+            "what is on this",
+            "key points",
+            "main points",
+            "takeaways"
+        ]
+        return pageTasks.contains { normalizedQuestion.contains($0) }
     }
 
     func prompt(for question: String) -> String {

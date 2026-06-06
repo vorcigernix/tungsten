@@ -5,26 +5,51 @@ final class LivePageSessionHost {
     private(set) var activePageSession: BrowserPageSession?
     @ObservationIgnored private var closingPageSession: BrowserPageSession?
 
-    func activate(pageTurn: BrowserTurn, isIncognito: Bool, configure: (BrowserPageSession) -> Void) {
-        guard pageTurn.kind == .page, let urlString = pageTurn.urlString else {
+    func activate(tab: BrowserTab, isIncognito: Bool, configure: (BrowserPageSession) -> Void) {
+        guard let urlString = tab.urlString else {
+            BrowserPerformanceLog.event("livePage.activate.blankTab", metadata: [
+                "tab": BrowserPerformanceLog.shortID(tab.id)
+            ])
             closeActivePage()
             return
         }
-        if activePageSession?.pageTurnID == pageTurn.id { return }
+        if activePageSession?.tabID == tab.id {
+            BrowserPerformanceLog.event("livePage.activate.alreadyActive", metadata: [
+                "tab": BrowserPerformanceLog.shortID(tab.id)
+            ])
+            return
+        }
+        if let activePageSession {
+            BrowserPerformanceLog.event("livePage.activate.closePrevious", metadata: [
+                "old_tab": BrowserPerformanceLog.shortID(activePageSession.tabID),
+                "new_tab": BrowserPerformanceLog.shortID(tab.id)
+            ])
+        }
         closeActivePage()
 
-        let pageTitle = pageTurn.title ?? ""
+        let pageTitle = tab.title ?? ""
         let session = BrowserPageSession(
-            pageTurnID: pageTurn.id,
+            tabID: tab.id,
             initialURL: urlString,
             title: pageTitle.isEmpty ? "New Page" : pageTitle,
             isIncognito: isIncognito
         )
         configure(session)
         activePageSession = session
+        BrowserPerformanceLog.event("livePage.activate.createdSession", metadata: [
+            "tab": BrowserPerformanceLog.shortID(tab.id),
+            "session": BrowserPerformanceLog.shortID(session.id),
+            "is_incognito": isIncognito
+        ])
     }
 
     func closeActivePage() {
+        if let activePageSession {
+            BrowserPerformanceLog.event("livePage.closeActive", metadata: [
+                "tab": BrowserPerformanceLog.shortID(activePageSession.tabID),
+                "session": BrowserPerformanceLog.shortID(activePageSession.id)
+            ])
+        }
         activePageSession?.closeBrowser()
         activePageSession = nil
     }

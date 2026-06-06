@@ -22,6 +22,7 @@ FOUNDATION_EXPORT NSString *const TungstenLocalAIProviderDefaultsKey;
 @property (nonatomic, readonly, getter=isTerminating) BOOL terminating;
 
 - (void)initializeCEF;
+- (void)prewarmCEF;
 - (void)beginTermination;
 - (void)shutdownCEF;
 

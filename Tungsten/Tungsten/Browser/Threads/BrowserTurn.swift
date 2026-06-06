@@ -8,6 +8,8 @@ enum BrowserTurnKind: String, Codable, Equatable {
 }
 
 struct BrowserTurn: Identifiable, Codable, Equatable {
+    static let maxPersistedTextCharacters = 4_000
+
     var id: UUID
     var kind: BrowserTurnKind
     var text: String
@@ -36,8 +38,17 @@ struct BrowserTurn: Identifiable, Codable, Equatable {
             return fallback.isEmpty ? "Untitled" : fallback
         case .userQuestion, .assistantResponse, .system:
             let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
-            return trimmedText.isEmpty ? "Untitled" : trimmedText
+            return trimmedText.isEmpty ? "Untitled" : Self.cappedText(trimmedText, suffix: "...")
         }
+    }
+
+    var sanitizedForPersistence: BrowserTurn {
+        var turn = self
+        turn.text = Self.cappedText(turn.text, suffix: "")
+        turn.title = turn.title.map { Self.cappedText($0, suffix: "") }
+        turn.urlString = turn.urlString.map { Self.cappedText($0, suffix: "") }
+        turn.faviconURLString = turn.faviconURLString.map { Self.cappedText($0, suffix: "") }
+        return turn
     }
 
     static func question(_ text: String, id: UUID = UUID(), createdAt: Date = Date()) -> BrowserTurn {
@@ -68,5 +79,13 @@ struct BrowserTurn: Identifiable, Codable, Equatable {
             faviconURLString: faviconURLString,
             createdAt: createdAt
         )
+    }
+
+    private static func cappedText(_ value: String, suffix: String) -> String {
+        guard value.count > maxPersistedTextCharacters else {
+            return value
+        }
+
+        return String(value.prefix(maxPersistedTextCharacters)) + suffix
     }
 }

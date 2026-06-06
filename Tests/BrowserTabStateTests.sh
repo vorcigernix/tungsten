@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 MODEL_FILE="$ROOT_DIR/Tungsten/Tungsten/Browser/BrowserModel.swift"
-THREAD_FILE="$ROOT_DIR/Tungsten/Tungsten/Browser/Threads/BrowserThread.swift"
+TAB_FILE="$ROOT_DIR/Tungsten/Tungsten/Browser/Tabs/BrowserTab.swift"
 SPLIT_VIEW_FILE="$ROOT_DIR/Tungsten/Tungsten/Browser/BrowserSplitView.swift"
 
 require_pattern() {
@@ -17,14 +17,16 @@ require_pattern() {
     fi
 }
 
-require_pattern "$THREAD_FILE" "var isPinned" "BrowserThread.isPinned"
-require_pattern "$MODEL_FILE" "func toggleSelectedThreadPin\\(" "BrowserModel.toggleSelectedThreadPin"
-require_pattern "$MODEL_FILE" "func toggleThreadPin\\(" "BrowserModel.toggleThreadPin"
-require_pattern "$MODEL_FILE" "func clearUnpinnedThreads\\(" "BrowserModel.clearUnpinnedThreads"
-require_pattern "$SPLIT_VIEW_FILE" "Pin Thread|Unpin Thread" "pin/unpin thread context menu"
-require_pattern "$SPLIT_VIEW_FILE" "Clear Unpinned Threads" "clear unpinned threads UI action"
-
-require_pattern "$MODEL_FILE" "func reopenLastClosedThread\\(" "BrowserModel.reopenLastClosedThread"
-require_pattern "$MODEL_FILE" "closedThreads\\.append" "closed thread snapshot recording"
+require_pattern "$TAB_FILE" "struct BrowserTab" "BrowserTab model"
+require_pattern "$TAB_FILE" "var isPinned" "BrowserTab.isPinned"
+require_pattern "$MODEL_FILE" "func createTab\\(" "BrowserModel.createTab"
+require_pattern "$MODEL_FILE" "func closeSelectedTab\\(" "BrowserModel.closeSelectedTab"
+require_pattern "$MODEL_FILE" "func toggleSelectedTabPin\\(" "BrowserModel.toggleSelectedTabPin"
+require_pattern "$MODEL_FILE" "func toggleTabPin\\(" "BrowserModel.toggleTabPin"
+require_pattern "$MODEL_FILE" "func clearUnpinnedTabs\\(" "BrowserModel.clearUnpinnedTabs"
+require_pattern "$MODEL_FILE" "func reopenLastClosedTab\\(" "BrowserModel.reopenLastClosedTab"
+require_pattern "$MODEL_FILE" "closedTabs\\.append" "closed tab snapshot recording"
+require_pattern "$SPLIT_VIEW_FILE" "Pin Tab|Unpin Tab" "pin/unpin tab context menu"
+require_pattern "$SPLIT_VIEW_FILE" "Close Other Tabs" "close other tabs context menu"
 
 echo "BrowserTabStateTests passed"

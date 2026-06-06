@@ -6,9 +6,8 @@ final class BrowserPageSession: Identifiable {
     typealias ID = UUID
 
     let id = UUID()
-    let pageTurnID: BrowserTurn.ID
+    let tabID: BrowserTab.ID
     let isIncognito: Bool
-    var isPinned = false
     var title: String
     var urlString: String
     var isLoading = false
@@ -27,6 +26,15 @@ final class BrowserPageSession: Identifiable {
     @ObservationIgnored private let initialURL: String
     @ObservationIgnored private lazy var observer = BrowserPageSessionObserver(pageSession: self)
     @ObservationIgnored lazy var browserController: TungstenBrowserController = {
+        let start = BrowserPerformanceLog.now()
+        var metadata: [String: Any] = [
+            "tab": BrowserPerformanceLog.shortID(tabID),
+            "session": BrowserPerformanceLog.shortID(id),
+            "is_incognito": isIncognito
+        ]
+        metadata.merge(BrowserPerformanceLog.urlMetadata(initialURL)) { _, new in new }
+        BrowserPerformanceLog.event("pageSession.controller.create.start", metadata: metadata)
+
         let controller = TungstenBrowserController(initialURL: initialURL, incognito: isIncognito)
         controller.delegate = observer
         controller.browserDidCloseHandler = { [weak self] in
@@ -34,6 +42,7 @@ final class BrowserPageSession: Identifiable {
                 self?.onBrowserClose?()
             }
         }
+        BrowserPerformanceLog.duration("pageSession.controller.create.end", from: start, metadata: metadata)
         return controller
     }()
 
@@ -49,19 +58,33 @@ final class BrowserPageSession: Identifiable {
         return "New Page"
     }
 
-    init(pageTurnID: BrowserTurn.ID, initialURL: String, title: String = "New Page", isIncognito: Bool) {
-        self.pageTurnID = pageTurnID
+    init(tabID: BrowserTab.ID, initialURL: String, title: String = "New Page", isIncognito: Bool) {
+        self.tabID = tabID
         self.initialURL = initialURL
         self.isIncognito = isIncognito
         self.urlString = initialURL
         self.title = title
+        var metadata: [String: Any] = [
+            "tab": BrowserPerformanceLog.shortID(tabID),
+            "session": BrowserPerformanceLog.shortID(id),
+            "is_incognito": isIncognito
+        ]
+        metadata.merge(BrowserPerformanceLog.urlMetadata(initialURL)) { _, new in new }
+        BrowserPerformanceLog.event("pageSession.init", metadata: metadata)
     }
 
     convenience init(initialURL: String, isIncognito: Bool) {
-        self.init(pageTurnID: BrowserTurn.ID(), initialURL: initialURL, title: "New Page", isIncognito: isIncognito)
+        self.init(tabID: BrowserTab.ID(), initialURL: initialURL, title: "New Page", isIncognito: isIncognito)
     }
 
     func navigate(to urlString: String) {
+        var metadata: [String: Any] = [
+            "tab": BrowserPerformanceLog.shortID(tabID),
+            "session": BrowserPerformanceLog.shortID(id)
+        ]
+        metadata.merge(BrowserPerformanceLog.urlMetadata(urlString)) { _, new in new }
+        BrowserPerformanceLog.event("pageSession.navigate", metadata: metadata)
+
         if URLComponents(string: urlString)?.host != URLComponents(string: self.urlString)?.host {
             favicon = nil
             loadedFaviconURL = nil
@@ -73,11 +96,22 @@ final class BrowserPageSession: Identifiable {
 
     func updateTitle(_ title: String) {
         self.title = title
+        BrowserPerformanceLog.event("pageSession.title", metadata: [
+            "tab": BrowserPerformanceLog.shortID(tabID),
+            "session": BrowserPerformanceLog.shortID(id),
+            "title_length": title.count
+        ])
         onTitleChange?(title)
     }
 
     func updateURL(_ urlString: String) {
         self.urlString = urlString
+        var metadata: [String: Any] = [
+            "tab": BrowserPerformanceLog.shortID(tabID),
+            "session": BrowserPerformanceLog.shortID(id)
+        ]
+        metadata.merge(BrowserPerformanceLog.urlMetadata(urlString)) { _, new in new }
+        BrowserPerformanceLog.event("pageSession.url", metadata: metadata)
         onURLChange?(urlString)
     }
 
@@ -159,6 +193,10 @@ final class BrowserPageSession: Identifiable {
     }
 
     func closeBrowser() {
+        BrowserPerformanceLog.event("pageSession.close", metadata: [
+            "tab": BrowserPerformanceLog.shortID(tabID),
+            "session": BrowserPerformanceLog.shortID(id)
+        ])
         browserController.closeBrowser()
     }
 
@@ -179,6 +217,7 @@ final class BrowserPageSession: Identifiable {
         browserController.stopFinding(clearSelection: true)
         browserController.navigate(toURLString: urlString)
     }
+
 }
 
 private final class BrowserPageSessionObserver: NSObject, TungstenBrowserControllerDelegate {
@@ -202,6 +241,15 @@ private final class BrowserPageSessionObserver: NSObject, TungstenBrowserControl
 
     func browserController(_ controller: TungstenBrowserController, didUpdateLoading isLoading: Bool, canGoBack: Bool, canGoForward: Bool) {
         Task { @MainActor [weak pageSession] in
+            if let pageSession {
+                BrowserPerformanceLog.event("pageSession.loading", metadata: [
+                    "tab": BrowserPerformanceLog.shortID(pageSession.tabID),
+                    "session": BrowserPerformanceLog.shortID(pageSession.id),
+                    "is_loading": isLoading,
+                    "can_go_back": canGoBack,
+                    "can_go_forward": canGoForward
+                ])
+            }
             pageSession?.isLoading = isLoading
             pageSession?.canGoBack = canGoBack
             pageSession?.canGoForward = canGoForward

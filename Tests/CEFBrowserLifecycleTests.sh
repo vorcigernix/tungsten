@@ -5,7 +5,9 @@ model_file="Tungsten/Tungsten/Browser/BrowserModel.swift"
 window_root_file="Tungsten/Tungsten/Browser/BrowserWindowRoot.swift"
 host_file="Tungsten/Tungsten/Browser/Threads/LivePageSessionHost.swift"
 controller_header="Tungsten/Tungsten/CEF/TungstenBrowserController.h"
+cef_header="Tungsten/Tungsten/CEF/TungstenCEFApp.h"
 bridge_file="Tungsten/Tungsten/CEF/TungstenCEFBridge.mm"
+app_file="Tungsten/Tungsten/TungstenApp.swift"
 
 if ! rg -q -- "- \\(void\\)closeBrowser;" "$controller_header"; then
     echo "TungstenBrowserController must expose closeBrowser so BrowserModel can close CEF before dropping a tab." >&2
@@ -35,8 +37,48 @@ if ! rg -q -- "TUNGSTEN_PAGE_TEXT" "$bridge_file" ||
     exit 1
 fi
 
+if rg -q -- "TUNGSTEN_LOCAL_AI|LanguageModel\\.availability|LanguageModel\\.create|downloadprogress|Gemini Nano|answerWithGoogleLocalAI|checkGoogleLocalAIAvailability|prepareGoogleLocalAI" "$controller_header" "$bridge_file"; then
+    echo "CEF bridge must not own Gemma 4 Local inference or keep Gemini Nano Prompt API remnants." >&2
+    exit 1
+fi
+
 if rg -q -- "TUNGSTEN_BG|bg-probe|didUpdatePageBackgroundColorString|pageBackgroundColor" "$controller_header" "$bridge_file" "$model_file"; then
     echo "Obsolete CEF page background probing must stay removed." >&2
+    exit 1
+fi
+
+if ! rg -q -- "- \\(void\\)prewarmCEF;" "$cef_header"; then
+    echo "TungstenCEFApp must expose prewarmCEF so app/window startup can pay CEF initialization before the first visible page navigation." >&2
+    exit 1
+fi
+
+if ! rg -q -- "prewarmCEF\\(\\)" "$app_file" "$window_root_file"; then
+    echo "App/window startup must call TungstenCEFApp.prewarmCEF() before restored tabs trigger visible CEF page creation." >&2
+    exit 1
+fi
+
+if ! rg -q -- "cef\\.prewarm\\.start|cef\\.prewarm\\.end|cef\\.prewarm\\.skipped" "$bridge_file"; then
+    echo "CEF prewarm must be performance logged so traces show whether initialization was paid before browser creation." >&2
+    exit 1
+fi
+
+if ! rg -q -- "TUNGSTEN_PERF_MARK" "$bridge_file" ||
+   ! rg -q -- "DOMContentLoaded" "$bridge_file" ||
+   ! rg -q -- "PerformanceObserver" "$bridge_file" ||
+   ! rg -q -- "first-contentful-paint" "$bridge_file" ||
+   ! rg -q -- "cef\\.renderer\\.mark" "$bridge_file"; then
+    echo "CEF bridge must inject renderer performance markers for DOMContentLoaded and first paint/contentful paint." >&2
+    exit 1
+fi
+
+if ! rg -q -- "kCFRunLoopBeforeSources[[:space:]]*\\|[[:space:]]*kCFRunLoopBeforeWaiting" "$bridge_file" ||
+   ! rg -q -- "CefRunLoopPumpCallback" "$bridge_file"; then
+    echo "CEF message pump must run before source/event handling as well as before idle so Chromium is not starved during live scrolling." >&2
+    exit 1
+fi
+
+if ! rg -q -- "cef\\.messagePump\\.workSlow" "$bridge_file"; then
+    echo "CEF message pump must log slow work iterations so scroll jank traces expose main-thread CEF stalls." >&2
     exit 1
 fi
 

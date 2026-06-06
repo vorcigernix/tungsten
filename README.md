@@ -2,7 +2,7 @@
 
 Tungsten is a native macOS SwiftUI browser shell backed by the Chromium Embedded Framework.
 
-Browser tabs live in the sidebar, and the toolbar search field works as a combined search/address field.
+Browser tabs live in Safari-style top chrome, and the Smart Search field works as a combined search/address field.
 
 ## CEF Setup
 
