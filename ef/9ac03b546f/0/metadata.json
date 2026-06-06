@@ -1,0 +1,39 @@
+{
+  "cli_version": "0.6.1",
+  "checkpoint_id": "ef9ac03b546f",
+  "session_id": "287e9109-997b-4606-837b-518df0fe49ba",
+  "strategy": "manual-commit",
+  "created_at": "2026-06-06T16:58:23.610168Z",
+  "branch": "codex/thread-first-browser",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "Tests/ThreadBrowserLifecycleTests.sh",
+    "Tungsten/Tungsten/Browser/Chrome/BrowserChrome.swift",
+    "Tungsten/Tungsten/Browser/Chrome/ChromeTheme.swift"
+  ],
+  "agent": "Claude Code",
+  "model": "",
+  "turn_id": "6b864d063a75",
+  "token_usage": {
+    "input_tokens": 33194,
+    "cache_creation_tokens": 2159834,
+    "cache_read_tokens": 69794644,
+    "output_tokens": 676490,
+    "api_call_count": 173
+  },
+  "session_metrics": {
+    "turn_count": 17
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-06-06T16:58:23.432344Z",
+    "agent_lines": 162,
+    "agent_removed": 99,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 162,
+    "total_lines_changed": 261,
+    "agent_percentage": 100,
+    "metric_version": 2
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.6.1",
+  "checkpoint_id": "ef9ac03b546f",
+  "strategy": "manual-commit",
+  "branch": "codex/thread-first-browser",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "Tests/ThreadBrowserLifecycleTests.sh",
+    "Tungsten/Tungsten/Browser/Chrome/BrowserChrome.swift",
+    "Tungsten/Tungsten/Browser/Chrome/ChromeTheme.swift"
+  ],
+  "sessions": [
+    {
+      "metadata": "/ef/9ac03b546f/0/metadata.json",
+      "transcript": "/ef/9ac03b546f/0/full.jsonl",
+      "content_hash": "/ef/9ac03b546f/0/content_hash.txt",
+      "prompt": "/ef/9ac03b546f/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 33194,
+    "cache_creation_tokens": 2159834,
+    "cache_read_tokens": 69794644,
+    "output_tokens": 676490,
+    "api_call_count": 173
+  }
+}
