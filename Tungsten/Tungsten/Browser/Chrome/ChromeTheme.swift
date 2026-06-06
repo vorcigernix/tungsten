@@ -18,6 +18,13 @@ enum ChromeMetrics {
     /// Tab height.
     static let tabHeight: CGFloat = 28
 
+    /// Address-field height when focused — it grows from `controlHeight` in
+    /// place (same position, same corner radius), nothing else moves.
+    static let expandedFieldHeight: CGFloat = 56
+    /// Tab height when minimized to a thin bar (focused state) — the tab
+    /// shrinks vertically, keeping its width.
+    static let minimizedTabHeight: CGFloat = 12
+
     /// Leading inset that keeps chrome clear of the window traffic lights.
     static let trafficLightGutter: CGFloat = 78
 

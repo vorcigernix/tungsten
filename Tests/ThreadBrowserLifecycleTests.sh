@@ -83,9 +83,10 @@ require_pattern "$app_file" "\\.windowStyle\\(\\.hiddenTitleBar\\)" "hidden titl
 
 require_pattern "$chrome_file" "struct BrowserChrome" "Liquid Glass chrome bar"
 require_pattern "$chrome_file" "\\.glassEffect\\(" "native Liquid Glass effect for the chrome bar"
-require_pattern "$chrome_file" "SeparateTabBar" "separate Safari-style tab bar"
-require_pattern "$chrome_file" "CompactTabStrip" "compact tab strip"
-require_pattern "$chrome_file" "AddressBarField" "Smart Search field"
+require_pattern "$chrome_file" "struct TabStrip" "separate tab strip"
+require_pattern "$chrome_file" "struct InlineTabStrip" "compact inline tab strip"
+require_pattern "$chrome_file" "struct AddressField" "Smart Search field"
+require_pattern "$chrome_file" "expandedFieldHeight" "address field expands vertically on focus"
 require_pattern "$chrome_file" "\\.textFieldStyle\\(\\.plain\\)" "custom glass Smart Search text field styling"
 require_pattern "$chrome_file" "TabContextMenu" "tab context menu"
 require_pattern "$chrome_file" "Close Other Tabs" "close other tabs UI action"

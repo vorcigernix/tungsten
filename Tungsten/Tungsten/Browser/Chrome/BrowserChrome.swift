@@ -2,28 +2,35 @@
 See the LICENSE.txt file for this sample's licensing information.
 
 Abstract:
-The Liquid Glass browser chrome: one continuous glass bar hosting the
-toolbar controls, address field, and tab strip.
+The Liquid Glass browser chrome. A single, stable layout: on focus the address
+field simply grows taller in place and the tabs shrink into small favicon dots —
+nothing else moves or changes shape.
 */
 
 import AppKit
 import SwiftUI
 
-/// One continuous Liquid Glass bar that hosts the toolbar (and, in the
-/// `.separate` layout, the tab strip). A single glass surface — controls live
-/// *on* it as plain views, so there is no glass-on-glass.
 struct BrowserChrome: View {
+    @Environment(BrowserModel.self) private var browserModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let tabLayout: BrowserTabLayout
+
+    @State private var isExpanded = false
+    @FocusState private var fieldFocused: Bool
+    @State private var collapseTask: Task<Void, Never>?
 
     var body: some View {
         VStack(spacing: 0) {
-            ChromeBar(tabLayout: tabLayout)
+            toolbarRow
+                .zIndex(1)
 
             if tabLayout == .separate {
-                SeparateTabBar()
+                TabStrip(onPickDot: { collapse() })
+                    .padding(.horizontal, 12)
+                    .frame(height: ChromeMetrics.tabBarHeight)
             }
         }
-        .frame(height: ChromeMetrics.totalHeight(for: tabLayout), alignment: .top)
+        .frame(maxWidth: .infinity, alignment: .top)
         .glassEffect(.regular, in: Rectangle())
         .overlay(alignment: .bottom) {
             Rectangle()
@@ -31,44 +38,101 @@ struct BrowserChrome: View {
                 .frame(height: 1)
         }
         .ignoresSafeArea(edges: .top)
-    }
-}
-
-private struct ChromeBar: View {
-    let tabLayout: BrowserTabLayout
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Color.clear
-                .frame(width: ChromeMetrics.trafficLightGutter)
-
-            SidebarHistoryMenu()
-            NavigationControls()
-
-            Spacer(minLength: 16)
-
-            if tabLayout == .compact {
-                CompactTabStrip()
-                    .frame(minWidth: 360, idealWidth: 620, maxWidth: 820)
+        .animation(expandAnimation, value: isExpanded)
+        .onAppear { requestFocus() }
+        .onChange(of: browserModel.addressFocusRequestID) { _, _ in requestFocus() }
+        .onChange(of: fieldFocused) { _, focused in
+            if focused {
+                isExpanded = true
+                startCollapseTimer()
             } else {
-                AddressBarField()
-                    .frame(minWidth: 320, idealWidth: 560, maxWidth: 720)
+                collapse()
             }
+        }
+    }
 
-            Spacer(minLength: 16)
+    private var expandAnimation: Animation {
+        reduceMotion
+            ? .easeInOut(duration: 0.2)
+            : .smooth(duration: 0.32)
+    }
 
-            ToolbarActions()
-            PrivateWindowIndicator()
+    // The toolbar row keeps every control exactly where it is. Only the address
+    // field changes height; controls stay pinned to the top band.
+    private var toolbarRow: some View {
+        // Collapsed: the field is centered in the bar. Focused: the field grows
+        // taller with its top edge fixed, so the chrome grows and the full tab
+        // strip rides down with it — the tabs themselves are left unchanged.
+        let inset = (ChromeMetrics.barHeight - ChromeMetrics.controlHeight) / 2
+        return HStack(alignment: .top, spacing: 8) {
+            HStack(spacing: 8) {
+                Color.clear.frame(width: ChromeMetrics.trafficLightGutter)
+                SidebarHistoryMenu()
+                NavigationControls()
+
+                if tabLayout == .compact {
+                    InlineTabStrip(onPickDot: { collapse() })
+                }
+            }
+            .frame(height: ChromeMetrics.barHeight)
+
+            AddressField(focused: $fieldFocused, onSubmit: { submit() })
+                .frame(height: isExpanded ? ChromeMetrics.expandedFieldHeight : ChromeMetrics.controlHeight, alignment: .top)
+                .padding(.top, inset)
+                .frame(minWidth: 320, idealWidth: 560, maxWidth: 760)
+
+            HStack(spacing: 2) {
+                ToolbarActions()
+                PrivateWindowIndicator()
+            }
+            .frame(height: ChromeMetrics.barHeight)
         }
         .padding(.horizontal, 12)
-        .frame(height: ChromeMetrics.barHeight)
+        .frame(height: isExpanded ? ChromeMetrics.expandedFieldHeight + inset * 2 : ChromeMetrics.barHeight, alignment: .top)
+    }
+
+    // MARK: - Expand / collapse
+
+    private func requestFocus() {
+        DispatchQueue.main.async { fieldFocused = true }
+    }
+
+    private func collapse() {
+        cancelCollapseTimer()
+        guard isExpanded else { return }
+        isExpanded = false
+        fieldFocused = false
+        browserModel.addressText = browserModel.selectedTab?.urlString ?? ""
+    }
+
+    private func submit() {
+        browserModel.submitAddressBar()
+        collapse()
+    }
+
+    // Collapses after the pointer has been outside the chrome for 10s, unless
+    // the field still holds a draft being typed.
+    private func startCollapseTimer() {
+        cancelCollapseTimer()
+        collapseTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(10))
+            guard Task.isCancelled == false, isExpanded else { return }
+            if fieldFocused && browserModel.addressText.isEmpty == false {
+                startCollapseTimer()
+            } else {
+                collapse()
+            }
+        }
+    }
+
+    private func cancelCollapseTimer() {
+        collapseTask?.cancel()
+        collapseTask = nil
     }
 }
 
 // MARK: - Controls
 
-/// Plain icon button used throughout the chrome. Foreground tracks state with
-/// semantic colors; hover paints a subtle system fill (no nested glass).
 private struct ChromeIconButton: View {
     let title: String
     let systemImage: String
@@ -198,31 +262,29 @@ private struct PrivateWindowIndicator: View {
     }
 }
 
-// MARK: - Address field
+// MARK: - Address field (grows vertically on focus, same place / shape)
 
-private struct AddressBarField: View {
+private struct AddressField: View {
     @Environment(BrowserModel.self) private var browserModel
-    var compact = false
-    @FocusState private var isFocused: Bool
+    @FocusState.Binding var focused: Bool
+    let onSubmit: () -> Void
 
     var body: some View {
         @Bindable var browserModel = browserModel
         let pageSession = browserModel.activePageSession
         let isPageLoading = pageSession?.isLoading == true
 
-        HStack(spacing: 7) {
+        HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: ChromeMetrics.smallIconSize, weight: .medium))
                 .foregroundStyle(.secondary)
 
             TextField("Search or enter website name", text: $browserModel.addressText)
                 .textFieldStyle(.plain)
-                .font(.system(size: compact ? ChromeMetrics.compactFontSize : ChromeMetrics.bodyFontSize))
+                .font(.system(size: ChromeMetrics.bodyFontSize))
                 .foregroundStyle(.primary)
-                .focused($isFocused)
-                .onSubmit {
-                    browserModel.submitAddressBar()
-                }
+                .focused($focused)
+                .onSubmit { onSubmit() }
 
             if pageSession != nil {
                 Button {
@@ -243,61 +305,26 @@ private struct AddressBarField: View {
                 .help(isPageLoading ? "Stop" : "Reload")
             }
         }
-        .padding(.horizontal, 10)
-        .frame(height: ChromeMetrics.controlHeight)
+        .padding(.horizontal, 14)
+        .padding(.top, 6)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background {
-            Capsule(style: .continuous)
-                .fill(.quaternary)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color(nsColor: .textBackgroundColor).opacity(0.9))
         }
         .overlay {
-            Capsule(style: .continuous)
-                .strokeBorder(Color.accentColor, lineWidth: isFocused ? 2 : 0)
-        }
-        .onChange(of: browserModel.addressFocusRequestID) { _, _ in
-            isFocused = true
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Color.accentColor.opacity(focused ? 0.9 : 0), lineWidth: 2)
         }
     }
 }
 
 // MARK: - Tabs
 
-private struct CompactTabStrip: View {
-    @Environment(BrowserModel.self) private var browserModel
-
-    var body: some View {
-        @Bindable var browserModel = browserModel
-
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 4) {
-                ForEach(browserModel.tabs) { tab in
-                    if tab.id == browserModel.selectedTabID {
-                        AddressTab(tab: tab)
-                            .frame(minWidth: 320, idealWidth: 460, maxWidth: 560)
-                    } else {
-                        TabButton(
-                            tab: tab,
-                            isSelected: false,
-                            onSelect: { browserModel.selectedTabID = tab.id }
-                        )
-                        .frame(width: tab.isPinned ? 40 : 160)
-                    }
-                }
-            }
-            .padding(.vertical, 2)
-        }
-    }
-}
-
-private struct SeparateTabBar: View {
-    var body: some View {
-        TabStrip()
-            .padding(.horizontal, 12)
-            .frame(height: ChromeMetrics.tabBarHeight)
-    }
-}
-
+/// Separate-layout tab strip. Each tab shrinks to a favicon dot when `asDots`.
 private struct TabStrip: View {
     @Environment(BrowserModel.self) private var browserModel
+    let onPickDot: () -> Void
 
     var body: some View {
         @Bindable var browserModel = browserModel
@@ -308,45 +335,66 @@ private struct TabStrip: View {
                     TabButton(
                         tab: tab,
                         isSelected: tab.id == browserModel.selectedTabID,
-                        onSelect: { browserModel.selectedTabID = tab.id }
+                        onSelect: {
+                            browserModel.selectedTabID = tab.id
+                            onPickDot()
+                        }
                     )
                     .frame(width: tab.isPinned ? 44 : 220)
                 }
             }
+            .frame(maxHeight: .infinity)
         }
         .frame(height: ChromeMetrics.tabBarHeight)
     }
 }
 
-private struct AddressTab: View {
-    let tab: BrowserTab
+/// Compact-layout inline tabs, sitting next to the navigation controls.
+private struct InlineTabStrip: View {
+    @Environment(BrowserModel.self) private var browserModel
+    let onPickDot: () -> Void
 
     var body: some View {
-        HStack(spacing: 7) {
-            TabFavicon(tab: tab)
-            AddressBarField(compact: true)
-            CloseTabButton(tab: tab, isSelected: true)
+        @Bindable var browserModel = browserModel
+
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(browserModel.tabs) { tab in
+                    TabButton(
+                        tab: tab,
+                        isSelected: tab.id == browserModel.selectedTabID,
+                        onSelect: {
+                            browserModel.selectedTabID = tab.id
+                            onPickDot()
+                        }
+                    )
+                    .frame(width: tab.isPinned ? 40 : 150)
+                }
+            }
+            .frame(maxHeight: .infinity)
         }
-        .padding(.horizontal, 4)
-        .frame(height: ChromeMetrics.tabHeight)
-        .contextMenu {
-            TabContextMenu(tab: tab)
-        }
+        .frame(maxWidth: 460)
+        .frame(height: ChromeMetrics.controlHeight)
     }
 }
 
 private struct TabButton: View {
     let tab: BrowserTab
     let isSelected: Bool
+    var minimized: Bool = false
     let onSelect: () -> Void
 
     @State private var isHovering = false
 
+    // One stable view. Minimizing shrinks the tab *vertically* into a thin bar:
+    // the height collapses, the title/close fade out, and the favicon shrinks —
+    // width and the favicon's position stay put, so it reads as a minimized tab
+    // (not gone) and the transition is a smooth resize, not a view swap.
     var body: some View {
         HStack(spacing: 0) {
             Button(action: onSelect) {
                 HStack(spacing: 6) {
-                    TabFavicon(tab: tab)
+                    TabFavicon(tab: tab, size: minimized ? 10 : 14)
 
                     if tab.isPinned == false {
                         Text(tab.displayTitle)
@@ -354,6 +402,7 @@ private struct TabButton: View {
                             .foregroundStyle(isSelected ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
                             .lineLimit(1)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                            .opacity(minimized ? 0 : 1)
                     }
                 }
                 .padding(.leading, tab.isPinned ? 0 : 8)
@@ -366,12 +415,14 @@ private struct TabButton: View {
             if tab.isPinned == false {
                 CloseTabButton(tab: tab, isSelected: isSelected)
                     .padding(.trailing, 5)
+                    .opacity(minimized ? 0 : 1)
             }
         }
-        .frame(height: ChromeMetrics.tabHeight)
+        .frame(height: minimized ? ChromeMetrics.minimizedTabHeight : ChromeMetrics.tabHeight)
         .background {
             tabBackground
         }
+        .clipped()
         .contextMenu {
             TabContextMenu(tab: tab)
         }
@@ -386,6 +437,9 @@ private struct TabButton: View {
                     Capsule(style: .continuous)
                         .strokeBorder(Color.accentColor.opacity(0.35), lineWidth: 1)
                 }
+        } else if minimized {
+            Capsule(style: .continuous)
+                .fill(.quaternary)
         } else if isHovering {
             Capsule(style: .continuous)
                 .fill(.quaternary)
@@ -395,12 +449,13 @@ private struct TabButton: View {
 
 private struct TabFavicon: View {
     let tab: BrowserTab
+    var size: CGFloat = 15
 
     var body: some View {
         FaviconIcon(
             faviconURLString: tab.faviconURLString,
             fallbackSystemName: tab.urlString == nil ? "plus" : "globe",
-            size: 15
+            size: size
         )
     }
 }
