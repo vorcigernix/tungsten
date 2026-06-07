@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-app_file="Tungsten/Tungsten/TungstenApp.swift"
-icon_manifest="Tungsten/Tungsten/AppIcon.icon/icon.json"
+app_file="Tungsten/Sources/Tungsten/Application/TungstenApp.swift"
+icon_manifest="Tungsten/Sources/Tungsten/AppIcon.icon/icon.json"
 project_file="Tungsten/Tungsten.xcodeproj/project.pbxproj"
 copy_runtime_script="scripts/copy-cef-runtime.sh"
 build_release_script="scripts/build-release.sh"
@@ -34,6 +34,12 @@ require_pattern "$build_release_script" "CURRENT_PROJECT_VERSION" "release build
 require_pattern "$build_release_script" "lsregister" "release LaunchServices refresh"
 require_pattern "$package_release_script" "TUNGSTEN_BUILD_NUMBER" "package build number propagation"
 require_pattern "$package_release_script" "scripts/build-release\\.sh" "package release rebuild"
+require_pattern "$package_release_script" 'rm -rf "\$APP_PATH"' "stale release app removal before package builds"
+require_pattern "$package_release_script" "CFBundleShortVersionString" "packaged app version verification"
+require_pattern "$package_release_script" "CFBundleVersion" "packaged app build verification"
+require_pattern "$package_release_script" "hdiutil attach" "DMG content verification mount"
+require_pattern "$package_release_script" "hdiutil detach" "DMG content verification unmount"
+require_pattern "$package_release_script" "warn_if_installed_copy_differs" "installed app drift warning"
 
 if rg -q 'if \[\[ ! -d "\$APP_PATH" \]\]' "$package_release_script"; then
     echo "package-release must rebuild production apps instead of reusing stale bundles with cached icons." >&2

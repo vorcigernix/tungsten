@@ -4,6 +4,15 @@ Tungsten is a native macOS SwiftUI browser shell backed by the Chromium Embedded
 
 Browser tabs live in Safari-style top chrome, and the Smart Search field works as a combined search/address field.
 
+## Project Layout
+
+The Xcode project lives at `Tungsten/Tungsten.xcodeproj`. App source is under `Tungsten/Sources/Tungsten` and is organized by feature:
+
+- `Application`: app entry point, shared app model, preferences.
+- `Browser`: browser shell, navigation, tabs, history, Tor, and page sessions.
+- `CEF`: native Chromium Embedded Framework bridge.
+- `Settings` and `Shortcuts`: user-facing settings and shortcut configuration.
+
 ## CEF Setup
 
 CEF binaries are intentionally not committed to the repository.

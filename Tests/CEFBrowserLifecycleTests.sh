@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-model_file="Tungsten/Tungsten/Browser/BrowserModel.swift"
-window_root_file="Tungsten/Tungsten/Browser/BrowserWindowRoot.swift"
-host_file="Tungsten/Tungsten/Browser/Threads/LivePageSessionHost.swift"
-controller_header="Tungsten/Tungsten/CEF/TungstenBrowserController.h"
-cef_header="Tungsten/Tungsten/CEF/TungstenCEFApp.h"
-bridge_file="Tungsten/Tungsten/CEF/TungstenCEFBridge.mm"
-app_file="Tungsten/Tungsten/TungstenApp.swift"
+model_file="Tungsten/Sources/Tungsten/Browser/BrowserModel.swift"
+window_root_file="Tungsten/Sources/Tungsten/Browser/BrowserWindowRoot.swift"
+host_file="Tungsten/Sources/Tungsten/Browser/Threads/LivePageSessionHost.swift"
+controller_header="Tungsten/Sources/Tungsten/CEF/TungstenBrowserController.h"
+cef_header="Tungsten/Sources/Tungsten/CEF/TungstenCEFApp.h"
+bridge_file="Tungsten/Sources/Tungsten/CEF/TungstenCEFBridge.mm"
+app_file="Tungsten/Sources/Tungsten/Application/TungstenApp.swift"
 
 if ! rg -q -- "- \\(void\\)closeBrowser;" "$controller_header"; then
     echo "TungstenBrowserController must expose closeBrowser so BrowserModel can close CEF before dropping a tab." >&2

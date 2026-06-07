@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-app_protocol_file="Tungsten/Tungsten/CEF/TungstenCrAppProtocol.m"
+app_protocol_file="Tungsten/Sources/Tungsten/CEF/TungstenCrAppProtocol.m"
 cef_header="Vendor/CEF/current/include/cef_application_mac.h"
 
 if ! rg -q -- "@protocol CrAppControlProtocol" "$cef_header" ||

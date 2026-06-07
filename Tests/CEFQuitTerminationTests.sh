@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-app_file="Tungsten/Tungsten/TungstenApp.swift"
-bridge_file="Tungsten/Tungsten/CEF/TungstenCEFBridge.mm"
-header_file="Tungsten/Tungsten/CEF/TungstenCEFApp.h"
+app_file="Tungsten/Sources/Tungsten/Application/TungstenApp.swift"
+bridge_file="Tungsten/Sources/Tungsten/CEF/TungstenCEFBridge.mm"
+header_file="Tungsten/Sources/Tungsten/CEF/TungstenCEFApp.h"
 
 require_pattern() {
     local file="$1"

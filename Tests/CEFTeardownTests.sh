@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-bridge_file="Tungsten/Tungsten/CEF/TungstenCEFBridge.mm"
+bridge_file="Tungsten/Sources/Tungsten/CEF/TungstenCEFBridge.mm"
 
 if awk '
     /^- \(void\)dealloc/ { in_dealloc = 1 }
