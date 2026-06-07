@@ -33,9 +33,9 @@ require_pattern "$workflow_file" "environment:" "GitHub Pages deployment environ
 require_pattern "$workflow_file" "name: github-pages" "github-pages environment name"
 require_pattern "$workflow_file" "actions/checkout@v6" "current checkout action"
 require_pattern "$workflow_file" "actions/configure-pages@v6" "GitHub Pages configuration action"
-require_pattern "$workflow_file" "actions/upload-pages-artifact@v4" "GitHub Pages artifact upload action"
+require_pattern "$workflow_file" "actions/upload-pages-artifact@v5" "GitHub Pages artifact upload action"
 require_pattern "$workflow_file" "path: site" "site folder artifact path"
-require_pattern "$workflow_file" "actions/deploy-pages@v4" "GitHub Pages deployment action"
+require_pattern "$workflow_file" "actions/deploy-pages@v5" "GitHub Pages deployment action"
 
 if rg -q "path: \\." "$workflow_file"; then
     echo "GitHub Pages workflow must publish site/, not the repository root." >&2
