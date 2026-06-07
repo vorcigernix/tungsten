@@ -33,9 +33,10 @@
       <a href="#privacy">Privacy</a>
       <a href="#principles">Principles</a>
       <a href="#how">Compare</a>
+      <a href="#download">Install</a>
     </nav>
-    <a class="btn btn-lime btn-sm" href="https://github.com/vorcigernix/tungsten">
-      GitHub
+    <a class="btn btn-lime btn-sm" href="https://github.com/vorcigernix/tungsten/releases/download/v0.11/Tungsten-0.11.dmg">
+      Download v0.11
       <svg class="icon" aria-hidden="true"><use href="#i-download"></use></svg>
     </a>
   </header>
@@ -51,12 +52,12 @@
           and privacy controls that live in the app instead of a pile of extensions.
         </p>
         <div class="hero-actions">
-          <a class="btn btn-lime btn-lg" href="https://github.com/vorcigernix/tungsten">
-            Get Tungsten on GitHub
+          <a class="btn btn-lime btn-lg" href="https://github.com/vorcigernix/tungsten/releases/download/v0.11/Tungsten-0.11.dmg">
+            Download Tungsten 0.11
             <svg class="icon" aria-hidden="true"><use href="#i-download"></use></svg>
           </a>
-          <a class="btn btn-purple btn-lg" href="https://github.com/vorcigernix/tungsten">
-            Read the source
+          <a class="btn btn-purple btn-lg" href="https://github.com/vorcigernix/tungsten/releases/tag/v0.11">
+            View release notes
             <svg class="icon" aria-hidden="true"><use href="#i-arrow"></use></svg>
           </a>
         </div>
@@ -228,14 +229,49 @@
     <section id="download" class="band" aria-labelledby="download-title">
       <div class="cta">
         <div>
-          <p class="badge badge-lime">Project repository</p>
-          <h2 id="download-title">Download Tungsten from GitHub.</h2>
-          <p class="cta-note">Builds, source, packaging notes, and the current macOS app work live in the public repository.</p>
+          <p class="badge badge-lime">Pinned release</p>
+          <h2 id="download-title">Install Tungsten 0.11 for macOS.</h2>
+          <p class="cta-note">Download the versioned DMG from GitHub Releases. This build is for Apple silicon Macs and includes the bundled Arti runtime for Tor tabs.</p>
         </div>
-        <a class="btn btn-lime btn-lg" href="https://github.com/vorcigernix/tungsten">
-          Open vorcigernix/tungsten
+        <a class="btn btn-lime btn-lg" href="https://github.com/vorcigernix/tungsten/releases/download/v0.11/Tungsten-0.11.dmg">
+          Download 0.11 DMG
           <svg class="icon" aria-hidden="true"><use href="#i-download"></use></svg>
         </a>
+      </div>
+
+      <div class="install-grid">
+        <article class="tile release-card">
+          <h3>Release details</h3>
+          <dl class="release-meta">
+            <div>
+              <dt>Version</dt>
+              <dd>0.11</dd>
+            </div>
+            <div>
+              <dt>Build</dt>
+              <dd>20260607143833</dd>
+            </div>
+            <div>
+              <dt>Package</dt>
+              <dd>Tungsten-0.11.dmg</dd>
+            </div>
+            <div>
+              <dt>SHA256</dt>
+              <dd><code>4cf4af58ef4c3a8a44563f6cd613e271469c9ca82f85fa23b173de97f7dea866</code></dd>
+            </div>
+          </dl>
+          <a class="text-link" href="https://github.com/vorcigernix/tungsten/releases/tag/v0.11">Read the v0.11 release notes</a>
+        </article>
+
+        <article class="tile install-card">
+          <h3>Install steps</h3>
+          <ol class="install-steps">
+            <li>Download <a href="https://github.com/vorcigernix/tungsten/releases/download/v0.11/Tungsten-0.11.dmg">Tungsten-0.11.dmg</a>.</li>
+            <li>Open the DMG and drag Tungsten into Applications.</li>
+            <li>On first launch, macOS may block the app because this experimental build is ad-hoc signed. Open System Settings, go to Privacy &amp; Security, choose Open Anyway next to the Tungsten warning, then confirm.</li>
+            <li>If Open Anyway does not appear, clear the quarantine flag in Terminal: <code>xattr -dr com.apple.quarantine /Applications/Tungsten.app</code></li>
+          </ol>
+        </article>
       </div>
     </section>
   </main>

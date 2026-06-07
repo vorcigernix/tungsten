@@ -361,6 +361,80 @@ p { margin: 0; }
 .cta h2 { margin-top: 12px; }
 .cta-note { margin-top: 12px; max-width: 46rem; font-size: 15px; font-weight: 600; }
 
+.install-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: var(--gap);
+  margin-top: 32px;
+}
+.release-card,
+.install-card { justify-content: flex-start; }
+.release-meta {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+.release-meta div {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  border-bottom: var(--bw) solid var(--ink);
+  padding-bottom: 10px;
+}
+.release-meta dt {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.release-meta dd {
+  margin: 0;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+code {
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+  background: var(--paper);
+  border: var(--bw) solid var(--ink);
+  padding: 4px 6px;
+}
+.text-link {
+  align-self: flex-start;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: var(--bw) solid var(--ink);
+  padding-bottom: 2px;
+}
+.text-link:hover { background: var(--lime); }
+.install-steps {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding-left: 22px;
+}
+.install-steps li {
+  font-size: 15px;
+  font-weight: 650;
+  padding-left: 4px;
+}
+.install-steps a {
+  border-bottom: var(--bw) solid var(--ink);
+  font-weight: 800;
+}
+.install-steps a:hover { background: var(--lime); }
+
 /* ---- Footer ---- */
 .site-footer {
   display: flex;
@@ -389,7 +463,8 @@ p { margin: 0; }
 @media (max-width: 900px) {
   .hero,
   .split,
-  .cta { grid-template-columns: 1fr; }
+  .cta,
+  .install-grid { grid-template-columns: 1fr; }
   .cta { text-align: left; }
   .tile-wide,
   .tile-purple { grid-column: span 12; }
@@ -405,6 +480,7 @@ p { margin: 0; }
   .btn-lg,
   .hero-actions .btn { width: 100%; justify-content: center; }
   .cta .btn { width: 100%; justify-content: center; }
+  .release-meta div { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {
