@@ -2,6 +2,7 @@
 set -euo pipefail
 
 workflow_file=".github/workflows/pages.yml"
+duplicate_workflow_file=".github/workflows/static.yml"
 
 require_pattern() {
     local file="$1"
@@ -19,6 +20,11 @@ if [[ ! -f "$workflow_file" ]]; then
     exit 1
 fi
 
+if [[ -f "$duplicate_workflow_file" ]]; then
+    echo "Duplicate GitHub Pages workflow at ${duplicate_workflow_file}" >&2
+    exit 1
+fi
+
 require_pattern "$workflow_file" "branches: \\[main\\]" "main branch Pages trigger"
 require_pattern "$workflow_file" "contents: read" "read-only repository permission"
 require_pattern "$workflow_file" "pages: write" "GitHub Pages write permission"
@@ -26,7 +32,7 @@ require_pattern "$workflow_file" "id-token: write" "OIDC token permission for Pa
 require_pattern "$workflow_file" "environment:" "GitHub Pages deployment environment"
 require_pattern "$workflow_file" "name: github-pages" "github-pages environment name"
 require_pattern "$workflow_file" "actions/checkout@v6" "current checkout action"
-require_pattern "$workflow_file" "actions/configure-pages@v5" "GitHub Pages configuration action"
+require_pattern "$workflow_file" "actions/configure-pages@v6" "GitHub Pages configuration action"
 require_pattern "$workflow_file" "actions/upload-pages-artifact@v4" "GitHub Pages artifact upload action"
 require_pattern "$workflow_file" "path: site" "site folder artifact path"
 require_pattern "$workflow_file" "actions/deploy-pages@v4" "GitHub Pages deployment action"
