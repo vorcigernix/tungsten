@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-tab_file="Tungsten/Tungsten/Browser/Tabs/BrowserTab.swift"
-model_file="Tungsten/Tungsten/Browser/BrowserModel.swift"
-preferences_file="Tungsten/Tungsten/AppPreferences.swift"
-settings_file="Tungsten/Tungsten/Settings/GeneralSettingsView.swift"
-tor_service_file="Tungsten/Tungsten/Browser/Tor/TorNetworkService.swift"
+tab_file="Tungsten/Sources/Tungsten/Browser/Tabs/BrowserTab.swift"
+model_file="Tungsten/Sources/Tungsten/Browser/BrowserModel.swift"
+preferences_file="Tungsten/Sources/Tungsten/Application/AppPreferences.swift"
+settings_file="Tungsten/Sources/Tungsten/Settings/GeneralSettingsView.swift"
+tor_service_file="Tungsten/Sources/Tungsten/Browser/Tor/TorNetworkService.swift"
 copy_runtime_script="scripts/copy-cef-runtime.sh"
 setup_arti_script="scripts/setup-arti.sh"
 build_release_script="scripts/build-release.sh"
 package_release_script="scripts/package-release.sh"
-shortcut_action_file="Tungsten/Tungsten/Shortcuts/Core/ShortcutAction.swift"
-shortcut_dispatcher_file="Tungsten/Tungsten/Shortcuts/ShortcutDispatcher.swift"
-cef_controller_header="Tungsten/Tungsten/CEF/TungstenBrowserController.h"
-cef_bridge_file="Tungsten/Tungsten/CEF/TungstenCEFBridge.mm"
+shortcut_action_file="Tungsten/Sources/Tungsten/Shortcuts/Core/ShortcutAction.swift"
+shortcut_dispatcher_file="Tungsten/Sources/Tungsten/Shortcuts/ShortcutDispatcher.swift"
+cef_controller_header="Tungsten/Sources/Tungsten/CEF/TungstenBrowserController.h"
+cef_bridge_file="Tungsten/Sources/Tungsten/CEF/TungstenCEFBridge.mm"
 
 require_pattern() {
     local file="$1"
@@ -76,7 +76,7 @@ require_pattern "$cef_controller_header" "torProxyHost" "CEF controller Tor prox
 require_pattern "$cef_bridge_file" "socks5://%@:%d" "CEF SOCKS5 proxy server preference"
 require_pattern "$cef_bridge_file" "setRequestContextPreference:\"proxy\"" "CEF request context proxy preference"
 require_pattern "$cef_bridge_file" "webrtc\\.ip_handling_policy" "WebRTC non-proxied UDP guard"
-require_pattern "Tungsten/Tungsten/Browser/Threads/BrowserPageSession.swift" "torStartupErrorURL" "Tor startup failure page"
-require_pattern "Tungsten/Tungsten/Browser/Threads/BrowserPageSession.swift" "ensureRunning\\(configuration: torConfiguration\\)" "Tor startup result check"
+require_pattern "Tungsten/Sources/Tungsten/Browser/Threads/BrowserPageSession.swift" "torStartupErrorURL" "Tor startup failure page"
+require_pattern "Tungsten/Sources/Tungsten/Browser/Threads/BrowserPageSession.swift" "ensureRunning\\(configuration: torConfiguration\\)" "Tor startup result check"
 
 echo "TorTabIntegrationTests passed"

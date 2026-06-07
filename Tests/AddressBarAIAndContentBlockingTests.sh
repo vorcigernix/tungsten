@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-preferences_file="Tungsten/Tungsten/AppPreferences.swift"
-settings_file="Tungsten/Tungsten/Settings/GeneralSettingsView.swift"
-search_file="Tungsten/Tungsten/Browser/SearchEngine.swift"
-browser_model_file="Tungsten/Tungsten/Browser/BrowserModel.swift"
-classifier_file="Tungsten/Tungsten/Browser/Threads/BrowserInputClassifier.swift"
-cef_header="Tungsten/Tungsten/CEF/TungstenCEFApp.h"
-bridge_file="Tungsten/Tungsten/CEF/TungstenCEFBridge.mm"
+preferences_file="Tungsten/Sources/Tungsten/Application/AppPreferences.swift"
+settings_file="Tungsten/Sources/Tungsten/Settings/GeneralSettingsView.swift"
+search_file="Tungsten/Sources/Tungsten/Browser/Navigation/SearchEngine.swift"
+browser_model_file="Tungsten/Sources/Tungsten/Browser/BrowserModel.swift"
+classifier_file="Tungsten/Sources/Tungsten/Browser/Threads/BrowserInputClassifier.swift"
+cef_header="Tungsten/Sources/Tungsten/CEF/TungstenCEFApp.h"
+bridge_file="Tungsten/Sources/Tungsten/CEF/TungstenCEFBridge.mm"
 
 require_pattern() {
     local file="$1"
@@ -21,6 +21,7 @@ require_pattern() {
 }
 
 require_pattern "$search_file" "enum AddressBarAIProvider" "address bar AI provider model"
+require_pattern "$search_file" "case \\.duckDuckGo: return \"https://duck\\.ai/\"" "DuckDuckGo default homepage points to Duck.ai"
 require_pattern "$search_file" "duck\\.ai/chat\\?prompt=1&home=1&q=" "DuckDuckGo AI URL builder"
 require_pattern "$search_file" "google\\.com/search\\?udm=50&q=" "Google AI Mode URL builder"
 require_pattern "$classifier_file" "return \\.question\\(trimmed\\)" "natural-language question classification"

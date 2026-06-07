@@ -46,7 +46,7 @@ struct StartPageView: View {
     private var defaultFavorites: [StartLink] {
         [
             StartLink(title: "Apple", urlString: "https://www.apple.com"),
-            StartLink(title: "DuckDuckGo", urlString: "https://duckduckgo.com"),
+            StartLink(title: "Duck AI", urlString: "https://duck.ai/"),
             StartLink(title: "Wikipedia", urlString: "https://www.wikipedia.org"),
             StartLink(title: "GitHub", urlString: "https://github.com"),
             StartLink(title: "Hacker News", urlString: "https://news.ycombinator.com"),

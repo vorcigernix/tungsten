@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-bridge_file="Tungsten/Tungsten/CEF/TungstenCEFBridge.mm"
+bridge_file="Tungsten/Sources/Tungsten/CEF/TungstenCEFBridge.mm"
 
 if ! grep -q "NonVibrantBrowserAppearanceForWindow" "$bridge_file"; then
     echo "CEF browser compositing must choose a non-vibrant Aqua/DarkAqua appearance for web content." >&2

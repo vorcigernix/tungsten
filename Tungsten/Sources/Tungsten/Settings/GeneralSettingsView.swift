@@ -32,13 +32,45 @@ struct GeneralSettingsView: View {
             }
 
             Section {
+                Toggle("Block third-party cookies", isOn: $appPreferences.thirdPartyCookieBlockingEnabled)
+
+                Text("Stops most cross-site cookies in Chromium. Some embedded login and support widgets may need a site exception later.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+
+                Toggle("Prevent WebRTC IP leaks", isOn: $appPreferences.webRTCIPLeakProtectionEnabled)
+
+                Text("Restricts WebRTC to avoid exposing local network routes. Video-call sites may behave differently.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+
+                Toggle("Reduce fingerprinting surface", isOn: $appPreferences.fingerprintSurfaceReductionEnabled)
+
+                Text("Blocks uncommon high-entropy browser signals like local font enumeration, sensors, idle detection, notification prompts, and ad attribution APIs while keeping normal web features on.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+
                 Toggle("uBlock-style content blocking", isOn: $appPreferences.contentBlockingEnabled)
 
                 Text("Blocks common ad and tracker requests in Chromium. Off by default.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
+
+                DisclosureGroup("Advanced privacy") {
+                    Toggle("Disable WebGL", isOn: $appPreferences.webGLDisabled)
+
+                    Toggle("Disable remote fonts", isOn: $appPreferences.remoteFontsDisabled)
+
+                    Toggle("Block JavaScript clipboard access", isOn: $appPreferences.javaScriptClipboardAccessDisabled)
+
+                    Toggle("Disable local storage", isOn: $appPreferences.localStorageDisabled)
+
+                    Text("These settings reduce fingerprinting and storage surfaces, but can break maps, editors, media tools, icons, sign-in flows, and web apps.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
             } header: {
-                Text("Content Blocking")
+                Text("Privacy")
             }
 
             Section {
@@ -83,6 +115,6 @@ struct GeneralSettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 760, height: 560)
+        .frame(width: 760, height: 640)
     }
 }

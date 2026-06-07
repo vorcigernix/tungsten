@@ -24,7 +24,7 @@ enum SearchEngine: String, CaseIterable, Codable, Identifiable {
 
     var homepageURL: String {
         switch self {
-        case .duckDuckGo: return "https://duckduckgo.com"
+        case .duckDuckGo: return "https://duck.ai/"
         case .google:     return "https://www.google.com"
         case .bing:       return "https://www.bing.com"
         }

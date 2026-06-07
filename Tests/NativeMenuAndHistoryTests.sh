@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-app_file="Tungsten/Tungsten/TungstenApp.swift"
-context_file="Tungsten/Tungsten/Browser/BrowserCommandContext.swift"
-window_root_file="Tungsten/Tungsten/Browser/BrowserWindowRoot.swift"
-history_file="Tungsten/Tungsten/Browser/HistoryView.swift"
-split_view_file="Tungsten/Tungsten/Browser/BrowserSplitView.swift"
+app_file="Tungsten/Sources/Tungsten/Application/TungstenApp.swift"
+context_file="Tungsten/Sources/Tungsten/Browser/BrowserCommandContext.swift"
+window_root_file="Tungsten/Sources/Tungsten/Browser/BrowserWindowRoot.swift"
+history_file="Tungsten/Sources/Tungsten/Browser/History/HistoryView.swift"
+split_view_file="Tungsten/Sources/Tungsten/Browser/BrowserSplitView.swift"
 
 require_pattern() {
     local file="$1"

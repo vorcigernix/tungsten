@@ -432,7 +432,7 @@ private struct TabButton: View {
         HStack(spacing: 0) {
             Button(action: onSelect) {
                 HStack(spacing: 6) {
-                    TabFavicon(tab: tab, size: minimized ? 10 : 14)
+                    TabPrivacyModeFavicon(tab: tab, minimized: minimized)
 
                     if tab.isPinned == false {
                         Text(tab.displayTitle)
@@ -470,10 +470,10 @@ private struct TabButton: View {
     @ViewBuilder private var tabBackground: some View {
         if isSelected {
             Capsule(style: .continuous)
-                .fill(Color.accentColor.opacity(0.18))
+                .fill(tab.privacyMode.tabModeSelectionColor.opacity(0.18))
                 .overlay {
                     Capsule(style: .continuous)
-                        .strokeBorder(Color.accentColor.opacity(0.35), lineWidth: 1)
+                        .strokeBorder(tab.privacyMode.tabModeSelectionColor.opacity(0.4), lineWidth: 1)
                 }
         } else if minimized {
             Capsule(style: .continuous)
@@ -485,16 +485,69 @@ private struct TabButton: View {
     }
 }
 
-private struct TabFavicon: View {
+private struct TabPrivacyModeFavicon: View {
     let tab: BrowserTab
-    var size: CGFloat = 15
+    var minimized: Bool = false
 
     var body: some View {
-        FaviconIcon(
-            faviconURLString: tab.faviconURLString,
-            fallbackSystemName: tab.urlString == nil ? "plus" : "globe",
-            size: size
-        )
+        Capsule(style: .continuous)
+            .fill(tab.privacyMode.tabModeFillColor)
+            .frame(width: minimized ? 14 : 22, height: minimized ? 10 : 18)
+            .overlay {
+                FaviconIcon(
+                    faviconURLString: tab.faviconURLString,
+                    fallbackSystemName: tab.urlString == nil ? "plus" : "globe",
+                    size: minimized ? 10 : 14
+                )
+            }
+            .overlay {
+                Capsule(style: .continuous)
+                    .strokeBorder(tab.privacyMode.tabModeBorderColor, lineWidth: 1)
+            }
+            .accessibilityLabel(tab.privacyMode.tabModeAccessibilityLabel)
+            .help(tab.privacyMode.tabModeAccessibilityLabel)
+    }
+}
+
+private extension BrowserTabPrivacyMode {
+    var tabModeAccessibilityLabel: String {
+        switch self {
+        case .normal:
+            return "Normal tab"
+        case .incognito:
+            return "Private tab"
+        case .tor:
+            return "Tor tab"
+        }
+    }
+
+    var tabModeFillColor: Color {
+        switch self {
+        case .normal:
+            return Color(nsColor: .textBackgroundColor)
+        case .incognito:
+            return Color(red: 173.0 / 255.0, green: 255.0 / 255.0, blue: 47.0 / 255.0)
+        case .tor:
+            return Color(red: 200.0 / 255.0, green: 62.0 / 255.0, blue: 255.0 / 255.0)
+        }
+    }
+
+    var tabModeBorderColor: Color {
+        switch self {
+        case .normal:
+            return Color(nsColor: .separatorColor)
+        case .incognito, .tor:
+            return .primary.opacity(0.35)
+        }
+    }
+
+    var tabModeSelectionColor: Color {
+        switch self {
+        case .normal:
+            return .accentColor
+        case .incognito, .tor:
+            return tabModeFillColor
+        }
     }
 }
 

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Tungsten is a native macOS browser for people who want Chrome-level compatibility, built-in privacy controls, and a Mac app that feels fast and familiar.">
+  <meta name="theme-color" content="#fdf9e9">
+  <title>Tungsten - Private browsing that still feels native</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <!-- Decorative inline SVG icon sprite (no icon-font dependency). -->
+  <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+    <defs>
+      <symbol id="i-download" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" d="M12 3v12m0 0 5-5m-5 5-5-5M4 20h16"/></symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" d="M5 12h13m0 0-6-6m6 6-6 6"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square" d="m4 12 5 5L20 6"/></symbol>
+      <symbol id="i-bolt" viewBox="0 0 24 24"><path fill="currentColor" d="M13 2 4 14h6l-1 8 9-12h-6z"/></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" d="M12 3 5 6v6c0 4 3 6.5 7 9 4-2.5 7-5 7-9V6z"/></symbol>
+    </defs>
+  </svg>
+
+  <header class="site-header" id="top">
+    <a class="brand" href="#top" aria-label="Tungsten home">
+      <img src="./assets/tungsten-privacy-shield.svg" alt="" width="34" height="34">
+      <span>Tungsten</span>
+    </a>
+    <nav class="site-nav" aria-label="Primary">
+      <a href="#why">Why</a>
+      <a href="#principles">Principles</a>
+      <a href="#how">Compare</a>
+    </nav>
+    <a class="btn btn-lime btn-sm" href="../dist/Tungsten-0.11.dmg">
+      Download
+      <svg class="icon" aria-hidden="true"><use href="#i-download"></use></svg>
+    </a>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="badge badge-lime">Private browsing that feels native</p>
+        <h1 id="hero-title">Tungsten</h1>
+        <p class="hero-lede">
+          A Mac browser for people who want modern websites to work, pages to stay fast,
+          and privacy controls built into the app instead of bolted on through extensions.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-lime btn-lg" href="../dist/Tungsten-0.11.dmg">
+            Download v0.11
+            <svg class="icon" aria-hidden="true"><use href="#i-download"></use></svg>
+          </a>
+          <a class="btn btn-purple btn-lg" href="../README.md">
+            Read the project notes
+            <svg class="icon" aria-hidden="true"><use href="#i-arrow"></use></svg>
+          </a>
+        </div>
+      </div>
+
+      <figure class="panel" aria-label="Tungsten product summary">
+        <span class="panel-tag">v0.11</span>
+        <div class="panel-head">
+          <img src="./assets/tungsten-privacy-shield.svg" alt="" width="56" height="56">
+          <div>
+            <strong>Tungsten</strong>
+            <span>Native Mac app + Chromium compatibility</span>
+          </div>
+        </div>
+        <dl class="signal-list">
+          <div>
+            <dt>Performance</dt>
+            <dd>Fast Chromium rendering in a lean SwiftUI app, without an extension stack on every page.</dd>
+          </div>
+          <div>
+            <dt>Privacy</dt>
+            <dd>Private windows, Tor tabs through Arti, and content blocking you can turn on deliberately.</dd>
+          </div>
+          <div>
+            <dt>Compatibility</dt>
+            <dd>Modern Chromium rendering for work sites, media, banking, and the messy web people actually use.</dd>
+          </div>
+          <div>
+            <dt>Mac fit</dt>
+            <dd>Native menus, shortcuts, window behavior, and packaging made for macOS.</dd>
+          </div>
+        </dl>
+      </figure>
+    </section>
+
+    <div class="rule" role="presentation"></div>
+
+    <!-- Why -->
+    <section id="why" class="band split" aria-labelledby="why-title">
+      <div>
+        <p class="badge">Why Tungsten exists</p>
+        <h2 id="why-title">Private browsers should not make the web feel worse.</h2>
+      </div>
+      <div class="copy-stack">
+        <p class="boxed">
+          Too many privacy-first browsers ask for a compromise: slower pages, broken apps,
+          unfamiliar UI, or a pile of extensions you are supposed to trust.
+        </p>
+        <p class="boxed">
+          Chrome is compatible, but it is not built around native Mac conventions or user-first
+          privacy. Tungsten takes a different route: keep the web working, keep the app Mac-native,
+          and make privacy modes clear.
+        </p>
+      </div>
+    </section>
+
+    <!-- Principles bento -->
+    <section id="principles" class="band" aria-labelledby="principles-title">
+      <p class="badge badge-ink">Core directives</p>
+      <h2 id="principles-title" class="band-title">Four requirements for a browser people can actually use.</h2>
+
+      <div class="bento">
+        <article class="tile tile-wide tile-hover">
+          <span class="num">01</span>
+          <div class="tile-body">
+            <h3>Put privacy in the browser</h3>
+            <p class="boxed">Content blocking and privacy modes should be part of the product, not a chain of third-party extensions you have to vet and trust.</p>
+          </div>
+          <svg class="tile-glyph" aria-hidden="true"><use href="#i-shield"></use></svg>
+        </article>
+
+        <article class="tile tile-purple">
+          <svg class="icon icon-lg accent-lime" aria-hidden="true"><use href="#i-bolt"></use></svg>
+          <div class="tile-body">
+            <h3>Keep the modern web working</h3>
+            <p>Compatibility matters. A private browser that breaks the daily sites people use for work, banking, and media becomes shelfware.</p>
+          </div>
+        </article>
+
+        <article class="tile">
+          <div class="tile-body">
+            <h3>Feel at home on macOS</h3>
+            <ul class="checklist">
+              <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg> Native menus &amp; shortcuts</li>
+              <li><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg> Real window behavior</li>
+              <li class="on"><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg> macOS-native packaging</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="tile tile-wide tile-modes">
+          <div class="tile-body">
+            <h3>Separate privacy modes clearly</h3>
+            <p>Normal, private, and Tor tabs should be obvious choices, not hidden states buried in a menu.</p>
+            <div class="modes">
+              <span class="chip">Normal</span>
+              <span class="chip chip-lime">Private</span>
+              <span class="chip chip-purple">Tor</span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- Compare -->
+    <section id="how" class="band" aria-labelledby="how-title">
+      <p class="badge">How it differs</p>
+      <h2 id="how-title" class="band-title">A private browser without the usual penalty.</h2>
+      <div class="cards" role="list">
+        <article class="tile" role="listitem">
+          <h3>Less extension trust</h3>
+          <p>Plugins can help, but every one adds another party to trust. Tungsten keeps core privacy behavior inside the app.</p>
+        </article>
+        <article class="tile" role="listitem">
+          <h3>Fewer compatibility surprises</h3>
+          <p>A private browser still has to open the sites people use for work, banking, media, and daily life.</p>
+        </article>
+        <article class="tile" role="listitem">
+          <h3>More Mac-native by default</h3>
+          <p>A browser people keep open all day should behave like a Mac app, not like a web app in a desktop frame.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- Download CTA -->
+    <section id="download" class="band" aria-labelledby="download-title">
+      <div class="cta">
+        <div>
+          <p class="badge badge-lime">Current build</p>
+          <h2 id="download-title">Download Tungsten 0.11.</h2>
+          <p class="cta-note">This local testing build is ad-hoc signed and includes bundled Arti support for Tor tabs plus the latest icon packaging fixes.</p>
+        </div>
+        <a class="btn btn-lime btn-lg" href="../dist/Tungsten-0.11.dmg">
+          Download the DMG
+          <svg class="icon" aria-hidden="true"><use href="#i-download"></use></svg>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span class="footer-brand">Tungsten</span>
+    <p>Experimental browser software for macOS.</p>
+    <a href="../README.md">Project README</a>
+  </footer>
+</body>
+</html>

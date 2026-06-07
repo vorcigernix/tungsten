@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-model_file="Tungsten/Tungsten/Browser/BrowserModel.swift"
-split_view_file="Tungsten/Tungsten/Browser/BrowserSplitView.swift"
-detail_view_file="Tungsten/Tungsten/Browser/BrowserDetailView.swift"
-app_file="Tungsten/Tungsten/TungstenApp.swift"
-session_file="Tungsten/Tungsten/Browser/Threads/BrowserPageSession.swift"
-host_file="Tungsten/Tungsten/Browser/Threads/LivePageSessionHost.swift"
-tab_file="Tungsten/Tungsten/Browser/Tabs/BrowserTab.swift"
-tab_store_file="Tungsten/Tungsten/Browser/Tabs/BrowserTabStore.swift"
-settings_file="Tungsten/Tungsten/Settings/GeneralSettingsView.swift"
-preferences_file="Tungsten/Tungsten/AppPreferences.swift"
-input_file="Tungsten/Tungsten/Browser/Threads/BrowserInputClassifier.swift"
-chrome_file="Tungsten/Tungsten/Browser/Chrome/BrowserChrome.swift"
-favicon_file="Tungsten/Tungsten/Browser/Chrome/FaviconIcon.swift"
-start_page_file="Tungsten/Tungsten/Browser/StartPage/StartPageView.swift"
+model_file="Tungsten/Sources/Tungsten/Browser/BrowserModel.swift"
+split_view_file="Tungsten/Sources/Tungsten/Browser/BrowserSplitView.swift"
+detail_view_file="Tungsten/Sources/Tungsten/Browser/BrowserDetailView.swift"
+app_file="Tungsten/Sources/Tungsten/Application/TungstenApp.swift"
+session_file="Tungsten/Sources/Tungsten/Browser/Threads/BrowserPageSession.swift"
+host_file="Tungsten/Sources/Tungsten/Browser/Threads/LivePageSessionHost.swift"
+tab_file="Tungsten/Sources/Tungsten/Browser/Tabs/BrowserTab.swift"
+tab_store_file="Tungsten/Sources/Tungsten/Browser/Tabs/BrowserTabStore.swift"
+settings_file="Tungsten/Sources/Tungsten/Settings/GeneralSettingsView.swift"
+preferences_file="Tungsten/Sources/Tungsten/Application/AppPreferences.swift"
+input_file="Tungsten/Sources/Tungsten/Browser/Threads/BrowserInputClassifier.swift"
+chrome_file="Tungsten/Sources/Tungsten/Browser/Chrome/BrowserChrome.swift"
+favicon_file="Tungsten/Sources/Tungsten/Browser/Chrome/FaviconIcon.swift"
+start_page_file="Tungsten/Sources/Tungsten/Browser/StartPage/StartPageView.swift"
 
 require_file() {
     local file="$1"
@@ -57,7 +57,9 @@ require_pattern "$session_file" "func closeBrowserForWindowClose\\(" "BrowserPag
 require_pattern "$session_file" "browserController\\.closeBrowserForWindowClose\\(" "BrowserPageSession closeBrowserForWindowClose forwarding call"
 
 require_pattern "$host_file" "final class LivePageSessionHost" "LivePageSessionHost class"
-require_pattern "$host_file" "func activate\\(tab: BrowserTab, isIncognito: Bool, configure: \\(BrowserPageSession\\) -> Void\\)" "LivePageSessionHost.activate(tab:isIncognito:configure:)"
+require_pattern "$host_file" "func activate\\(" "LivePageSessionHost.activate"
+require_pattern "$host_file" "privacyMode: BrowserTabPrivacyMode" "LivePageSessionHost privacy-mode activation parameter"
+require_pattern "$host_file" "torConfiguration: TorProxyConfiguration" "LivePageSessionHost Tor configuration activation parameter"
 require_pattern "$host_file" "activePageSession\\?\\.tabID == tab\\.id" "LivePageSessionHost selected-tab guard"
 require_pattern "$host_file" "closeActivePage\\(\\)" "LivePageSessionHost closes active CEF session before replacement"
 require_pattern "$host_file" "closingPageSession" "LivePageSessionHost pending window-close session retention"
@@ -95,6 +97,7 @@ require_pattern "$chrome_file" "\\.frame\\(width: 16, height: 16\\)" "fixed relo
 require_pattern "$chrome_file" "FaviconIcon" "shared favicon rendering view"
 require_pattern "$favicon_file" "FaviconLoader\\.shared\\.image" "favicon loading"
 require_pattern "$start_page_file" "struct StartPageView" "native start page"
+require_pattern "$start_page_file" "StartLink\\(title: \"Duck AI\", urlString: \"https://duck\\.ai/\"\\)" "Duck AI start page favorite"
 
 require_pattern "$preferences_file" "enum BrowserTabLayout" "BrowserTabLayout preference model"
 require_pattern "$preferences_file" "self\\.tabLayout = \\.separate" "separate tab layout default"
@@ -140,7 +143,7 @@ if rg -q "Tungsten\\.BrowserThreads\\.v1" "$tab_store_file"; then
 fi
 
 if ! awk '
-    /func activate\(tab: BrowserTab, isIncognito: Bool, configure: \(BrowserPageSession\) -> Void\)/ { in_activate = 1 }
+    /func activate\(/ { in_activate = 1 }
     in_activate && /closeActivePage\(\)/ { saw_close = 1 }
     in_activate && /let session = BrowserPageSession/ {
         if (!saw_close) {

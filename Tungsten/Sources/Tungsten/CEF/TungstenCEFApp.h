@@ -18,6 +18,16 @@ FOUNDATION_EXPORT NSString *const TungstenLocalAIProviderDefaultsKey;
 /// Shared by Swift settings and the CEF request interceptor.
 FOUNDATION_EXPORT NSString *const TungstenContentBlockingEnabledDefaultsKey;
 
+/// Canonical NSUserDefaults keys for Chromium privacy controls. Shared by
+/// Swift settings and the CEF browser/request-context setup.
+FOUNDATION_EXPORT NSString *const TungstenThirdPartyCookieBlockingEnabledDefaultsKey;
+FOUNDATION_EXPORT NSString *const TungstenWebRTCIPLeakProtectionEnabledDefaultsKey;
+FOUNDATION_EXPORT NSString *const TungstenFingerprintSurfaceReductionEnabledDefaultsKey;
+FOUNDATION_EXPORT NSString *const TungstenWebGLDisabledDefaultsKey;
+FOUNDATION_EXPORT NSString *const TungstenRemoteFontsDisabledDefaultsKey;
+FOUNDATION_EXPORT NSString *const TungstenJavaScriptClipboardAccessDisabledDefaultsKey;
+FOUNDATION_EXPORT NSString *const TungstenLocalStorageDisabledDefaultsKey;
+
 @interface TungstenCEFApp : NSObject
 
 + (instancetype)shared;

@@ -1,0 +1,13 @@
+<svg width="800px" height="800px" viewBox="35 15 130 170" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="shield-title">
+  <title id="shield-title">Tungsten shield logo</title>
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#22C55E;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#14532D;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <path d="M100 20 L40 45 V100 C40 145 100 180 100 180 C100 180 160 145 160 100 V45 L100 20Z" fill="url(#grad1)" />
+  <circle cx="100" cy="100" r="35" fill="white" fill-opacity="0.2" />
+  <circle cx="100" cy="100" r="15" fill="#ADFF2F" />
+  <path d="M60 55 Q100 35 140 55" stroke="white" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.5" />
+</svg>

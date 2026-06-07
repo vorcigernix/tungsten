@@ -72,7 +72,7 @@ struct ThreadModelTests {
     }
 
     static func testSearchEngineDefaultsUseDuckDuckGo() throws {
-        try expect(SearchEngine.duckDuckGo.homepageURL == "https://duckduckgo.com")
+        try expect(SearchEngine.duckDuckGo.homepageURL == "https://duck.ai/")
         try expect(SearchEngine.duckDuckGo.searchURL(for: "hello world") == "https://duckduckgo.com/?q=hello%20world")
     }
 

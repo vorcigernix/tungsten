@@ -31,9 +31,23 @@ final class AppPreferences {
 #if TESTING
     private static let localAIProviderKey = "Tungsten.LocalAIProvider.v1"
     private static let contentBlockingEnabledKey = "Tungsten.ContentBlockingEnabled.v1"
+    private static let thirdPartyCookieBlockingEnabledKey = "Tungsten.Privacy.BlockThirdPartyCookies.v1"
+    private static let webRTCIPLeakProtectionEnabledKey = "Tungsten.Privacy.WebRTCIPLeakProtection.v1"
+    private static let fingerprintSurfaceReductionEnabledKey = "Tungsten.Privacy.FingerprintSurfaceReduction.v1"
+    private static let webGLDisabledKey = "Tungsten.Privacy.DisableWebGL.v1"
+    private static let remoteFontsDisabledKey = "Tungsten.Privacy.DisableRemoteFonts.v1"
+    private static let javaScriptClipboardAccessDisabledKey = "Tungsten.Privacy.DisableJavaScriptClipboardAccess.v1"
+    private static let localStorageDisabledKey = "Tungsten.Privacy.DisableLocalStorage.v1"
 #else
     private static let localAIProviderKey = TungstenLocalAIProviderDefaultsKey
     private static let contentBlockingEnabledKey = TungstenContentBlockingEnabledDefaultsKey
+    private static let thirdPartyCookieBlockingEnabledKey = TungstenThirdPartyCookieBlockingEnabledDefaultsKey
+    private static let webRTCIPLeakProtectionEnabledKey = TungstenWebRTCIPLeakProtectionEnabledDefaultsKey
+    private static let fingerprintSurfaceReductionEnabledKey = TungstenFingerprintSurfaceReductionEnabledDefaultsKey
+    private static let webGLDisabledKey = TungstenWebGLDisabledDefaultsKey
+    private static let remoteFontsDisabledKey = TungstenRemoteFontsDisabledDefaultsKey
+    private static let javaScriptClipboardAccessDisabledKey = TungstenJavaScriptClipboardAccessDisabledDefaultsKey
+    private static let localStorageDisabledKey = TungstenLocalStorageDisabledDefaultsKey
 #endif
     private static let torLaunchesArtiKey = "Tungsten.Tor.LaunchesArti.v1"
     private static let torArtiExecutablePathKey = "Tungsten.Tor.ArtiExecutablePath.v1"
@@ -71,6 +85,55 @@ final class AppPreferences {
         didSet {
             guard oldValue != contentBlockingEnabled else { return }
             userDefaults.set(contentBlockingEnabled, forKey: Self.contentBlockingEnabledKey)
+        }
+    }
+
+    var thirdPartyCookieBlockingEnabled: Bool {
+        didSet {
+            guard oldValue != thirdPartyCookieBlockingEnabled else { return }
+            userDefaults.set(thirdPartyCookieBlockingEnabled, forKey: Self.thirdPartyCookieBlockingEnabledKey)
+        }
+    }
+
+    var webRTCIPLeakProtectionEnabled: Bool {
+        didSet {
+            guard oldValue != webRTCIPLeakProtectionEnabled else { return }
+            userDefaults.set(webRTCIPLeakProtectionEnabled, forKey: Self.webRTCIPLeakProtectionEnabledKey)
+        }
+    }
+
+    var fingerprintSurfaceReductionEnabled: Bool {
+        didSet {
+            guard oldValue != fingerprintSurfaceReductionEnabled else { return }
+            userDefaults.set(fingerprintSurfaceReductionEnabled, forKey: Self.fingerprintSurfaceReductionEnabledKey)
+        }
+    }
+
+    var webGLDisabled: Bool {
+        didSet {
+            guard oldValue != webGLDisabled else { return }
+            userDefaults.set(webGLDisabled, forKey: Self.webGLDisabledKey)
+        }
+    }
+
+    var remoteFontsDisabled: Bool {
+        didSet {
+            guard oldValue != remoteFontsDisabled else { return }
+            userDefaults.set(remoteFontsDisabled, forKey: Self.remoteFontsDisabledKey)
+        }
+    }
+
+    var javaScriptClipboardAccessDisabled: Bool {
+        didSet {
+            guard oldValue != javaScriptClipboardAccessDisabled else { return }
+            userDefaults.set(javaScriptClipboardAccessDisabled, forKey: Self.javaScriptClipboardAccessDisabledKey)
+        }
+    }
+
+    var localStorageDisabled: Bool {
+        didSet {
+            guard oldValue != localStorageDisabled else { return }
+            userDefaults.set(localStorageDisabled, forKey: Self.localStorageDisabledKey)
         }
     }
 
@@ -183,6 +246,48 @@ final class AppPreferences {
             self.contentBlockingEnabled = false
         } else {
             self.contentBlockingEnabled = userDefaults.bool(forKey: Self.contentBlockingEnabledKey)
+        }
+
+        if userDefaults.object(forKey: Self.thirdPartyCookieBlockingEnabledKey) == nil {
+            self.thirdPartyCookieBlockingEnabled = true
+        } else {
+            self.thirdPartyCookieBlockingEnabled = userDefaults.bool(forKey: Self.thirdPartyCookieBlockingEnabledKey)
+        }
+
+        if userDefaults.object(forKey: Self.webRTCIPLeakProtectionEnabledKey) == nil {
+            self.webRTCIPLeakProtectionEnabled = true
+        } else {
+            self.webRTCIPLeakProtectionEnabled = userDefaults.bool(forKey: Self.webRTCIPLeakProtectionEnabledKey)
+        }
+
+        if userDefaults.object(forKey: Self.fingerprintSurfaceReductionEnabledKey) == nil {
+            self.fingerprintSurfaceReductionEnabled = true
+        } else {
+            self.fingerprintSurfaceReductionEnabled = userDefaults.bool(forKey: Self.fingerprintSurfaceReductionEnabledKey)
+        }
+
+        if userDefaults.object(forKey: Self.webGLDisabledKey) == nil {
+            self.webGLDisabled = false
+        } else {
+            self.webGLDisabled = userDefaults.bool(forKey: Self.webGLDisabledKey)
+        }
+
+        if userDefaults.object(forKey: Self.remoteFontsDisabledKey) == nil {
+            self.remoteFontsDisabled = false
+        } else {
+            self.remoteFontsDisabled = userDefaults.bool(forKey: Self.remoteFontsDisabledKey)
+        }
+
+        if userDefaults.object(forKey: Self.javaScriptClipboardAccessDisabledKey) == nil {
+            self.javaScriptClipboardAccessDisabled = false
+        } else {
+            self.javaScriptClipboardAccessDisabled = userDefaults.bool(forKey: Self.javaScriptClipboardAccessDisabledKey)
+        }
+
+        if userDefaults.object(forKey: Self.localStorageDisabledKey) == nil {
+            self.localStorageDisabled = false
+        } else {
+            self.localStorageDisabled = userDefaults.bool(forKey: Self.localStorageDisabledKey)
         }
 
         if userDefaults.object(forKey: Self.torLaunchesArtiKey) == nil {

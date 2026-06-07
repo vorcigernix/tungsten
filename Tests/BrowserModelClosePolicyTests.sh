@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-model_file="Tungsten/Tungsten/Browser/BrowserModel.swift"
+model_file="Tungsten/Sources/Tungsten/Browser/BrowserModel.swift"
 
 if ! awk '
     /func close\(_ tab: BrowserTab\)/ { in_close = 1; found = 1 }

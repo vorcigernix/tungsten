@@ -21,6 +21,7 @@ Objective-C++ bridge between SwiftUI/AppKit and Chromium Embedded Framework.
 #include "include/cef_browser.h"
 #include "include/cef_client.h"
 #include "include/cef_command_line.h"
+#include "include/cef_permission_handler.h"
 #include "include/cef_request_handler.h"
 #include "include/cef_request_context.h"
 #include "include/cef_resource_request_handler.h"
@@ -65,6 +66,13 @@ constexpr CFTimeInterval kSlowCefMessagePumpWork = 0.008;
 
 extern "C" NSString *const TungstenLocalAIProviderDefaultsKey = @"Tungsten.LocalAIProvider.v1";
 extern "C" NSString *const TungstenContentBlockingEnabledDefaultsKey = @"Tungsten.ContentBlockingEnabled.v1";
+extern "C" NSString *const TungstenThirdPartyCookieBlockingEnabledDefaultsKey = @"Tungsten.Privacy.BlockThirdPartyCookies.v1";
+extern "C" NSString *const TungstenWebRTCIPLeakProtectionEnabledDefaultsKey = @"Tungsten.Privacy.WebRTCIPLeakProtection.v1";
+extern "C" NSString *const TungstenFingerprintSurfaceReductionEnabledDefaultsKey = @"Tungsten.Privacy.FingerprintSurfaceReduction.v1";
+extern "C" NSString *const TungstenWebGLDisabledDefaultsKey = @"Tungsten.Privacy.DisableWebGL.v1";
+extern "C" NSString *const TungstenRemoteFontsDisabledDefaultsKey = @"Tungsten.Privacy.DisableRemoteFonts.v1";
+extern "C" NSString *const TungstenJavaScriptClipboardAccessDisabledDefaultsKey = @"Tungsten.Privacy.DisableJavaScriptClipboardAccess.v1";
+extern "C" NSString *const TungstenLocalStorageDisabledDefaultsKey = @"Tungsten.Privacy.DisableLocalStorage.v1";
 
 NSString *ShortPerformanceID(void) {
     return [NSUUID.UUID.UUIDString substringToIndex:8];
@@ -344,8 +352,60 @@ NSString *ToNSString(const CefString &value) {
     return [NSString stringWithUTF8String:value.ToString().c_str()];
 }
 
+BOOL TungstenDefaultsBool(NSString *key, BOOL defaultValue) {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    if ([defaults objectForKey:key] == nil) {
+        return defaultValue;
+    }
+    return [defaults boolForKey:key];
+}
+
 BOOL TungstenContentBlockingEnabled(void) {
-    return [[NSUserDefaults standardUserDefaults] boolForKey:TungstenContentBlockingEnabledDefaultsKey];
+    return TungstenDefaultsBool(TungstenContentBlockingEnabledDefaultsKey, NO);
+}
+
+BOOL TungstenThirdPartyCookieBlockingEnabled(void) {
+    return TungstenDefaultsBool(TungstenThirdPartyCookieBlockingEnabledDefaultsKey, YES);
+}
+
+BOOL TungstenWebRTCIPLeakProtectionEnabled(void) {
+    return TungstenDefaultsBool(TungstenWebRTCIPLeakProtectionEnabledDefaultsKey, YES);
+}
+
+BOOL TungstenFingerprintSurfaceReductionEnabled(void) {
+    return TungstenDefaultsBool(TungstenFingerprintSurfaceReductionEnabledDefaultsKey, YES);
+}
+
+BOOL TungstenWebGLDisabled(void) {
+    return TungstenDefaultsBool(TungstenWebGLDisabledDefaultsKey, NO);
+}
+
+BOOL TungstenRemoteFontsDisabled(void) {
+    return TungstenDefaultsBool(TungstenRemoteFontsDisabledDefaultsKey, NO);
+}
+
+BOOL TungstenJavaScriptClipboardAccessDisabled(void) {
+    return TungstenDefaultsBool(TungstenJavaScriptClipboardAccessDisabledDefaultsKey, NO);
+}
+
+BOOL TungstenLocalStorageDisabled(void) {
+    return TungstenDefaultsBool(TungstenLocalStorageDisabledDefaultsKey, NO);
+}
+
+void ApplyPrivacyBrowserSettings(CefBrowserSettings &browserSettings) {
+    if (TungstenWebGLDisabled()) {
+        browserSettings.webgl = STATE_DISABLED;
+    }
+    if (TungstenRemoteFontsDisabled()) {
+        browserSettings.remote_fonts = STATE_DISABLED;
+    }
+    if (TungstenJavaScriptClipboardAccessDisabled()) {
+        browserSettings.javascript_access_clipboard = STATE_DISABLED;
+        browserSettings.javascript_dom_paste = STATE_DISABLED;
+    }
+    if (TungstenLocalStorageDisabled()) {
+        browserSettings.local_storage = STATE_DISABLED;
+    }
 }
 
 BOOL TungstenHostMatchesSuffix(NSString *host, NSString *suffix) {
@@ -548,6 +608,7 @@ class TungstenBrowserClient final : public CefClient,
                                     public CefDisplayHandler,
                                     public CefLifeSpanHandler,
                                     public CefLoadHandler,
+                                    public CefPermissionHandler,
                                     public CefRequestHandler,
                                     public CefResourceRequestHandler {
 public:
@@ -563,6 +624,10 @@ public:
     }
 
     CefRefPtr<CefLoadHandler> GetLoadHandler() override {
+        return this;
+    }
+
+    CefRefPtr<CefPermissionHandler> GetPermissionHandler() override {
         return this;
     }
 
@@ -601,6 +666,36 @@ public:
             return RV_CANCEL;
         }
         return RV_CONTINUE;
+    }
+
+    bool OnShowPermissionPrompt(CefRefPtr<CefBrowser> browser,
+                                uint64_t prompt_id,
+                                const CefString &requesting_origin,
+                                uint32_t requested_permissions,
+                                CefRefPtr<CefPermissionPromptCallback> callback) override {
+        if (!TungstenFingerprintSurfaceReductionEnabled()) {
+            return false;
+        }
+
+        constexpr uint32_t blockedPermissions =
+            CEF_PERMISSION_TYPE_LOCAL_FONTS |
+            CEF_PERMISSION_TYPE_IDLE_DETECTION |
+            CEF_PERMISSION_TYPE_MIDI_SYSEX |
+            CEF_PERMISSION_TYPE_NOTIFICATIONS |
+            CEF_PERMISSION_TYPE_WINDOW_MANAGEMENT |
+#if CEF_API_ADDED(14700)
+            CEF_PERMISSION_TYPE_SENSORS |
+#endif
+            CEF_PERMISSION_TYPE_NONE;
+
+        if ((requested_permissions & blockedPermissions) == 0) {
+            return false;
+        }
+
+        if (callback) {
+            callback->Continue(CEF_PERMISSION_RESULT_DENY);
+        }
+        return true;
     }
 
     void OnAfterCreated(CefRefPtr<CefBrowser> browser) override {
@@ -1078,20 +1173,95 @@ private:
     return [_privacyMode isEqualToString:@"tor"];
 }
 
-- (void)setRequestContextPreference:(const std::string &)name
-                              value:(CefRefPtr<CefValue>)value
-                        description:(NSString *)description {
-    if (!_requestContext || !value) {
+- (void)setRequestContext:(CefRefPtr<CefRequestContext>)requestContext
+               preference:(const std::string &)name
+                    value:(CefRefPtr<CefValue>)value
+              description:(NSString *)description {
+    if (!requestContext || !value) {
         return;
     }
 
     CefString error;
-    if (!_requestContext->SetPreference(name, value, error)) {
+    if (!requestContext->SetPreference(name, value, error)) {
         [self logPerformanceEvent:@"cef.requestContext.preference.failed" metadata:@{
             @"preference": description ?: @"unknown",
             @"error": ToNSString(error) ?: @"unknown"
         }];
     }
+}
+
+- (void)setRequestContextPreference:(const std::string &)name
+                              value:(CefRefPtr<CefValue>)value
+                        description:(NSString *)description {
+    [self setRequestContext:_requestContext preference:name value:value description:description];
+}
+
+- (void)configurePrivacyRequestContextPreferences:(CefRefPtr<CefRequestContext>)requestContext
+                            forceWebRTCProtection:(BOOL)forceWebRTCProtection {
+    if (!requestContext) {
+        return;
+    }
+
+    CefRefPtr<CefValue> thirdPartyCookies = CefValue::Create();
+    thirdPartyCookies->SetBool(TungstenThirdPartyCookieBlockingEnabled());
+    [self setRequestContext:requestContext
+                 preference:"profile.block_third_party_cookies"
+                      value:thirdPartyCookies
+                description:@"profile.block_third_party_cookies"];
+
+    BOOL protectWebRTC = forceWebRTCProtection || TungstenWebRTCIPLeakProtectionEnabled();
+    CefRefPtr<CefValue> webRTCPolicy = CefValue::Create();
+    webRTCPolicy->SetString(protectWebRTC ? "disable_non_proxied_udp" : "default");
+    [self setRequestContext:requestContext
+                 preference:"webrtc.ip_handling_policy"
+                      value:webRTCPolicy
+                description:@"webrtc.ip_handling_policy"];
+
+    CefRefPtr<CefValue> webRTCMultipleRoutes = CefValue::Create();
+    webRTCMultipleRoutes->SetBool(!protectWebRTC);
+    [self setRequestContext:requestContext
+                 preference:"webrtc.multiple_routes_enabled"
+                      value:webRTCMultipleRoutes
+                description:@"webrtc.multiple_routes_enabled"];
+
+    BOOL reduceFingerprintSurface = TungstenFingerprintSurfaceReductionEnabled() || forceWebRTCProtection;
+    if (!reduceFingerprintSurface) {
+        return;
+    }
+
+    CefRefPtr<CefValue> disabled = CefValue::Create();
+    disabled->SetBool(false);
+    [self setRequestContext:requestContext
+                 preference:"privacy_sandbox.m1.topics_enabled"
+                      value:disabled
+                description:@"privacy_sandbox.m1.topics_enabled"];
+    [self setRequestContext:requestContext
+                 preference:"privacy_sandbox.m1.fledge_enabled"
+                      value:disabled
+                description:@"privacy_sandbox.m1.fledge_enabled"];
+    [self setRequestContext:requestContext
+                 preference:"privacy_sandbox.m1.ad_measurement_enabled"
+                      value:disabled
+                description:@"privacy_sandbox.m1.ad_measurement_enabled"];
+    [self setRequestContext:requestContext
+                 preference:"privacy_sandbox.first_party_sets_enabled"
+                      value:disabled
+                description:@"privacy_sandbox.first_party_sets_enabled"];
+    [self setRequestContext:requestContext
+                 preference:"enable_a_ping"
+                      value:disabled
+                description:@"enable_a_ping"];
+
+    requestContext->SetContentSetting("", "", CEF_CONTENT_SETTING_TYPE_LOCAL_FONTS, CEF_CONTENT_SETTING_VALUE_BLOCK);
+    requestContext->SetContentSetting("", "", CEF_CONTENT_SETTING_TYPE_SENSORS, CEF_CONTENT_SETTING_VALUE_BLOCK);
+    requestContext->SetContentSetting("", "", CEF_CONTENT_SETTING_TYPE_IDLE_DETECTION, CEF_CONTENT_SETTING_VALUE_BLOCK);
+    requestContext->SetContentSetting("", "", CEF_CONTENT_SETTING_TYPE_NOTIFICATIONS, CEF_CONTENT_SETTING_VALUE_BLOCK);
+    requestContext->SetContentSetting("", "", CEF_CONTENT_SETTING_TYPE_WINDOW_MANAGEMENT, CEF_CONTENT_SETTING_VALUE_BLOCK);
+    requestContext->SetContentSetting("", "", CEF_CONTENT_SETTING_TYPE_MIDI_SYSEX, CEF_CONTENT_SETTING_VALUE_BLOCK);
+    requestContext->SetContentSetting("", "", CEF_CONTENT_SETTING_TYPE_USB_GUARD, CEF_CONTENT_SETTING_VALUE_BLOCK);
+    requestContext->SetContentSetting("", "", CEF_CONTENT_SETTING_TYPE_BLUETOOTH_GUARD, CEF_CONTENT_SETTING_VALUE_BLOCK);
+    requestContext->SetContentSetting("", "", CEF_CONTENT_SETTING_TYPE_SERIAL_GUARD, CEF_CONTENT_SETTING_VALUE_BLOCK);
+    requestContext->SetContentSetting("", "", CEF_CONTENT_SETTING_TYPE_HID_GUARD, CEF_CONTENT_SETTING_VALUE_BLOCK);
 }
 
 - (void)configureTorRequestContextPreferences {
@@ -1108,18 +1278,7 @@ private:
     CefRefPtr<CefValue> proxyValue = CefValue::Create();
     proxyValue->SetDictionary(proxyDictionary);
     [self setRequestContextPreference:"proxy" value:proxyValue description:@"proxy"];
-
-    CefRefPtr<CefValue> webRTCPolicy = CefValue::Create();
-    webRTCPolicy->SetString("disable_non_proxied_udp");
-    [self setRequestContextPreference:"webrtc.ip_handling_policy"
-                                value:webRTCPolicy
-                          description:@"webrtc.ip_handling_policy"];
-
-    CefRefPtr<CefValue> webRTCMultipleRoutes = CefValue::Create();
-    webRTCMultipleRoutes->SetBool(false);
-    [self setRequestContextPreference:"webrtc.multiple_routes_enabled"
-                                value:webRTCMultipleRoutes
-                          description:@"webrtc.multiple_routes_enabled"];
+    [self configurePrivacyRequestContextPreferences:_requestContext forceWebRTCProtection:YES];
 }
 
 - (void)logPerformanceEvent:(NSString *)event metadata:(NSDictionary<NSString *, id> *)metadata {
@@ -1145,6 +1304,15 @@ private:
     view.layer.masksToBounds = (cornerRadius > 0);
     if (@available(macOS 13.0, *)) {
         view.layer.cornerCurve = kCACornerCurveContinuous;
+    }
+}
+
+- (void)clearPageContentCompletions {
+    NSArray *pendingCompletions = [_pageContentCompletions.allValues copy];
+    [_pageContentCompletions removeAllObjects];
+
+    for (TungstenPageContentCompletion completion in pendingCompletions) {
+        completion(nil, nil);
     }
 }
 
@@ -1296,13 +1464,19 @@ private:
 
     frame->ExecuteJavaScript(ToString(script), "tungsten://internal/page-content", 0);
 
+    __weak typeof(self) weakSelf = self;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, static_cast<int64_t>(2 * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{
-        TungstenPageContentCompletion pendingCompletion = _pageContentCompletions[requestID];
+        __strong typeof(weakSelf) self = weakSelf;
+        if (self == nil) {
+            return;
+        }
+
+        TungstenPageContentCompletion pendingCompletion = self->_pageContentCompletions[requestID];
         if (pendingCompletion == nil) {
             return;
         }
-        [_pageContentCompletions removeObjectForKey:requestID];
+        [self->_pageContentCompletions removeObjectForKey:requestID];
         pendingCompletion(nil, nil);
     });
 }
@@ -1466,6 +1640,7 @@ private:
     // window is inactive. Without an opaque CEF surface, that desaturation
     // bleeds through and the rendered web content goes bland on focus loss.
     browserSettings.background_color = 0xFFFFFFFF;
+    ApplyPrivacyBrowserSettings(browserSettings);
     std::string url = ToString(_pendingURL ?: _initialURL);
 
     CefRefPtr<CefRequestContext> requestContext = nullptr;
@@ -1475,9 +1650,14 @@ private:
             _requestContext = CefRequestContext::CreateContext(contextSettings, nullptr);
             if ([self isTorPrivacyMode]) {
                 [self configureTorRequestContextPreferences];
+            } else {
+                [self configurePrivacyRequestContextPreferences:_requestContext forceWebRTCProtection:NO];
             }
         }
         requestContext = _requestContext;
+    } else {
+        [self configurePrivacyRequestContextPreferences:CefRequestContext::GetGlobalContext()
+                                  forceWebRTCProtection:NO];
     }
 
     if (!CefBrowserHost::CreateBrowser(windowInfo, _client.get(), url, browserSettings, nullptr, requestContext)) {
@@ -1504,6 +1684,7 @@ private:
     }
 
     _isClosingBrowser = YES;
+    [self clearPageContentCompletions];
     self.delegate = nil;
 
     CefRefPtr<CefBrowser> browser = _client ? _client->browser() : nullptr;

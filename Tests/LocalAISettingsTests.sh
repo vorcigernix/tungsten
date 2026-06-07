@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-preferences_file="Tungsten/Tungsten/AppPreferences.swift"
-provider_file="Tungsten/Tungsten/Browser/AI/LocalAIProvider.swift"
-settings_file="Tungsten/Tungsten/Settings/GeneralSettingsView.swift"
-split_view_file="Tungsten/Tungsten/Browser/BrowserSplitView.swift"
-gemma_file="Tungsten/Tungsten/Browser/AI/GemmaLocalAI.swift"
-bridge_file="Tungsten/Tungsten/CEF/TungstenCEFBridge.mm"
-cef_app_header="Tungsten/Tungsten/CEF/TungstenCEFApp.h"
+preferences_file="Tungsten/Sources/Tungsten/Application/AppPreferences.swift"
+provider_file="Tungsten/Sources/Tungsten/Browser/AI/LocalAIProvider.swift"
+settings_file="Tungsten/Sources/Tungsten/Settings/GeneralSettingsView.swift"
+split_view_file="Tungsten/Sources/Tungsten/Browser/BrowserSplitView.swift"
+gemma_file="Tungsten/Sources/Tungsten/Browser/AI/GemmaLocalAI.swift"
+bridge_file="Tungsten/Sources/Tungsten/CEF/TungstenCEFBridge.mm"
+cef_app_header="Tungsten/Sources/Tungsten/CEF/TungstenCEFApp.h"
 
 require_pattern() {
     local file="$1"
