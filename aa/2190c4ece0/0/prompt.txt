@@ -1,0 +1,306 @@
+I created folder site with microsite, copy is good but design is boring. Would you transplant design I created in design tool? <!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TUNGSTEN BROWSER - BUILT FOR PRIVACY</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&amp;family=JetBrains+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary-fixed-dim": "#8fdb00",
+                      "surface-container": "#f2eede",
+                      "error": "#ba1a1a",
+                      "background": "#fdf9e9",
+                      "on-tertiary-fixed-variant": "#75009e",
+                      "surface-tint": "#5e5e5e",
+                      "on-tertiary-fixed": "#320046",
+                      "inverse-on-surface": "#f5f1e1",
+                      "on-primary-fixed-variant": "#474747",
+                      "secondary-container": "#a5f624",
+                      "primary-fixed-dim": "#c6c6c6",
+                      "on-surface-variant": "#4c4546",
+                      "on-tertiary-container": "#c83eff",
+                      "secondary-fixed": "#a8f928",
+                      "surface-dim": "#dedacb",
+                      "on-error": "#ffffff",
+                      "tertiary-fixed": "#f9d8ff",
+                      "secondary": "#426900",
+                      "surface-bright": "#fdf9e9",
+                      "tertiary": "#000000",
+                      "surface-container-low": "#f8f4e4",
+                      "on-secondary-fixed": "#112000",
+                      "on-secondary": "#ffffff",
+                      "tertiary-fixed-dim": "#ecb1ff",
+                      "outline-variant": "#cfc4c5",
+                      "on-background": "#1c1c13",
+                      "surface-variant": "#e6e3d3",
+                      "primary": "#000000",
+                      "on-surface": "#1c1c13",
+                      "surface-container-lowest": "#ffffff",
+                      "primary-container": "#1b1b1b",
+                      "on-primary": "#ffffff",
+                      "outline": "#7e7576",
+                      "surface": "#fdf9e9",
+                      "on-tertiary": "#ffffff",
+                      "surface-container-highest": "#e6e3d3",
+                      "primary-fixed": "#e2e2e2",
+                      "on-error-container": "#93000a",
+                      "on-primary-fixed": "#1b1b1b",
+                      "inverse-primary": "#c6c6c6",
+                      "error-container": "#ffdad6",
+                      "on-secondary-container": "#456e00",
+                      "inverse-surface": "#323126",
+                      "on-secondary-fixed-variant": "#314f00",
+                      "on-primary-container": "#848484",
+                      "surface-container-high": "#ece8d9",
+                      "tertiary-container": "#320046"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "unit": "4px",
+                      "stack-lg": "32px",
+                      "gutter": "24px",
+                      "stack-md": "16px",
+                      "margin-desktop": "32px",
+                      "margin-mobile": "16px",
+                      "stack-sm": "8px"
+              },
+              "fontFamily": {
+                      "headline-md": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "JetBrains Mono"
+                      ],
+                      "headline-lg-mobile": [
+                              "Inter"
+                      ],
+                      "display-xl": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "800"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.0",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "fontWeight": "900"
+                              }
+                      ],
+                      "display-xl": [
+                              "72px",
+                              {
+                                      "lineHeight": "1.0",
+                                      "letterSpacing": "-0.04em",
+                                      "fontWeight": "900"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "900"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+            },
+          }
+        }
+      </script>
+<style>
+        /* Neo-brutalist specific styles */
+        .brutal-border { border: 3px solid #000; }
+        .brutal-shadow { box-shadow: 4px 4px 0px #000; transition: all 0.1s ease-in-out; }
+        .brutal-shadow-lg { box-shadow: 8px 8px 0px #000; transition: all 0.1s ease-in-out; }
+        .brutal-hover:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0px #000; }
+        .brutal-active:active { transform: translate(4px, 4px); box-shadow: 0px 0px 0px #000; }
+        .brutal-hover-lg:hover { transform: translate(-2px, -2px); box-shadow: 10px 10px 0px #000; }
+        .brutal-active-lg:active { transform: translate(8px, 8px); box-shadow: 0px 0px 0px #000; }
+        
+        .bg-lime { background-color: #adff2f; }
+        .bg-purple { background-color: #c83eff; } /* using on-tertiary-container from theme */
+        
+        body { background-color: #fdf9e9; color: #000; }
+      </style>
+</head>
+<body class="bg-background text-primary font-body-md antialiased min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="bg-background dark:bg-background text-primary dark:text-primary-fixed font-headline-md text-headline-md font-body-md text-body-md w-full border-b-[3px] border-primary dark:border-primary-fixed sticky top-0 z-50">
+<div class="flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop py-stack-md max-w-[1440px] mx-auto">
+<a class="font-display-xl text-headline-lg-mobile md:text-display-xl font-black text-primary dark:text-primary-fixed tracking-tighter hover:text-secondary-container dark:hover:bg-secondary-fixed-variant transition-colors active:translate-x-[2px] active:translate-y-[2px]" href="#">
+                TUNGSTEN
+            </a>
+<!-- Desktop Nav -->
+<nav class="hidden md:flex items-center gap-stack-lg">
+<a class="text-primary dark:text-primary-fixed opacity-70 hover:bg-secondary-container dark:hover:bg-secondary-fixed-variant transition-colors active:translate-x-[2px] active:translate-y-[2px] px-2 py-1" href="#features">Features</a>
+<a class="text-primary dark:text-primary-fixed opacity-70 hover:bg-secondary-container dark:hover:bg-secondary-fixed-variant transition-colors active:translate-x-[2px] active:translate-y-[2px] px-2 py-1" href="#privacy">Privacy</a>
+<a class="text-primary dark:text-primary-fixed opacity-70 hover:bg-secondary-container dark:hover:bg-secondary-fixed-variant transition-colors active:translate-x-[2px] active:translate-y-[2px] px-2 py-1" href="#specs">Specs</a>
+<a class="text-primary dark:text-primary-fixed opacity-70 hover:bg-secondary-container dark:hover:bg-secondary-fixed-variant transition-colors active:translate-x-[2px] active:translate-y-[2px] px-2 py-1" href="#changelog">Changelog</a>
+</nav>
+<div class="hidden md:flex items-center gap-stack-md">
+<button class="font-label-sm text-label-sm uppercase brutal-border bg-background brutal-shadow brutal-hover brutal-active px-4 py-2 hover:bg-secondary-container transition-colors">Sign In</button>
+<button class="font-label-sm text-label-sm uppercase brutal-border bg-lime brutal-shadow brutal-hover brutal-active px-4 py-2">Download</button>
+</div>
+<!-- Mobile Menu Toggle -->
+<button class="md:hidden p-2 brutal-border bg-lime brutal-shadow brutal-active">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</div>
+</header>
+<main class="flex-grow">
+<!-- Hero Section -->
+<section class="max-w-[1440px] mx-auto px-margin-mobile md:px-margin-desktop py-stack-lg md:py-[120px] grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<div class="col-span-1 md:col-span-8 flex flex-col items-start justify-center gap-stack-lg">
+<h1 class="font-display-xl text-headline-lg-mobile md:text-display-xl uppercase leading-none">
+<span class="bg-lime px-2 brutal-border inline-block brutal-shadow mb-2">RADICAL</span><br/>
+                    BROWSING.<br/>
+                    ZERO TRACKING.
+                </h1>
+<p class="font-body-lg text-body-lg max-w-2xl bg-surface-container brutal-border p-4 brutal-shadow">
+                    {{DATA:DOCUMENT:DOCUMENT_1}}
+                </p>
+<div class="flex flex-wrap gap-stack-md mt-stack-md">
+<button class="font-label-sm text-label-sm uppercase brutal-border bg-lime brutal-shadow-lg brutal-hover-lg brutal-active-lg px-8 py-4 text-headline-md font-headline-md flex items-center gap-2">
+                        DOWNLOAD TUNGSTEN
+                        <span class="material-symbols-outlined">download</span>
+</button>
+<button class="font-label-sm text-label-sm uppercase brutal-border bg-purple text-white brutal-shadow-lg brutal-hover-lg brutal-active-lg px-8 py-4 text-headline-md font-headline-md flex items-center gap-2">
+                        VIEW SOURCE
+                        <span class="material-symbols-outlined">code</span>
+</button>
+</div>
+</div>
+<div class="col-span-1 md:col-span-4 mt-stack-lg md:mt-0 relative">
+<div class="aspect-[3/4] brutal-border bg-surface-container brutal-shadow-lg overflow-hidden relative group">
+<img alt="Tech Abstract" class="w-full h-full object-cover filter grayscale contrast-150 group-hover:grayscale-0 transition-all duration-500" data-alt="A macro shot of complex glowing computer circuits and microchips on a stark black background. High contrast neon lime green and deep purple light traces pathways along the motherboard. The aesthetic is raw, technical, and brutalist. Sharp geometric lines dominate the composition." src="https://lh3.googleusercontent.com/aida-public/REDACTED"/>
+<div class="absolute inset-0 border-[3px] border-black m-4 pointer-events-none"></div>
+<div class="absolute top-4 left-4 bg-lime brutal-border px-2 py-1 font-label-sm text-label-sm">V.2.0.4</div>
+</div>
+</div>
+</section>
+<!-- Divider -->
+<div class="w-full h-[3px] bg-primary my-stack-lg max-w-[1440px] mx-auto"></div>
+<!-- Features Bento Grid -->
+<section class="max-w-[1440px] mx-auto px-margin-mobile md:px-margin-desktop py-stack-lg" id="features">
+<h2 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg uppercase mb-stack-lg inline-block bg-primary text-on-primary px-4 py-2 brutal-shadow">CORE DIRECTIVES</h2>
+<div class="grid grid-cols-1 md:grid-cols-12 auto-rows-[250px] gap-gutter">
+<!-- Feature 1 -->
+<div class="col-span-1 md:col-span-8 brutal-border bg-surface-container brutal-shadow p-stack-lg flex flex-col justify-between relative overflow-hidden group hover:bg-lime transition-colors">
+<div class="z-10">
+<span class="material-symbols-outlined text-[48px] mb-stack-sm block">shield</span>
+<h3 class="font-headline-md text-headline-md uppercase bg-white inline-block px-2 brutal-border mb-2">ABSOLUTE PRIVACY</h3>
+<p class="font-body-md text-body-md bg-white p-2 brutal-border inline-block max-w-md">No telemetry. No tracking. Your data stays local. We actively block fingerprints and invasive scripts.</p>
+</div>
+<div class="absolute -right-10 -bottom-10 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-[200px]" style="font-variation-settings: 'FILL' 1;">security</span>
+</div>
+</div>
+<!-- Feature 2 -->
+<div class="col-span-1 md:col-span-4 brutal-border bg-purple text-white brutal-shadow p-stack-lg flex flex-col justify-between">
+<span class="material-symbols-outlined text-[48px] mb-stack-sm block text-lime">bolt</span>
+<div>
+<h3 class="font-headline-md text-headline-md uppercase mb-2">BARE METAL SPEED</h3>
+<p class="font-body-md text-body-md">Stripped of bloatware. Written in Rust. It compiles fast and runs faster.</p>
+</div>
+</div>
+<!-- Feature 3 -->
+<div class="col-span-1 md:col-span-4 brutal-border bg-surface-container brutal-shadow p-stack-lg flex flex-col justify-between relative">
+<div class="absolute top-0 left-0 w-full h-[3px] bg-primary"></div>
+<div>
+<h3 class="font-headline-md text-headline-md uppercase mb-2">DEVELOPER FIRST</h3>
+<ul class="font-label-sm text-label-sm space-y-2">
+<li class="flex items-center gap-2 border-b-[3px] border-primary pb-1"><span class="material-symbols-outlined text-sm">check_box_outline_blank</span> Native JSON formatting</li>
+<li class="flex items-center gap-2 border-b-[3px] border-primary pb-1"><span class="material-symbols-outlined text-sm">check_box_outline_blank</span> Built-in API tester</li>
+<li class="flex items-center gap-2 border-b-[3px] border-primary pb-1 bg-lime px-1"><span class="material-symbols-outlined text-sm">check_box</span> Terminal integration</li>
+</ul>
+</div>
+</div>
+<!-- Feature 4 -->
+<div class="col-span-1 md:col-span-8 brutal-border bg-background brutal-shadow p-0 flex relative overflow-hidden">
+<div class="w-1/2 p-stack-lg flex flex-col justify-center border-r-[3px] border-primary z-10 bg-background">
+<h3 class="font-headline-md text-headline-md uppercase mb-2">COMMAND PALETTE</h3>
+<p class="font-body-md text-body-md mb-stack-md">Ditch the mouse. Control everything with Cmd+K. Navigate, search, and execute scripts instantly.</p>
+<div class="brutal-border p-2 bg-surface-container font-label-sm flex items-center justify-between">
+<span>&gt; search docs...</span>
+<span class="bg-primary text-on-primary px-1">⌘K</span>
+</div>
+</div>
+<div class="w-1/2 bg-surface-container relative">
+<img alt="Keyboard" class="w-full h-full object-cover filter grayscale contrast-125" data-alt="A close up of a brutalist mechanical keyboard with blank dark grey keycaps. One single keycap is brightly colored neon lime green. The lighting is harsh, creating stark black shadows on a cream colored desk mat. The style is raw, functional, and high contrast." src="https://lh3.googleusercontent.com/aida-public/REDACTED"/>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-background dark:bg-background text-primary dark:text-primary-fixed font-label-sm text-label-sm font-body-md text-body-md w-full border-t-[3px] border-primary dark:border-primary-fixed mt-stack-lg">
+<div class="flex flex-col md:flex-row justify-between items-center w-full px-margin-desktop py-stack-lg max-w-[1440px] mx-auto gap-stack-md md:gap-0">
+<div class="font-headline-md text-headline-md font-black text-primary active:scale-95 transition-transform uppercase">
+                TUNGSTEN
+            </div>
+<nav class="flex flex-wrap justify-center gap-stack-md">
+<a class="text-primary dark:text-primary-fixed opacity-80 hover:text-secondary-container dark:hover:text-secondary-fixed transition-colors active:scale-95" href="#">Documentation</a>
+<a class="text-primary dark:text-primary-fixed opacity-80 hover:text-secondary-container dark:hover:text-secondary-fixed transition-colors active:scale-95" href="#">Privacy Policy</a>
+<a class="text-primary dark:text-primary-fixed opacity-80 hover:text-secondary-container dark:hover:text-secondary-fixed transition-colors active:scale-95" href="#">Security</a>
+<a class="text-primary dark:text-primary-fixed opacity-80 hover:text-secondary-container dark:hover:text-secondary-fixed transition-colors active:scale-95" href="#">GitHub</a>
+</nav>
+<div class="opacity-80 text-center md:text-right">
+                © 2024 TUNGSTEN BROWSER. BUILT FOR PRIVACY.
+            </div>
+</div>
+</footer>
+</body></html>
+
+---
+
+no, thank you, all good, I'll continue working on this
