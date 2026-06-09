@@ -156,9 +156,7 @@ final class BrowserModel {
         }
 
         let selectedWasClosed = selectedTabID == tab.id
-        if selectedWasClosed {
-            livePageHost.closeActivePage()
-        }
+        livePageHost.closePage(tabID: tab.id)
 
         tabs.remove(at: index)
 
@@ -186,6 +184,7 @@ final class BrowserModel {
             closedTabs.append(contentsOf: removedTabs.filter { shouldRememberClosedTab($0) })
         }
 
+        livePageHost.closePages(tabIDs: removedTabs.map(\.id))
         tabs = [tab]
         selectedTabID = tab.id
         persistTabs()
@@ -221,9 +220,9 @@ final class BrowserModel {
             closedTabs.append(contentsOf: removedTabs.filter { shouldRememberClosedTab($0) })
         }
 
+        livePageHost.closePages(tabIDs: removedTabs.map(\.id))
         if pinnedTabs.isEmpty {
             selectedTabID = nil
-            livePageHost.closeActivePage()
             createTab()
         } else {
             let oldSelectedTabID = selectedTabID
@@ -316,6 +315,34 @@ final class BrowserModel {
     /// the start page's Favorites and Frequently Visited tiles.
     func openURLString(_ urlString: String) {
         navigateSelectedTab(to: urlString)
+    }
+
+    func openContextMenuSearch(for selectedText: String) {
+        let query = selectedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard query.isEmpty == false else {
+            return
+        }
+
+        let searchURL = appPreferences.searchEngine.searchURL(for: query)
+        BrowserPerformanceLog.event("contextMenu.search", metadata: [
+            "query_length": query.count,
+            "search_engine": appPreferences.searchEngine.rawValue
+        ])
+        createTab(urlString: searchURL, privacyMode: selectedTabPrivacyMode)
+    }
+
+    func openPopupTab(urlString: String, privacyMode: BrowserTabPrivacyMode) {
+        let targetURLString = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard targetURLString.isEmpty == false else {
+            return
+        }
+
+        var metadata: [String: Any] = [
+            "privacy_mode": privacyMode.rawValue
+        ]
+        metadata.merge(BrowserPerformanceLog.urlMetadata(targetURLString)) { _, new in new }
+        BrowserPerformanceLog.event("popup.openTab", metadata: metadata)
+        createTab(urlString: targetURLString, privacyMode: privacyMode)
     }
 
     func copyActivePageURL() {
@@ -445,18 +472,17 @@ final class BrowserModel {
         findText = ""
         windowCloseCompletion = completion
 
-        guard let pageSession = activePageSession else {
+        if let pageSession = activePageSession {
+            let originalOnBrowserClose = pageSession.onBrowserClose
+            pageSession.onBrowserClose = { [weak self] in
+                originalOnBrowserClose?()
+                self?.finishWindowCloseIfNeeded()
+            }
+        } else {
             finishWindowCloseIfNeeded()
-            return
         }
 
-        let originalOnBrowserClose = pageSession.onBrowserClose
-        pageSession.onBrowserClose = { [weak self] in
-            originalOnBrowserClose?()
-            self?.finishWindowCloseIfNeeded()
-        }
-
-        livePageHost.closeActivePageForWindowClose()
+        livePageHost.closeCachedPagesForWindowClose()
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
             self?.finishWindowCloseIfNeeded()
@@ -540,6 +566,18 @@ final class BrowserModel {
     }
 
     private func configurePageCallbacks(for pageSession: BrowserPageSession) {
+        pageSession.configurePopupOpening { [weak self, weak pageSession] urlString in
+            guard let self, let pageSession, self.activePageSession === pageSession else {
+                return
+            }
+
+            self.openPopupTab(urlString: urlString, privacyMode: pageSession.privacyMode)
+        }
+
+        pageSession.configureContextMenuSearch(searchEngine: appPreferences.searchEngine) { [weak self] selectedText in
+            self?.openContextMenuSearch(for: selectedText)
+        }
+
         pageSession.onURLChange = { [weak self, weak pageSession] urlString in
             guard let self, let pageSession else {
                 return

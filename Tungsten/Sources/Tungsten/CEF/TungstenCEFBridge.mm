@@ -21,6 +21,7 @@ Objective-C++ bridge between SwiftUI/AppKit and Chromium Embedded Framework.
 #include "include/cef_browser.h"
 #include "include/cef_client.h"
 #include "include/cef_command_line.h"
+#include "include/cef_context_menu_handler.h"
 #include "include/cef_permission_handler.h"
 #include "include/cef_request_handler.h"
 #include "include/cef_request_context.h"
@@ -73,6 +74,9 @@ extern "C" NSString *const TungstenWebGLDisabledDefaultsKey = @"Tungsten.Privacy
 extern "C" NSString *const TungstenRemoteFontsDisabledDefaultsKey = @"Tungsten.Privacy.DisableRemoteFonts.v1";
 extern "C" NSString *const TungstenJavaScriptClipboardAccessDisabledDefaultsKey = @"Tungsten.Privacy.DisableJavaScriptClipboardAccess.v1";
 extern "C" NSString *const TungstenLocalStorageDisabledDefaultsKey = @"Tungsten.Privacy.DisableLocalStorage.v1";
+
+constexpr int kTungstenSearchSelectionCommandID = MENU_ID_USER_FIRST + 1;
+constexpr NSUInteger kTungstenContextMenuSelectionLabelLimit = 56;
 
 NSString *ShortPerformanceID(void) {
     return [NSUUID.UUID.UUIDString substringToIndex:8];
@@ -352,6 +356,39 @@ NSString *ToNSString(const CefString &value) {
     return [NSString stringWithUTF8String:value.ToString().c_str()];
 }
 
+NSString *NormalizedContextMenuSelectionText(NSString *value) {
+    NSString *trimmed = [value ?: @"" stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
+    if (trimmed.length == 0) {
+        return @"";
+    }
+
+    NSArray<NSString *> *parts = [trimmed componentsSeparatedByCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
+    NSMutableArray<NSString *> *nonEmptyParts = [NSMutableArray arrayWithCapacity:parts.count];
+    for (NSString *part in parts) {
+        if (part.length > 0) {
+            [nonEmptyParts addObject:part];
+        }
+    }
+    return [nonEmptyParts componentsJoinedByString:@" "];
+}
+
+NSString *ContextMenuSelectionLabelText(NSString *selectionText) {
+    NSString *normalized = NormalizedContextMenuSelectionText(selectionText);
+    if (normalized.length <= kTungstenContextMenuSelectionLabelLimit) {
+        return normalized;
+    }
+
+    NSString *prefix = [normalized substringToIndex:kTungstenContextMenuSelectionLabelLimit];
+    return [prefix stringByAppendingString:@"..."];
+}
+
+NSString *ContextMenuSearchLabel(NSString *engineName, NSString *selectionText) {
+    NSString *resolvedEngineName = engineName.length > 0 ? engineName : @"Web";
+    return [NSString stringWithFormat:@"Search %@ for \"%@\"",
+            resolvedEngineName,
+            ContextMenuSelectionLabelText(selectionText)];
+}
+
 BOOL TungstenDefaultsBool(NSString *key, BOOL defaultValue) {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if ([defaults objectForKey:key] == nil) {
@@ -605,6 +642,7 @@ private:
 };
 
 class TungstenBrowserClient final : public CefClient,
+                                    public CefContextMenuHandler,
                                     public CefDisplayHandler,
                                     public CefLifeSpanHandler,
                                     public CefLoadHandler,
@@ -614,6 +652,10 @@ class TungstenBrowserClient final : public CefClient,
 public:
     explicit TungstenBrowserClient(__weak TungstenBrowserController *controller)
         : controller_(controller) {}
+
+    CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override {
+        return this;
+    }
 
     CefRefPtr<CefDisplayHandler> GetDisplayHandler() override {
         return this;
@@ -668,6 +710,85 @@ public:
         return RV_CONTINUE;
     }
 
+    void OnBeforeContextMenu(CefRefPtr<CefBrowser> browser,
+                             CefRefPtr<CefFrame> frame,
+                             CefRefPtr<CefContextMenuParams> params,
+                             CefRefPtr<CefMenuModel> model) override {
+        NSString *selectionText = params ? NormalizedContextMenuSelectionText(ToNSString(params->GetSelectionText())) : @"";
+        if (selectionText.length == 0 || !model) {
+            return;
+        }
+
+        TungstenBrowserController *controller = controller_;
+        NSString *label = ContextMenuSearchLabel(controller.contextMenuSearchEngineName, selectionText);
+
+        if (model->GetCount() > 0) {
+            model->AddSeparator();
+        }
+        model->AddItem(kTungstenSearchSelectionCommandID, ToString(label));
+    }
+
+    bool OnContextMenuCommand(CefRefPtr<CefBrowser> browser,
+                              CefRefPtr<CefFrame> frame,
+                              CefRefPtr<CefContextMenuParams> params,
+                              int command_id,
+                              EventFlags event_flags) override {
+        if (command_id != kTungstenSearchSelectionCommandID) {
+            return false;
+        }
+
+        NSString *selectionText = params ? NormalizedContextMenuSelectionText(ToNSString(params->GetSelectionText())) : @"";
+        if (selectionText.length == 0) {
+            return true;
+        }
+
+        TungstenBrowserController *controller = controller_;
+        TungstenContextMenuSearchHandler handler = controller.contextMenuSearchHandler;
+        if (handler != nil) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                handler(selectionText);
+            });
+        }
+        return true;
+    }
+
+    bool OnBeforePopup(CefRefPtr<CefBrowser> browser,
+                       CefRefPtr<CefFrame> frame,
+                       int popup_id,
+                       const CefString& target_url,
+                       const CefString& target_frame_name,
+                       WindowOpenDisposition target_disposition,
+                       bool user_gesture,
+                       const CefPopupFeatures& popupFeatures,
+                       CefWindowInfo& windowInfo,
+                       CefRefPtr<CefClient>& client,
+                       CefBrowserSettings& settings,
+                       CefRefPtr<CefDictionaryValue>& extra_info,
+                       bool* no_javascript_access) override {
+        CEF_REQUIRE_UI_THREAD();
+
+        NSString *urlString = ToNSString(target_url);
+        TungstenBrowserController *controller = controller_;
+        NSMutableDictionary<NSString *, id> *metadata = PerformanceURLMetadata(urlString);
+        metadata[@"browser_id"] = browser ? @(browser->GetIdentifier()) : @(-1);
+        metadata[@"popup_id"] = @(popup_id);
+        metadata[@"user_gesture"] = @(user_gesture);
+        [controller logPerformanceEvent:@"cef.popup.openTab" metadata:metadata];
+
+        TungstenPopupOpenHandler handler = controller.popupOpenHandler;
+        if (handler != nil && urlString.length > 0) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                handler(urlString);
+            });
+        }
+
+        // Tungsten embeds one CEF browser as a child view per visible tab.
+        // Native CEF popup windows have a different AppKit ownership path and
+        // can send lifecycle callbacks through this same client. Route popups
+        // into Tungsten tabs instead, and cancel native popup creation.
+        return true;
+    }
+
     bool OnShowPermissionPrompt(CefRefPtr<CefBrowser> browser,
                                 uint64_t prompt_id,
                                 const CefString &requesting_origin,
@@ -700,8 +821,17 @@ public:
 
     void OnAfterCreated(CefRefPtr<CefBrowser> browser) override {
         CEF_REQUIRE_UI_THREAD();
-        browser_ = browser;
         TungstenBrowserController *controller = controller_;
+
+        if (browser_ && !browser_->IsSame(browser)) {
+            [controller logPerformanceEvent:@"cef.browser.afterCreated.untracked" metadata:@{
+                @"browser_id": @(browser->GetIdentifier()),
+                @"tracked_browser_id": @(browser_->GetIdentifier())
+            }];
+            return;
+        }
+
+        browser_ = browser;
         [controller logPerformanceEvent:@"cef.browser.afterCreated" metadata:@{
             @"browser_id": @(browser->GetIdentifier())
         }];
@@ -712,10 +842,16 @@ public:
 
     void OnBeforeClose(CefRefPtr<CefBrowser> browser) override {
         CEF_REQUIRE_UI_THREAD();
-        if (browser_ && browser_->IsSame(browser)) {
-            browser_ = nullptr;
-        }
         TungstenBrowserController *controller = controller_;
+        const bool isTrackedBrowser = browser_ && browser_->IsSame(browser);
+        if (!isTrackedBrowser) {
+            [controller logPerformanceEvent:@"cef.browser.beforeClose.untracked" metadata:@{
+                @"browser_id": @(browser->GetIdentifier())
+            }];
+            return;
+        }
+
+        browser_ = nullptr;
         [controller logPerformanceEvent:@"cef.browser.beforeClose" metadata:@{
             @"browser_id": @(browser->GetIdentifier())
         }];
@@ -725,9 +861,25 @@ public:
     bool DoClose(CefRefPtr<CefBrowser> browser) override {
         CEF_REQUIRE_UI_THREAD();
 
+        TungstenBrowserController *controller = controller_;
+        if (browser_ && !browser_->IsSame(browser)) {
+            [controller logPerformanceEvent:@"cef.browser.doClose.untracked" metadata:@{
+                @"browser_id": @(browser->GetIdentifier()),
+                @"tracked_browser_id": @(browser_->GetIdentifier())
+            }];
+            return false;
+        }
+
+        if (!browser_) {
+            [controller logPerformanceEvent:@"cef.browser.doClose.untracked" metadata:@{
+                @"browser_id": @(browser->GetIdentifier()),
+                @"tracked_browser_id": @"nil"
+            }];
+            return false;
+        }
+
         NSView *browserView = (__bridge NSView *)browser->GetHost()->GetWindowHandle();
         [browserView removeFromSuperview];
-        TungstenBrowserController *controller = controller_;
         [controller logPerformanceEvent:@"cef.browser.doClose" metadata:@{
             @"browser_id": @(browser->GetIdentifier())
         }];
@@ -1124,6 +1276,9 @@ private:
 }
 
 @synthesize browserDidCloseHandler = _browserDidCloseHandler;
+@synthesize contextMenuSearchHandler = _contextMenuSearchHandler;
+@synthesize popupOpenHandler = _popupOpenHandler;
+@synthesize contextMenuSearchEngineName = _contextMenuSearchEngineName;
 
 - (instancetype)initWithInitialURL:(NSString *)initialURL {
     return [self initWithInitialURL:initialURL incognito:NO];
@@ -1152,6 +1307,7 @@ private:
     _isIncognito = ![_privacyMode isEqualToString:@"normal"];
     _torProxyHost = torProxyHost.length > 0 ? [torProxyHost copy] : @"127.0.0.1";
     _torProxyPort = torProxyPort > 0 ? torProxyPort : 9150;
+    _contextMenuSearchEngineName = @"Web";
     _pageContentCompletions = [NSMutableDictionary dictionary];
 
     NSMutableDictionary<NSString *, id> *metadata = PerformanceURLMetadata(_initialURL);

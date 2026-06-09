@@ -261,6 +261,22 @@ final class BrowserPageSession: Identifiable {
         browserController.stopLoading()
     }
 
+    func configureContextMenuSearch(
+        searchEngine: SearchEngine,
+        handler: @escaping (String) -> Void
+    ) {
+        browserController.contextMenuSearchEngineName = searchEngine.displayName
+        browserController.contextMenuSearchHandler = { selectedText in
+            handler(selectedText)
+        }
+    }
+
+    func configurePopupOpening(handler: @escaping (String) -> Void) {
+        browserController.popupOpenHandler = { urlString in
+            handler(urlString)
+        }
+    }
+
     func zoomIn() {
         browserController.zoomIn()
     }

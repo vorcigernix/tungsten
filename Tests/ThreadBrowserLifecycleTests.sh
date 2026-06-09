@@ -61,10 +61,12 @@ require_pattern "$host_file" "func activate\\(" "LivePageSessionHost.activate"
 require_pattern "$host_file" "privacyMode: BrowserTabPrivacyMode" "LivePageSessionHost privacy-mode activation parameter"
 require_pattern "$host_file" "torConfiguration: TorProxyConfiguration" "LivePageSessionHost Tor configuration activation parameter"
 require_pattern "$host_file" "activePageSession\\?\\.tabID == tab\\.id" "LivePageSessionHost selected-tab guard"
-require_pattern "$host_file" "closeActivePage\\(\\)" "LivePageSessionHost closes active CEF session before replacement"
-require_pattern "$host_file" "closingPageSession" "LivePageSessionHost pending window-close session retention"
+require_pattern "$host_file" "maximumCachedPageSessions[[:space:]]*=[[:space:]]*10" "LivePageSessionHost keeps a bounded warm tab cache"
+require_pattern "$host_file" "cachedPageSessions\\[tab\\.id\\]" "LivePageSessionHost reuses cached page sessions"
+require_pattern "$host_file" "evictStalePageSessionsIfNeeded" "LivePageSessionHost evicts stale cached sessions"
+require_pattern "$host_file" "closingPageSessions" "LivePageSessionHost pending window-close session retention"
 require_pattern "$host_file" "originalOnClose\\?\\(\\)" "LivePageSessionHost preserves original close callback"
-require_pattern "$host_file" "closingPageSession = nil" "LivePageSessionHost releases pending window-close session"
+require_pattern "$host_file" "closingPageSessions\\.removeAll" "LivePageSessionHost releases pending window-close sessions"
 
 require_pattern "$model_file" "var tabs: \\[BrowserTab\\]" "BrowserModel tab state"
 require_pattern "$model_file" "selectedTabID" "BrowserModel selected tab state"
@@ -142,23 +144,18 @@ if rg -q "Tungsten\\.BrowserThreads\\.v1" "$tab_store_file"; then
     exit 1
 fi
 
-if ! awk '
+if awk '
     /func activate\(/ { in_activate = 1 }
-    in_activate && /closeActivePage\(\)/ { saw_close = 1 }
-    in_activate && /let session = BrowserPageSession/ {
-        if (!saw_close) {
-            exit 1
-        }
-        saw_session = 1
-    }
-    in_activate && /^    }$/ && saw_session { exit 0 }
+    in_activate && /closeActivePage\(\)/ { found_close_before_create = 1 }
+    in_activate && /let session = BrowserPageSession/ { saw_session = 1 }
+    in_activate && /^    }$/ && saw_session { exit found_close_before_create ? 0 : 1 }
     END {
         if (!saw_session) {
             exit 1
         }
     }
 ' "$host_file"; then
-    echo "LivePageSessionHost.activate must close the active CEF page before creating a hibernated-tab replacement session." >&2
+    echo "LivePageSessionHost.activate must keep recent CEF page sessions warm instead of closing on every tab switch." >&2
     exit 1
 fi
 

@@ -13,6 +13,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 typedef void (^TungstenPageContentCompletion)(NSString *_Nullable selectedText,
                                               NSString *_Nullable bodyText);
+typedef void (^TungstenContextMenuSearchHandler)(NSString *selectedText);
+typedef void (^TungstenPopupOpenHandler)(NSString *urlString);
 
 @protocol TungstenBrowserControllerDelegate <NSObject>
 
@@ -39,6 +41,9 @@ typedef void (^TungstenPageContentCompletion)(NSString *_Nullable selectedText,
 
 @property (nonatomic, weak, nullable) id<TungstenBrowserControllerDelegate> delegate;
 @property (nonatomic, copy, nullable) void (^browserDidCloseHandler)(void);
+@property (nonatomic, copy, nullable) TungstenContextMenuSearchHandler contextMenuSearchHandler;
+@property (nonatomic, copy, nullable) TungstenPopupOpenHandler popupOpenHandler;
+@property (nonatomic, copy) NSString *contextMenuSearchEngineName;
 @property (nonatomic, strong, readonly) NSView *view;
 @property (nonatomic) CGFloat cornerRadius;
 
