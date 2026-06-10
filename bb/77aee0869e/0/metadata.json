@@ -1,0 +1,82 @@
+{
+  "cli_version": "0.6.1",
+  "checkpoint_id": "bb77aee0869e",
+  "session_id": "acd9b3d3-1787-4961-a25b-7ebbd1afc670",
+  "strategy": "manual-commit",
+  "created_at": "2026-06-10T13:15:15.014148Z",
+  "branch": "sidebar-navigationsplitview",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "docs/superpowers/specs/2026-06-10-sidebar-navigationsplitview-design.md"
+  ],
+  "agent": "Claude Code",
+  "model": "",
+  "turn_id": "ff0c32f9a413",
+  "token_usage": {
+    "input_tokens": 13806,
+    "cache_creation_tokens": 331039,
+    "cache_read_tokens": 3002438,
+    "output_tokens": 77802,
+    "api_call_count": 32
+  },
+  "session_metrics": {
+    "turn_count": 2
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-06-10T13:15:15.002338Z",
+    "agent_lines": 153,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 153,
+    "total_lines_changed": 153,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 248,
+      "user_lines_removed": 35,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 61,
+        "Tests/ThreadBrowserLifecycleTests.sh": 18,
+        "Tests/ThreadModelTests.swift": 17,
+        "Tungsten/Sources/Tungsten/Application/AppPreferences.swift": 31,
+        "Tungsten/Sources/Tungsten/Browser/BrowserSplitView.swift": 23,
+        "Tungsten/Sources/Tungsten/Browser/Chrome/BrowserChrome.swift": 87,
+        "Tungsten/Sources/Tungsten/Browser/Chrome/ChromeMetrics.swift": 10,
+        "Tungsten/Sources/Tungsten/Settings/GeneralSettingsView.swift": 1
+      },
+      "user_removed_per_file": {
+        "Tungsten/Sources/Tungsten/Browser/BrowserSplitView.swift": 9,
+        "Tungsten/Sources/Tungsten/Browser/Chrome/BrowserChrome.swift": 24,
+        "Tungsten/Sources/Tungsten/Browser/Chrome/ChromeMetrics.swift": 1,
+        "Tungsten/Sources/Tungsten/Settings/GeneralSettingsView.swift": 1
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 61,
+      "user_lines_removed": 0,
+      "agent_lines_added": 187,
+      "agent_lines_removed": 35,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 61
+      }
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 61,
+      "user_lines_removed": 0,
+      "agent_lines_added": 340,
+      "agent_lines_removed": 35,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 61
+      }
+    }
+  ]
+}
