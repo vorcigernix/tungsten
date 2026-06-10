@@ -1,0 +1,43 @@
+{
+  "cli_version": "0.6.1",
+  "checkpoint_id": "66500a26133a",
+  "session_id": "acd9b3d3-1787-4961-a25b-7ebbd1afc670",
+  "strategy": "manual-commit",
+  "created_at": "2026-06-10T14:39:30.445935Z",
+  "branch": "sidebar-navigationsplitview",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "Tests/ThreadBrowserLifecycleTests.sh",
+    "Tests/ThreadModelTests.swift",
+    "Tungsten/Sources/Tungsten/Application/AppPreferences.swift",
+    "Tungsten/Sources/Tungsten/Browser/BrowserSplitView.swift",
+    "Tungsten/Sources/Tungsten/Browser/Chrome/BrowserChrome.swift",
+    "Tungsten/Sources/Tungsten/Browser/Chrome/ChromeMetrics.swift",
+    "Tungsten/Sources/Tungsten/Settings/GeneralSettingsView.swift"
+  ],
+  "agent": "Claude Code",
+  "model": "",
+  "turn_id": "ff0c32f9a413",
+  "token_usage": {
+    "input_tokens": 14494,
+    "cache_creation_tokens": 698977,
+    "cache_read_tokens": 6227531,
+    "output_tokens": 162579,
+    "api_call_count": 49
+  },
+  "session_metrics": {
+    "turn_count": 2
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-06-10T14:39:30.426484Z",
+    "agent_lines": 187,
+    "agent_removed": 35,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 187,
+    "total_lines_changed": 222,
+    "agent_percentage": 100,
+    "metric_version": 2
+  }
+}

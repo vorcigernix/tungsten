@@ -1,0 +1,31 @@
+{
+  "cli_version": "0.6.1",
+  "checkpoint_id": "66500a26133a",
+  "strategy": "manual-commit",
+  "branch": "sidebar-navigationsplitview",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "Tests/ThreadBrowserLifecycleTests.sh",
+    "Tests/ThreadModelTests.swift",
+    "Tungsten/Sources/Tungsten/Application/AppPreferences.swift",
+    "Tungsten/Sources/Tungsten/Browser/BrowserSplitView.swift",
+    "Tungsten/Sources/Tungsten/Browser/Chrome/BrowserChrome.swift",
+    "Tungsten/Sources/Tungsten/Browser/Chrome/ChromeMetrics.swift",
+    "Tungsten/Sources/Tungsten/Settings/GeneralSettingsView.swift"
+  ],
+  "sessions": [
+    {
+      "metadata": "/66/500a26133a/0/metadata.json",
+      "transcript": "/66/500a26133a/0/full.jsonl",
+      "content_hash": "/66/500a26133a/0/content_hash.txt",
+      "prompt": "/66/500a26133a/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 14494,
+    "cache_creation_tokens": 698977,
+    "cache_read_tokens": 6227531,
+    "output_tokens": 162579,
+    "api_call_count": 49
+  }
+}
