@@ -1,0 +1,9 @@
+would you look at the UI syntax? it seems that the sidebar is somehow not styled as current best practices at least
+
+---
+
+no, web mockups rarely projects 1:1 in the native app
+
+---
+
+plan looks good, let's go
