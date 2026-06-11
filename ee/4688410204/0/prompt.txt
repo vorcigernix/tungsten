@@ -35,3 +35,7 @@ yes, but I still don't like it.  As you see from screenshot, there is a window b
 ---
 
 gone. good. would you make the content same width as the nav area?
+
+---
+
+yes, lovely. commit and push to the main please
