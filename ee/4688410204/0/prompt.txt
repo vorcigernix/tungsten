@@ -1,0 +1,37 @@
+okay, that was a bad idea, remove the branch and let's return to main
+
+---
+
+continue please
+
+---
+
+no, forget about sidebar. actually, delete the button and sidebar code, it make no sense in our UI. You managed to improve the visuals of buttons though, would you iterate over this a little (think about the navigation UI). Do not remove the expand on type though, just think if you can make it look more like liquid glass native app
+
+---
+
+maybe I saw a similar design with the controls detached - so the browser screen is jus a rounded browser window, then there is a gap and on top of that there are controls. it will be really nice if the default, expanded state makes the gap minimal and as the url bar collapses we will make the gap bigger. is this doable using native leements?
+
+---
+
+no browser is launched and file I was launching before open /tmp/TungstenDerivedData/Build/Products/Release/Tungsten.app does not exist
+
+---
+
+okay, almost there. there is a background glass now behind the whole app, can you remove it? or, if there is a border needed on the CEF, can you round the border around it?
+
+---
+
+now it is worse, it lost the translucency only. that was opposite of what I wanted. I want a rounded browser window and on top of that with a small gap a control panel that is liquid glass. version before was really close, but the whole application had one more background around the whole app (as it have now)
+
+---
+
+Okay, this was probably bad idea. Let's try something different, let's move the liquid glass towards the content. So contracted view should have the minimal gat that expanded view have now (looks like 5px) and expanded view will expand over the content (removing the gap completely and overlapping the content a little)
+
+---
+
+yes, but I still don't like it.  As you see from screenshot, there is a window border  around the whole app - it will be fantastic if we can just dissappear that
+
+---
+
+gone. good. would you make the content same width as the nav area?
