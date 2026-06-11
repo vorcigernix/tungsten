@@ -4,8 +4,8 @@ set -euo pipefail
 site_file="site/index.html"
 site_readme="site/README.md"
 github_url="https://github.com/vorcigernix/tungsten"
-release_url="https://github.com/vorcigernix/tungsten/releases/tag/v0.12"
-dmg_url="https://github.com/vorcigernix/tungsten/releases/download/v0.12/Tungsten-0.12.dmg"
+release_url="https://github.com/vorcigernix/tungsten/releases/tag/v0.13"
+dmg_url="https://github.com/vorcigernix/tungsten/releases/download/v0.13/Tungsten-0.13.dmg"
 release_sha256="bce92cc8df463c1bb8edfad39f1cab0cdfde1f14b88435ef845db0d80882ff13"
 release_build="20260609173721"
 

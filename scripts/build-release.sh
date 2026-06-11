@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DERIVED_DATA="${TUNGSTEN_DERIVED_DATA:-/tmp/TungstenDerivedData}"
-APP_VERSION="${TUNGSTEN_VERSION:-0.12}"
+APP_VERSION="${TUNGSTEN_VERSION:-0.13}"
 BUILD_NUMBER="${TUNGSTEN_BUILD_NUMBER:-$(date -u +%Y%m%d%H%M%S)}"
 ARTI_VENDOR_BIN="${ROOT_DIR}/Vendor/Arti/bin/arti"
 APP_PATH="${DERIVED_DATA}/Build/Products/Release/Tungsten.app"

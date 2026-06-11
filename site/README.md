@@ -2,11 +2,11 @@
 
 Static project microsite. Open `site/index.html` directly in a browser, or serve the repository root with any static file server.
 
-The primary download link points to the pinned v0.12 GitHub release DMG:
-<https://github.com/vorcigernix/tungsten/releases/download/v0.12/Tungsten-0.12.dmg>
+The primary download link points to the pinned v0.13 GitHub release DMG:
+<https://github.com/vorcigernix/tungsten/releases/download/v0.13/Tungsten-0.13.dmg>
 
 Release notes:
-<https://github.com/vorcigernix/tungsten/releases/tag/v0.12>
+<https://github.com/vorcigernix/tungsten/releases/tag/v0.13>
 
 Build:
 `20260609173721`
