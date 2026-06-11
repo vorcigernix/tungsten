@@ -213,7 +213,6 @@ private struct StartPageBackground: View {
                 endRadius: 720
             )
         }
-        .ignoresSafeArea()
     }
 
     private var tintColor: Color {

@@ -31,12 +31,11 @@ struct BrowserChrome: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .top)
-        .glassEffect(.regular, in: Rectangle())
-        .overlay(alignment: .bottom) {
-            Rectangle()
-                .fill(Color(nsColor: .separatorColor))
-                .frame(height: 1)
-        }
+        .glassEffect(.regular, in: UnevenRoundedRectangle(
+            bottomLeadingRadius: ChromeMetrics.cardCornerRadius,
+            bottomTrailingRadius: ChromeMetrics.cardCornerRadius,
+            style: .continuous
+        ))
         .ignoresSafeArea(edges: .top)
         .animation(expandAnimation, value: isExpanded)
         .onAppear { requestFocus() }
@@ -67,7 +66,6 @@ struct BrowserChrome: View {
         return HStack(alignment: .top, spacing: 8) {
             HStack(spacing: 8) {
                 Color.clear.frame(width: ChromeMetrics.trafficLightGutter)
-                SidebarHistoryMenu()
                 NavigationControls()
 
                 if tabLayout == .compact {
@@ -139,66 +137,66 @@ private struct ChromeIconButton: View {
     var isEnabled: Bool = true
     let action: () -> Void
 
-    @State private var isHovering = false
+    @State private var tapCount = 0
 
     var body: some View {
-        Button(action: action) {
+        Button {
+            tapCount += 1
+            action()
+        } label: {
             Image(systemName: systemImage)
                 .font(.system(size: ChromeMetrics.iconSize, weight: .medium))
+                .symbolEffect(.bounce, options: .speed(1.7), value: tapCount)
                 .frame(width: 30, height: ChromeMetrics.controlHeight)
                 .contentShape(RoundedRectangle(cornerRadius: ChromeMetrics.controlCornerRadius, style: .continuous))
         }
-        .buttonStyle(.plain)
-        .foregroundStyle(foreground)
-        .background {
-            if isHovering && isEnabled {
-                RoundedRectangle(cornerRadius: ChromeMetrics.controlCornerRadius, style: .continuous)
-                    .fill(.quaternary)
-            }
-        }
+        .buttonStyle(ChromeIconButtonStyle(isEnabled: isEnabled))
         .disabled(isEnabled == false)
-        .onHover { isHovering = $0 }
         .help(title)
-    }
-
-    private var foreground: AnyShapeStyle {
-        if isEnabled == false {
-            return AnyShapeStyle(.tertiary)
-        }
-        return AnyShapeStyle(isHovering ? .primary : .secondary)
+        .accessibilityLabel(title)
     }
 }
 
-private struct SidebarHistoryMenu: View {
-    @Environment(BrowserModel.self) private var browserModel
-    @State private var isHovering = false
+/// Native-feeling press/hover treatment for a borderless chrome icon button:
+/// a `.quaternary` wash on hover, a firmer `.tertiary` wash plus a slight
+/// depress on press, and the icon brightening from `.secondary` to `.primary`
+/// as it activates. Stays a single control on the one Liquid Glass bar — no
+/// glass-on-glass.
+private struct ChromeIconButtonStyle: ButtonStyle {
+    var isEnabled: Bool
 
-    var body: some View {
-        Menu {
-            Button("Show History", systemImage: "clock.arrow.circlepath") {
-                browserModel.showHistory()
-            }
-            Button("Copy URL", systemImage: "doc.on.doc") {
-                browserModel.copyActivePageURL()
-            }
-        } label: {
-            Image(systemName: "sidebar.left")
-                .font(.system(size: ChromeMetrics.iconSize, weight: .medium))
-                .frame(width: 30, height: ChromeMetrics.controlHeight)
-                .contentShape(RoundedRectangle(cornerRadius: ChromeMetrics.controlCornerRadius, style: .continuous))
+    func makeBody(configuration: Configuration) -> some View {
+        LabelBody(configuration: configuration, isEnabled: isEnabled)
+    }
+
+    private struct LabelBody: View {
+        let configuration: ButtonStyleConfiguration
+        let isEnabled: Bool
+        @State private var isHovering = false
+
+        var body: some View {
+            let pressed = configuration.isPressed && isEnabled
+            let active = pressed || (isHovering && isEnabled)
+            configuration.label
+                .foregroundStyle(foreground(active: active))
+                .background {
+                    if active {
+                        RoundedRectangle(cornerRadius: ChromeMetrics.controlCornerRadius, style: .continuous)
+                            .fill(pressed ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.quaternary))
+                    }
+                }
+                .scaleEffect(pressed ? 0.94 : 1)
+                .onHover { isHovering = $0 }
+                .animation(.smooth(duration: 0.13), value: isHovering)
+                .animation(.smooth(duration: 0.13), value: configuration.isPressed)
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
-        .foregroundStyle(isHovering ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
-        .background {
-            if isHovering {
-                RoundedRectangle(cornerRadius: ChromeMetrics.controlCornerRadius, style: .continuous)
-                    .fill(.quaternary)
+
+        private func foreground(active: Bool) -> AnyShapeStyle {
+            if isEnabled == false {
+                return AnyShapeStyle(.tertiary)
             }
+            return AnyShapeStyle(active ? .primary : .secondary)
         }
-        .onHover { isHovering = $0 }
-        .help("Sidebar and History")
     }
 }
 

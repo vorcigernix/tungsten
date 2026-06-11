@@ -39,8 +39,27 @@ enum ChromeMetrics {
     /// Corner radius for control hover / selection fills.
     static let controlCornerRadius: CGFloat = 7
 
+    /// Detached "floating card" layout. The web content is an inset, rounded
+    /// card and the glass bar floats above it. `detachedGap` is the *minimal*
+    /// gap below the collapsed bar. The card sits at a fixed inset, so when the
+    /// address field expands the bar grows down through this gap and slightly
+    /// over the top of the content; collapsing restores the minimal gap. The
+    /// card never jumps.
+    static let detachedGap: CGFloat = 5
+    /// Inset of the content card from the window's side and bottom edges.
+    static let contentMargin: CGFloat = 10
+    /// Corner radius of the content card and of the bar's floating bottom edge.
+    static let cardCornerRadius: CGFloat = 12
+
     /// Total chrome height for a given tab layout.
     static func totalHeight(for layout: BrowserTabLayout) -> CGFloat {
         layout == .separate ? barHeight + tabBarHeight : barHeight
+    }
+
+    /// Fixed top inset of the content card: clears the collapsed chrome plus
+    /// the gap. Constant regardless of focus so the card holds position while
+    /// the bar grows into the gap on focus and retreats on collapse.
+    static func cardTopInset(for layout: BrowserTabLayout) -> CGFloat {
+        totalHeight(for: layout) + detachedGap
     }
 }

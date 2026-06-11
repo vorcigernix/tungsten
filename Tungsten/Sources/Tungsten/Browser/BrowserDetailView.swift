@@ -9,16 +9,15 @@ import SwiftUI
 
 struct BrowserDetailView: View {
     let pageSession: BrowserPageSession
-    /// Space reserved at the top for the floating glass chrome, so the web
-    /// page begins below the bar instead of being occluded by it.
-    var topInset: CGFloat = 0
 
     var body: some View {
+        // The card's inset + position is owned by `BrowserSplitView`; here the
+        // web view simply fills the card. Rounded corners come from the CEF
+        // view's own layer (`cornerRadius`), since a SwiftUI `clipShape` can't
+        // clip the hosted AppKit/CEF surface.
         BrowserView(controller: pageSession.browserController)
             .id(pageSession.tabID)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(.top, topInset)
-            .ignoresSafeArea(edges: [.top, .bottom])
             .toolbar(removing: .title)
     }
 }
@@ -27,7 +26,7 @@ private struct BrowserView: NSViewRepresentable {
     let controller: TungstenBrowserController
 
     func makeNSView(context: Context) -> NSView {
-        controller.cornerRadius = 0
+        controller.cornerRadius = ChromeMetrics.cardCornerRadius
         return controller.view
     }
 

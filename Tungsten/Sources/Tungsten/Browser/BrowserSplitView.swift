@@ -16,18 +16,28 @@ struct BrowserSplitView: View {
     var body: some View {
         @Bindable var browserModel = browserModel
         let chromeHeight = ChromeMetrics.totalHeight(for: appPreferences.tabLayout)
+        let cardTopInset = ChromeMetrics.cardTopInset(for: appPreferences.tabLayout)
 
         ZStack(alignment: .top) {
-            if let pageSession = browserModel.activePageSession {
-                BrowserDetailView(pageSession: pageSession, topInset: chromeHeight)
-            } else {
-                StartPageView(
-                    isPrivate: browserModel.selectedTab?.isEphemeral ?? browserModel.kind.isIncognito,
-                    historyStore: browserModel.historyStore,
-                    topInset: chromeHeight,
-                    onOpen: { browserModel.openURLString($0) }
-                )
+            // The rounded content spans the full window width — matching the
+            // full-width glass bar — with the minimal top gap below the bar and
+            // a small float above the window's bottom edge. The window is
+            // translucent and shadowless, so the desktop shows through the gap.
+            Group {
+                if let pageSession = browserModel.activePageSession {
+                    BrowserDetailView(pageSession: pageSession)
+                } else {
+                    StartPageView(
+                        isPrivate: browserModel.selectedTab?.isEphemeral ?? browserModel.kind.isIncognito,
+                        historyStore: browserModel.historyStore,
+                        topInset: 0,
+                        onOpen: { browserModel.openURLString($0) }
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: ChromeMetrics.cardCornerRadius, style: .continuous))
+                }
             }
+            .padding(.top, cardTopInset)
+            .padding(.bottom, ChromeMetrics.contentMargin)
 
             if browserModel.isFindBarVisible {
                 VStack {
@@ -111,6 +121,12 @@ private struct SafariWindowChromeConfigurator: NSViewRepresentable {
 
         window.isOpaque = false
         window.backgroundColor = translucent ? .clear : AppPreferences.opaqueWindowBackgroundColor
+
+        // On a translucent window the drop shadow is what renders a visible
+        // edge/outline around the whole app against the desktop. Drop it for
+        // the borderless look; keep it for the opaque reduce-transparency
+        // fallback so that mode still reads as a window.
+        window.hasShadow = (translucent == false)
     }
 }
 
